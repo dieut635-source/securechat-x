@@ -16,7 +16,7 @@ Fork của `element-hq/element-x-android`, rebrand thành **SecureChat** cho hom
 - JDK 21, Gradle wrapper của repo.
 - Build `:app:assembleFdroidDebug` (bản **fdroid** dùng UnifiedPush, **không** cần `google-services.json`).
   Khi có Firebase project cho `com.securechat.app` sẽ đổi sang `assembleGplayDebug`.
-- Artifact: **`app-debug.apk`** (bản **arm64-v8a**, ~60 MB — mọi điện thoại Android đời mới đều là arm64).
+- Artifact: **`app-debug.apk`** (bản **arm64-v8a**, ~99 MB — mọi điện thoại Android đời mới đều là arm64).
   Cần bản universal thì đổi tên file ở bước "Rename arm64 APK" trong workflow.
 - Job thứ hai chạy unit test của hai module ta đã sửa (`features/login/impl`, `features/enterprise/impl-foss`).
 - `-PallWarningsAsErrors=false` (upstream để `true`; ta nới ra để cảnh báo không làm đỏ CI).

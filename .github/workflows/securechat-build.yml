@@ -4,8 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches: [ main, develop ]
+    paths-ignore: [ '**.md' ]
   pull_request:
     branches: [ main, develop ]
+    paths-ignore: [ '**.md' ]
 
 permissions:
   contents: read
@@ -54,8 +56,9 @@ jobs:
       - name: Assemble fdroid debug APK
         run: ./gradlew :app:assembleFdroidDebug $CI_GRADLE_ARG_PROPERTIES
 
-      # arm64-v8a: ~60 MB thay vì ~200 MB của bản universal. Mọi điện thoại Android đời mới
-      # (kể cả Samsung/Knox) đều là arm64. Cần bản universal thì đổi lại tên file ở đây.
+      # arm64-v8a: ~99 MB thay vì ~197 MB của bản universal (bản debug chưa strip ký hiệu của
+      # Rust SDK nên vẫn nặng). Mọi điện thoại Android đời mới (kể cả Samsung/Knox) đều là arm64.
+      # Cần bản universal thì đổi lại tên file ở đây.
       - name: Rename arm64 APK to app-debug.apk
         run: cp app/build/outputs/apk/fdroid/debug/app-fdroid-arm64-v8a-debug.apk app-debug.apk
 
