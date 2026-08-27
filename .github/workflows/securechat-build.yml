@@ -123,6 +123,8 @@ jobs:
           :features:login:impl:testDebugUnitTest
           :features:enterprise:impl-foss:testDebugUnitTest
           :libraries:mdm:impl:testDebugUnitTest
+          :features:messages:impl:testDebugUnitTest
+          :features:share:impl:testDebugUnitTest
           $CI_GRADLE_ARG_PROPERTIES
 
       - name: Upload test reports on failure
@@ -134,3 +136,5 @@ jobs:
             features/login/impl/build/reports/tests/**
             features/enterprise/impl-foss/build/reports/tests/**
             libraries/mdm/impl/build/reports/tests/**
+            features/messages/impl/build/reports/tests/**
+            features/share/impl/build/reports/tests/**
