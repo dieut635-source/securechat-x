@@ -239,6 +239,7 @@ class DefaultShareIntentHandlerTest : RobolectricTest() {
         givenAnApplicationHandling(intent)
         val result = DefaultShareIntentHandler(
             context = FailingGrantUriPermissionContext(RuntimeEnvironment.getApplication()),
+            mdmService = FakeMdmService(),
         ).handleIncomingShareIntent(intent)
         assertThat(intent.action).isEqualTo(Intent.ACTION_SEND)
         assertThat(intent.component).isNull()
