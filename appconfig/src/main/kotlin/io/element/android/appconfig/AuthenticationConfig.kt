@@ -9,6 +9,15 @@
 package io.element.android.appconfig
 
 object AuthenticationConfig {
+    /**
+     * The homeserver SecureChat signs in to by default, and the one offered for autocomplete.
+     */
+    const val DEFAULT_HOMESERVER_URL = "https://chat.securechat.com.au"
+
+    /**
+     * Kept as the literal matrix.org URL: it is only used to decide whether to show the matrix.org
+     * logo and the "public server" badge next to an account provider, never as a default.
+     */
     const val MATRIX_ORG_URL = "https://matrix.org"
 
     /**

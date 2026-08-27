@@ -271,7 +271,7 @@ class OnBoardingPresenterTest {
             skipItems(3)
             awaitItem().also {
                 assertThat(it.defaultAccountProvider).isEqualTo(A_HOMESERVER_URL)
-                assertThat(accountProviderDataSource.flow.first().url).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
+                assertThat(accountProviderDataSource.flow.first().url).isEqualTo(AuthenticationConfig.DEFAULT_HOMESERVER_URL)
                 it.eventSink(OnBoardingEvent.OnSignIn(A_HOMESERVER_URL_2))
                 skipItems(1) // Loading
                 // Account data source has been updated

@@ -32,11 +32,11 @@ class AccountProviderDataSource(
     @AppCoroutineScope private val coroutineScope: CoroutineScope,
 ) {
     // The provider used when the user has not selected one: an enterprise/MDM-configured provider,
-    // else matrix.org. The most recently used provider (from history) can override it, see init.
+    // else the SecureChat homeserver. The most recently used provider (from history) can override it, see init.
     private val configuredAccountProvider = createAccountProvider(
         url = enterpriseService.homeserverAllowList()
             .firstOrNull { it != EnterpriseService.ANY_ACCOUNT_PROVIDER }
-            ?: AuthenticationConfig.MATRIX_ORG_URL
+            ?: AuthenticationConfig.DEFAULT_HOMESERVER_URL
     )
 
     private val accountProvider: MutableStateFlow<AccountProvider> = MutableStateFlow(configuredAccountProvider)

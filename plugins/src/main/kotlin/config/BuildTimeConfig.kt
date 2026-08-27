@@ -9,16 +9,16 @@
 package config
 
 object BuildTimeConfig {
-    const val APPLICATION_ID = "io.element.android.x"
-    const val APPLICATION_NAME = "Element X"
-    val METADATA_HOST_REVERSED: String? = null
+    const val APPLICATION_ID = "com.securechat.app"
+    const val APPLICATION_NAME = "SecureChat"
+    val METADATA_HOST_REVERSED: String? = "com.securechat"
     val OAUTH_CLIENT_URL_PATH: String? = "apps/android"
-    val URL_WEBSITE: String? = null
-    val URL_LOGO: String? = null
-    val URL_COPYRIGHT: String? = null
-    val URL_ACCEPTABLE_USE: String? = null
-    val URL_PRIVACY: String? = null
-    val URL_POLICY: String? = null
+    val URL_WEBSITE: String? = "https://chat.securechat.com.au"
+    val URL_LOGO: String? = "https://chat.securechat.com.au/vector-icons/1024.png"
+    val URL_COPYRIGHT: String? = "https://chat.securechat.com.au"
+    val URL_ACCEPTABLE_USE: String? = "https://chat.securechat.com.au"
+    val URL_PRIVACY: String? = "https://chat.securechat.com.au"
+    val URL_POLICY: String? = "https://chat.securechat.com.au"
     val SERVICES_MAPTILER_BASE_URL: String? = null
     val SERVICES_MAPTILER_APIKEY: String? = null
     val SERVICES_MAPTILER_LIGHT_MAPID: String? = null

@@ -30,11 +30,11 @@ class AccountProviderDataSourceTest {
             val initialState = awaitItem()
             assertThat(initialState).isEqualTo(
                 AccountProvider(
-                    url = AuthenticationConfig.MATRIX_ORG_URL,
-                    title = "matrix.org",
+                    url = AuthenticationConfig.DEFAULT_HOMESERVER_URL,
+                    title = "chat.securechat.com.au",
                     subtitle = null,
-                    isPublic = true,
-                    isMatrixOrg = true,
+                    isPublic = false,
+                    isMatrixOrg = false,
                 )
             )
         }
@@ -87,7 +87,7 @@ class AccountProviderDataSourceTest {
         val sut = anAccountProviderDataSource()
         sut.flow.test {
             val initialState = awaitItem()
-            assertThat(initialState.url).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
+            assertThat(initialState.url).isEqualTo(AuthenticationConfig.DEFAULT_HOMESERVER_URL)
             sut.setAccountProvider(AccountProvider(url = "https://example.com"))
             val changedState = awaitItem()
             assertThat(changedState).isEqualTo(
@@ -101,7 +101,7 @@ class AccountProviderDataSourceTest {
             )
             sut.reset()
             val resetState = awaitItem()
-            assertThat(resetState.url).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
+            assertThat(resetState.url).isEqualTo(AuthenticationConfig.DEFAULT_HOMESERVER_URL)
         }
     }
 
@@ -110,7 +110,7 @@ class AccountProviderDataSourceTest {
         val sut = anAccountProviderDataSource()
         sut.flow.test {
             val initialState = awaitItem()
-            assertThat(initialState.url).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
+            assertThat(initialState.url).isEqualTo(AuthenticationConfig.DEFAULT_HOMESERVER_URL)
             sut.setUrl(url = "https://example.com")
             val changedState = awaitItem()
             assertThat(changedState).isEqualTo(
@@ -124,7 +124,7 @@ class AccountProviderDataSourceTest {
             )
             sut.reset()
             val resetState = awaitItem()
-            assertThat(resetState.url).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
+            assertThat(resetState.url).isEqualTo(AuthenticationConfig.DEFAULT_HOMESERVER_URL)
         }
     }
 

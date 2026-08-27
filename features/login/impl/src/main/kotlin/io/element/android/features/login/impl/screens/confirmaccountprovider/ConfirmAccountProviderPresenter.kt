@@ -59,11 +59,11 @@ class ConfirmAccountProviderPresenter(
         val homeserverHistory by appPreferencesStore.getHomeserverHistoryFlow().collectAsState(emptyList())
 
         // The account providers offered for autocomplete: previously-used ones first, then the
-        // enterprise/MDM-configured allow-list, then matrix.org (always available, even before any sign-in).
+        // enterprise/MDM-configured allow-list, then the SecureChat homeserver (always available, even before any sign-in).
         // The "*" wildcard is a routing marker, not a real provider, so it is filtered out. Everything is
         // rendered without the https:// scheme (added back at connection time).
         val autocompleteCandidates = remember(homeserverHistory) {
-            (homeserverHistory + enterpriseService.homeserverAllowList() + AuthenticationConfig.MATRIX_ORG_URL)
+            (homeserverHistory + enterpriseService.homeserverAllowList() + AuthenticationConfig.DEFAULT_HOMESERVER_URL)
                 .filter { it != EnterpriseService.ANY_ACCOUNT_PROVIDER }
                 .map { it.withoutScheme() }
                 .distinct()

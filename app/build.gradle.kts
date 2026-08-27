@@ -21,7 +21,6 @@ import extension.allFeaturesImpl
 import extension.allLibrariesImpl
 import extension.allServicesImpl
 import extension.buildConfigFieldStr
-import extension.locales
 import extension.setupDependencyInjection
 import extension.testCommonDependencies
 import org.sonarqube.gradle.SonarResolverTask
@@ -76,7 +75,11 @@ android {
         }
 
         androidResources {
-            localeFilters += locales
+            // SecureChat ships in English only (users are in Australia). This also keeps the upstream
+            // translations - which still say "Element" in the call/notification strings overridden in
+            // app/src/main/res/values/securechat_strings.xml - out of the APK. Add locales back here
+            // (e.g. `setOf("en", "en-rUS", "vi")`) if other languages are ever needed.
+            localeFilters += setOf("en", "en-rUS")
         }
     }
 

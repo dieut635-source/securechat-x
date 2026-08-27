@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2025 Element Creations Ltd.
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  SecureChat rebrand.
+
+  Nearly every string upstream builds the app name from %1$s (app_name), so it rebrands itself. These
+  are the handful that hard-code an Element product name. Resources in the app module win over the
+  library ones, so overriding here leaves the upstream files untouched and keeps merges clean.
+-->
+<resources>
+    <!-- features/call/impl -->
+    <string translatable="false" name="element_call">SecureChat Call</string>
+    <string name="screen_incoming_call_subtitle_android">"Incoming call"</string>
+    <string name="call_invalid_audio_device_bluetooth_devices_disabled">"Calls do not support using Bluetooth audio devices in this Android version. Please select a different audio device."</string>
+
+    <!-- features/preferences/impl -->
+    <string name="screen_advanced_settings_element_call_base_url">"Custom call server URL"</string>
+    <string name="screen_advanced_settings_element_call_base_url_description">"Set a custom base URL for calls."</string>
+    <string name="screen_notification_settings_sound_element_default">"SecureChat Default"</string>
+    <string name="screen_notification_settings_sound_element_fade">"SecureChat Fade"</string>
+
+    <!-- features/messages/impl -->
+    <string name="screen_room_timeline_legacy_call">"Unsupported call. Ask if the caller can use the new SecureChat app."</string>
+
+    <!-- features/login/impl -->
+    <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
+    <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+    <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
+    <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
+    <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
+</resources>

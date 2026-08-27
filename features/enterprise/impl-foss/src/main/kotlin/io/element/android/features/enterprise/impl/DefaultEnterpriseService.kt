@@ -30,11 +30,11 @@ class DefaultEnterpriseService : EnterpriseService {
     override suspend fun overrideBrandColor(sessionId: SessionId?, brandColor: String?) = Unit
 
     override fun brandColorsFlow(sessionId: SessionId?): Flow<Color?> {
-        return flowOf(null)
+        return flowOf(SecureChatColors.brand)
     }
 
     override fun semanticColorsFlow(sessionId: SessionId?): Flow<SemanticColorsLightDark> {
-        return flowOf(SemanticColorsLightDark.default)
+        return flowOf(SecureChatColors.semanticColors)
     }
 
     override fun firebasePushGateway(): String? = null
