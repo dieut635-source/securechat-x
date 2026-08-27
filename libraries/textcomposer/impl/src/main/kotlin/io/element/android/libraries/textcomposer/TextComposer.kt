@@ -424,6 +424,7 @@ fun TextComposer(
             modifier = layoutModifier,
             textInput = textInput,
             endButtonParams = endButtonParams,
+            canSendAttachments = canSendAttachments,
             voiceRecording = voiceRecording,
             onAddAttachment = onAddAttachment,
             onDeleteVoiceMessage = onDeleteVoiceMessage,
