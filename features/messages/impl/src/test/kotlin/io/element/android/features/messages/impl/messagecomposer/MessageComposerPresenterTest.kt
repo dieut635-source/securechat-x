@@ -1670,9 +1670,12 @@ class MessageComposerPresenterTest : RobolectricTest() {
         presenter.test {
             val state = awaitFirstItem()
             assertThat(state.canSendAttachments).isFalse()
-            // Even if something else fires the event, the picker must not open.
+            assertThat(state.showAttachmentSourcePicker).isFalse()
+            // The button is hidden, but the event must be refused too, in case another caller fires it.
+            // `present - Open attachments menu` shows this same event does emit a new state when
+            // attachments are allowed, so no emission here is what proves the event was ignored.
             state.eventSink(MessageComposerEvent.AddAttachment)
-            assertThat(awaitFirstItem().showAttachmentSourcePicker).isFalse()
+            expectNoEvents()
         }
     }
 
