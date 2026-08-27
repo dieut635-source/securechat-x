@@ -66,13 +66,20 @@ jobs:
           cp "$D/app-fdroid-arm64-v8a-debug.apk" app-debug.apk
           cp "$D/app-fdroid-x86_64-debug.apk"    app-debug-x86_64.apk
 
-      - name: Upload APK
+      # Hai artifact riêng để chỉ phải tải bản mình cần (~100 MB thay vì 200 MB).
+      # Máy Android thật và emulator trên Mac Apple Silicon -> arm64. Emulator trên máy Intel -> x86_64.
+      - name: Upload APK (arm64 — điện thoại thật, Mac Apple Silicon)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: app-debug.apk
-          path: |
-            app-debug.apk
-            app-debug-x86_64.apk
+          path: app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload APK (x86_64 — emulator trên máy Intel)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: app-debug-x86_64.apk
+          path: app-debug-x86_64.apk
           if-no-files-found: error
 
   test:
