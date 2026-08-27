@@ -9,9 +9,17 @@
 package io.element.android.appconfig
 
 object LearnMoreConfig {
-    const val ENCRYPTION_URL: String = "https://element.io/help#encryption"
-    const val DEVICE_VERIFICATION_URL: String = "https://element.io/help#encryption-device-verification"
-    const val SECURE_BACKUP_URL: String = "https://element.io/help#encryption5"
-    const val IDENTITY_CHANGE_URL: String = "https://element.io/help#encryption18"
-    const val HISTORY_VISIBLE_URL: String = "https://element.io/en/help#e2ee-history-sharing"
+    /**
+     * Every "Learn more" link in the app. Upstream points these at element.io help pages, which would
+     * show Element branding to SecureChat users; they all point at the SecureChat site instead.
+     *
+     * TODO: replace with real help pages once they exist, and give each topic its own anchor again.
+     */
+    private const val HELP_URL: String = "https://chat.securechat.com.au"
+
+    const val ENCRYPTION_URL: String = HELP_URL
+    const val DEVICE_VERIFICATION_URL: String = HELP_URL
+    const val SECURE_BACKUP_URL: String = HELP_URL
+    const val IDENTITY_CHANGE_URL: String = HELP_URL
+    const val HISTORY_VISIBLE_URL: String = HELP_URL
 }

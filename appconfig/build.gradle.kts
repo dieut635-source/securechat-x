@@ -22,27 +22,17 @@ android {
     defaultConfig {
         buildConfigFieldStr(
             name = "URL_POLICY",
-            value = if (isEnterpriseBuild) {
-                BuildTimeConfig.URL_POLICY ?: ""
-            } else {
-                "https://element.io/cookie-policy"
-            },
+            // Upstream falls back to element.io here; SecureChat always uses its own URL.
+            value = BuildTimeConfig.URL_POLICY ?: "",
         )
         buildConfigFieldStr(
             name = "BUG_REPORT_URL",
-            value = if (isEnterpriseBuild) {
-                BuildTimeConfig.BUG_REPORT_URL ?: ""
-            } else {
-                "https://rageshakes.element.io/api/submit"
-            },
+            // Empty disables the bug reporter. Upstream would post logs to Element's rageshake server.
+            value = BuildTimeConfig.BUG_REPORT_URL ?: "",
         )
         buildConfigFieldStr(
             name = "BUG_REPORT_APP_NAME",
-            value = if (isEnterpriseBuild) {
-                BuildTimeConfig.BUG_REPORT_APP_NAME ?: ""
-            } else {
-                "element-x-android"
-            },
+            value = BuildTimeConfig.BUG_REPORT_APP_NAME ?: "securechat-android",
         )
     }
 }

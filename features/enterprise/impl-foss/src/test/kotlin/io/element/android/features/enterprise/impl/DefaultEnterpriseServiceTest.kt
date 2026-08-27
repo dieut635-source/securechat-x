@@ -84,10 +84,10 @@ class DefaultEnterpriseServiceTest {
     }
 
     @Test
-    fun `bugReportUrlFlow only emits UseDefault`() = runTest {
+    fun `bugReportUrlFlow only emits Disabled`() = runTest {
         val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.bugReportUrlFlow(A_SESSION_ID).test {
-            assertThat(awaitItem()).isEqualTo(BugReportUrl.UseDefault)
+            assertThat(awaitItem()).isEqualTo(BugReportUrl.Disabled)
             awaitComplete()
         }
     }

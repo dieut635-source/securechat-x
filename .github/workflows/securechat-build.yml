@@ -59,14 +59,20 @@ jobs:
       # arm64-v8a: ~99 MB thay vì ~197 MB của bản universal (bản debug chưa strip ký hiệu của
       # Rust SDK nên vẫn nặng). Mọi điện thoại Android đời mới (kể cả Samsung/Knox) đều là arm64.
       # Cần bản universal thì đổi lại tên file ở đây.
-      - name: Rename arm64 APK to app-debug.apk
-        run: cp app/build/outputs/apk/fdroid/debug/app-fdroid-arm64-v8a-debug.apk app-debug.apk
+      # Bản split theo ABI đã được build sẵn nên lấy thêm x86_64 không tốn thêm thời gian.
+      - name: Collect APKs
+        run: |
+          D=app/build/outputs/apk/fdroid/debug
+          cp "$D/app-fdroid-arm64-v8a-debug.apk" app-debug.apk
+          cp "$D/app-fdroid-x86_64-debug.apk"    app-debug-x86_64.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: app-debug.apk
-          path: app-debug.apk
+          path: |
+            app-debug.apk
+            app-debug-x86_64.apk
           if-no-files-found: error
 
   test:

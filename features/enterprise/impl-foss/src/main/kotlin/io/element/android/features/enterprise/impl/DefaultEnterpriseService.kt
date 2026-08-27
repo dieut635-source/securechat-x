@@ -41,7 +41,9 @@ class DefaultEnterpriseService : EnterpriseService {
     override fun unifiedPushDefaultPushGateway(): String? = null
 
     override fun bugReportUrlFlow(sessionId: SessionId?): Flow<BugReportUrl> {
-        return flowOf(BugReportUrl.UseDefault)
+        // UseDefault would post logs to Element's rageshake server (rageshakes.element.io).
+        // SecureChat has no bug-report endpoint of its own yet, so the feature stays off.
+        return flowOf(BugReportUrl.Disabled)
     }
 
     override fun getNoisyNotificationChannelId(sessionId: SessionId): String? = null

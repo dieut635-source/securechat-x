@@ -49,6 +49,9 @@ không cần**. Thư mục `enterprise/` rỗng nên Gradle bỏ qua, build ch�
 | Icon | `appicon/element/src/main/res/drawable/ic_launcher_{foreground,monochrome}.xml` (vector) + `mipmap-*/ic_launcher*.png` cho Android 7/7.1 |
 | Chuỗi còn tên Element | `app/src/main/res/values/securechat_strings.xml` (ghi đè module thư viện) |
 | Chỉ đóng gói tiếng Anh | `app/build.gradle.kts` → `localeFilters` |
+| Link "Learn more" (trỏ element.io) | `appconfig/.../LearnMoreConfig.kt` |
+| Tắt gửi log lỗi về rageshakes.element.io | `DefaultEnterpriseService.bugReportUrlFlow` → `Disabled` |
+| URL chính sách, tên app trong bug report | `appconfig/build.gradle.kts` |
 
 Còn tên "Element" ở những chỗ **không hiển thị cho người dùng**: package Java `io.element.android.*`,
 `namespace` của module app, tên style `Theme.ElementX`, tên thư mục `appicon/element`. Đổi những thứ này
