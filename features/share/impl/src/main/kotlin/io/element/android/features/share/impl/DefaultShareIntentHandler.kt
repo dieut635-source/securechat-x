@@ -29,11 +29,13 @@ import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeImage
 import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeText
 import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeVideo
 import io.element.android.libraries.di.annotations.ApplicationContext
+import io.element.android.libraries.mdm.api.MdmService
 import timber.log.Timber
 
 @ContributesBinding(AppScope::class)
 class DefaultShareIntentHandler(
     @ApplicationContext private val context: Context,
+    private val mdmService: MdmService,
 ) : ShareIntentHandler {
     override fun handleIncomingShareIntent(
         intent: Intent,
@@ -50,6 +52,13 @@ class DefaultShareIntentHandler(
                 type.isMimeTypeFile() ||
                 type.isMimeTypeText() ||
                 type.isMimeTypeAny() -> {
+                // `allow_file_send` off: sharing a file in from another app is one of the routes the
+                // attachment button no longer offers, so it is closed here too. Sharing plain text
+                // still works - that is a message the user could have typed.
+                if (!mdmService.config.value.allowFileSend) {
+                    Timber.i("Incoming share ignored: sending files is disabled by the managed configuration")
+                    return null
+                }
                 ShareIntentData.Uris(
                     text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.takeIf { it.isNotEmpty() },
                     uris = uris,

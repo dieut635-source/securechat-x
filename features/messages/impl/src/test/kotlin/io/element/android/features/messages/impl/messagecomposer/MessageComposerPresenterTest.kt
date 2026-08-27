@@ -55,6 +55,9 @@ import io.element.android.libraries.matrix.api.timeline.TimelineException
 import io.element.android.libraries.matrix.api.timeline.item.event.EventOrTransactionId
 import io.element.android.libraries.matrix.api.timeline.item.event.InReplyTo
 import io.element.android.libraries.matrix.api.timeline.item.event.toEventOrTransactionId
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.api.MdmService
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.matrix.test.ANOTHER_MESSAGE
 import io.element.android.libraries.matrix.test.AN_EVENT_ID
 import io.element.android.libraries.matrix.test.A_CAPTION
@@ -1651,6 +1654,29 @@ class MessageComposerPresenterTest : RobolectricTest() {
         return normalState
     }
 
+    @Test
+    fun `present - attachments are allowed by default`() = runTest {
+        val presenter = createPresenter()
+        presenter.test {
+            assertThat(awaitFirstItem().canSendAttachments).isTrue()
+        }
+    }
+
+    @Test
+    fun `present - allow_file_send off hides attachments and keeps the picker shut`() = runTest {
+        val presenter = createPresenter(
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowFileSend = false)),
+        )
+        presenter.test {
+            val state = awaitFirstItem()
+            assertThat(state.canSendAttachments).isFalse()
+            // Even if something else fires the event, the picker must not open.
+            state.eventSink(MessageComposerEvent.AddAttachment)
+            assertThat(awaitFirstItem().showAttachmentSourcePicker).isFalse()
+        }
+    }
+
+
     private fun TestScope.createPresenter(
         room: JoinedRoom = FakeJoinedRoom(
             typingNoticeResult = { Result.success(Unit) }
@@ -1677,6 +1703,7 @@ class MessageComposerPresenterTest : RobolectricTest() {
         threadRoot: ThreadId? = null,
         slashCommandService: SlashCommandService = FakeSlashCommandService(),
         featureFlagService: FakeFeatureFlagService = FakeFeatureFlagService(),
+        mdmService: MdmService = FakeMdmService(),
     ) = MessageComposerPresenter(
         navigator = navigator,
         sessionCoroutineScope = this,
@@ -1718,6 +1745,7 @@ class MessageComposerPresenterTest : RobolectricTest() {
         featureFlagService = featureFlagService,
         contentScannerService = { _, _ -> },
         contentValidationCache = InMemoryEventContentValidationCache(),
+        mdmService = mdmService,
     ).apply {
         isTesting = true
         showTextFormatting = isRichTextEditorEnabled

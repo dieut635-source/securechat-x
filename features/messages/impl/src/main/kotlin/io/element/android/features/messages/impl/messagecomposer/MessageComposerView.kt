@@ -116,7 +116,10 @@ internal fun MessageComposerView(
         resolveAtRoomMentionDisplay = state.resolveAtRoomMentionDisplay,
         onError = ::onError,
         onTyping = ::onTyping,
-        onSelectRichContent = ::sendUri,
+        // Null disables the keyboard's rich-content path (GIFs, pasted images), which is another way
+        // to put a file into a room.
+        onSelectRichContent = if (state.canSendAttachments) ::sendUri else null,
+        canSendAttachments = state.canSendAttachments,
     )
 
     AsyncActionView(

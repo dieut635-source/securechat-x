@@ -72,6 +72,7 @@ import io.element.android.libraries.matrix.ui.messages.reply.map
 import io.element.android.libraries.mediapickers.api.PickerProvider
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfigProvider
 import io.element.android.libraries.mediaupload.api.MediaSenderFactory
+import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.mediaviewer.api.local.LocalMediaFactory
 import io.element.android.libraries.permissions.api.PermissionsEvent
 import io.element.android.libraries.permissions.api.PermissionsPresenter
@@ -145,6 +146,7 @@ class MessageComposerPresenter(
     private val featureFlagService: FeatureFlagService,
     private val contentScannerService: ContentScannerService,
     private val contentValidationCache: EventContentValidationCache,
+    private val mdmService: MdmService,
 ) : Presenter<MessageComposerState> {
     @AssistedFactory
     interface Factory {
@@ -214,6 +216,8 @@ class MessageComposerPresenter(
             mutableStateOf(false)
         }
         var showAttachmentSourcePicker: Boolean by remember { mutableStateOf(false) }
+        val mdmConfig by mdmService.config.collectAsState()
+        val canSendAttachments = mdmConfig.allowFileSend
 
         val sendTypingNotifications by remember {
             sessionPreferencesStore.isSendTypingNotificationsEnabled()
@@ -304,7 +308,11 @@ class MessageComposerPresenter(
                     localCoroutineScope.setMode(event.composerMode, markdownTextEditorState, richTextEditorState)
                 }
                 MessageComposerEvent.AddAttachment -> localCoroutineScope.launch {
-                    showAttachmentSourcePicker = true
+                    // The button is already hidden when attachments are disallowed; this is the
+                    // second lock, so no other caller can open the picker either.
+                    if (canSendAttachments) {
+                        showAttachmentSourcePicker = true
+                    }
                 }
                 MessageComposerEvent.DismissAttachmentMenu -> showAttachmentSourcePicker = false
                 MessageComposerEvent.PickAttachmentSource.FromGallery -> localCoroutineScope.launch {
@@ -429,7 +437,8 @@ class MessageComposerPresenter(
             isFullScreen = isFullScreen.value,
             mode = messageComposerContext.composerMode,
             isInThreadTimeline = isInThread,
-            showAttachmentSourcePicker = showAttachmentSourcePicker,
+            showAttachmentSourcePicker = showAttachmentSourcePicker && canSendAttachments,
+            canSendAttachments = canSendAttachments,
             showTextFormatting = showTextFormatting,
             canShareLocation = canShareLocation.value,
             suggestions = suggestions.toImmutableList(),

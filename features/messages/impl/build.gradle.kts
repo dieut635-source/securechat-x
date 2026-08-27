@@ -45,6 +45,7 @@ dependencies {
     implementation(projects.libraries.uiStrings)
     implementation(projects.libraries.dateformatter.api)
     implementation(projects.libraries.eventformatter.api)
+    implementation(projects.libraries.mdm.api)
     implementation(projects.libraries.mediapickers.api)
     implementation(projects.libraries.mediaviewer.api)
     implementation(projects.libraries.featureflag.api)
@@ -84,6 +85,7 @@ dependencies {
 
     testCommonDependencies(libs, true)
     testImplementation(projects.libraries.matrix.test)
+    testImplementation(projects.libraries.mdm.test)
     testImplementation(projects.libraries.dateformatter.test)
     testImplementation(projects.libraries.push.test)
     testImplementation(projects.features.call.test)

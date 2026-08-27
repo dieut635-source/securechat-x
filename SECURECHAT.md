@@ -56,3 +56,25 @@ không cần**. Thư mục `enterprise/` rỗng nên Gradle bỏ qua, build ch�
 Còn tên "Element" ở những chỗ **không hiển thị cho người dùng**: package Java `io.element.android.*`,
 `namespace` của module app, tên style `Theme.ElementX`, tên thư mục `appicon/element`. Đổi những thứ này
 tốn công và làm mọi lần merge upstream xung đột, trong khi người dùng không bao giờ thấy.
+
+## Managed Configurations (Knox Manage)
+
+Bốn khoá, khai báo trong `app/src/main/res/xml/app_restrictions.xml`, đọc bởi `libraries/mdm`:
+
+| Khoá | Kiểu | Mặc định | Không cấu hình thì | Cấu hình rồi thì |
+|---|---|---|---|---|
+| `homeserver_url` | string | `https://chat.securechat.com.au` | đăng nhập vào server SecureChat | khoá vào đúng server đó, không đổi được |
+| `allow_registration` | bool | `false` | chỉ có "Sign in" | `true` mới hiện "Create account" |
+| `allow_file_send` | bool | `true` | gửi file bình thường | `false` → ẩn nút đính kèm, ẩn ghi âm, chặn chia sẻ file từ app khác, chặn dán ảnh từ bàn phím |
+| `auto_logout_minutes` | integer | `0` | không tự đăng xuất | `>0` → đăng xuất khi app ở nền quá N phút, kể cả khi tiến trình bị kill |
+
+**Tên khoá là hợp đồng với Knox** — đổi tên không làm build lỗi, nó chỉ âm thầm đưa thiết lập đó về
+mặc định trên mọi máy đã triển khai. Đừng đổi.
+
+Parser (`MdmConfigParser`) cố tình dễ dãi: console MDM hay đẩy sai kiểu (checkbox thành chuỗi `"true"`,
+số thành `" 30 "`). Giá trị không hiểu được thì rơi về mặc định của **riêng khoá đó**, không làm hỏng
+cả cấu hình — một máy từ chối đọc chính sách là máy quản trị viên không sửa được từ xa.
+URL `http://` bị từ chối thẳng: gõ nhầm một chữ không đáng đổi lấy kết nối không mã hoá.
+
+Thử không cần Knox: cài **TestDPC** (Google) lên máy/emulator, mục "Managed configurations" → chọn
+SecureChat → chỉnh bốn khoá.

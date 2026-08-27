@@ -23,6 +23,8 @@ data class MessageComposerState(
     val mode: MessageComposerMode,
     val isInThreadTimeline: Boolean,
     val showAttachmentSourcePicker: Boolean,
+    /** False when an administrator has turned off the `allow_file_send` managed configuration. */
+    val canSendAttachments: Boolean,
     val showTextFormatting: Boolean,
     val canShareLocation: Boolean,
     val suggestions: ImmutableList<ResolvedSuggestion>,

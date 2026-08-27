@@ -20,6 +20,9 @@ import androidx.core.net.toUri
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import io.element.android.features.share.api.ShareIntentData
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.api.MdmService
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.features.share.api.UriToShare
 import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.tests.testutils.robolectric.RobolectricTest
@@ -266,8 +269,36 @@ class DefaultShareIntentHandlerTest : RobolectricTest() {
         }
     }
 
-    private fun createDefaultShareIntentHandler() = DefaultShareIntentHandler(
+    @Test
+    fun `an incoming file is refused when allow_file_send is off`() {
+        val handler = createDefaultShareIntentHandler(
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowFileSend = false)),
+        )
+        val result = handler.handleIncomingShareIntent(
+            aSendIntent(type = "image/jpeg", uri = "content://sender/image.jpg".toUri())
+        )
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `plain text can still be shared when allow_file_send is off`() {
+        // Sharing text is a message the user could have typed, so the file restriction leaves it alone.
+        val handler = createDefaultShareIntentHandler(
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowFileSend = false)),
+        )
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, "a text")
+        }
+        assertThat(handler.handleIncomingShareIntent(intent)).isEqualTo(ShareIntentData.PlainText("a text"))
+    }
+
+
+    private fun createDefaultShareIntentHandler(
+        mdmService: MdmService = FakeMdmService(),
+    ) = DefaultShareIntentHandler(
         context = RuntimeEnvironment.getApplication(),
+        mdmService = mdmService,
     )
 
     private class FailingGrantUriPermissionContext(context: Context) : ContextWrapper(context) {

@@ -132,6 +132,9 @@ fun TextComposer(
     modifier: Modifier = Modifier,
     showTextFormatting: Boolean = false,
     isInThreadTimeline: Boolean = false,
+    // SecureChat: false when an administrator has turned off `allow_file_send`. Hides the attachment
+    // button and the voice recorder, which are the two ways to put a file into a room from here.
+    canSendAttachments: Boolean = true,
 ) {
     val markdown = when (state) {
         is TextEditorState.Markdown -> state.state.text.value()
@@ -243,6 +246,7 @@ fun TextComposer(
         composerMode.isEditing,
         voiceMessageState.endButtonKey(),
         canSendTextMessage,
+        canSendAttachments,
     ) {
         when {
             composerMode.isEditing -> EndButtonParams(
@@ -256,6 +260,18 @@ fun TextComposer(
                     SendButtonIcon(
                         canSendMessage = canSendTextMessage,
                         isEditing = true,
+                    )
+                },
+            )
+            // Without attachments there is no voice recorder to offer, so keep showing a (disabled)
+            // send button rather than a microphone the user is not allowed to use.
+            !canSendTextMessage && !canSendAttachments -> EndButtonParams(
+                endButtonContentDescriptionResId = CommonStrings.action_send,
+                endButtonClick = {},
+                endButtonContent = @Composable {
+                    SendButtonIcon(
+                        canSendMessage = false,
+                        isEditing = false,
                     )
                 },
             )
@@ -459,6 +475,7 @@ private fun StandardLayout(
     textInput: @Composable () -> Unit,
     voiceRecording: @Composable () -> Unit,
     endButtonParams: EndButtonParams,
+    canSendAttachments: Boolean,
     onAddAttachment: () -> Unit,
     onDeleteVoiceMessage: () -> Unit,
     onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
@@ -472,12 +489,16 @@ private fun StandardLayout(
             Spacer(Modifier.height(4.dp))
         }
         Row(verticalAlignment = Alignment.Bottom) {
-            when (composerMode) {
-                is MessageComposerMode.Attachment -> {
+            when {
+                composerMode is MessageComposerMode.Attachment -> {
                     Spacer(modifier = Modifier.width(12.dp))
                 }
-                is MessageComposerMode.EditCaption -> {
+                composerMode is MessageComposerMode.EditCaption -> {
                     Spacer(modifier = Modifier.width(19.dp))
+                }
+                // `allow_file_send` off: no attachment button at all, just the leading gap.
+                !canSendAttachments -> {
+                    Spacer(modifier = Modifier.width(12.dp))
                 }
                 else -> {
                     val endPadding = if (voiceMessageState is VoiceMessageState.Idle) 0.dp else 3.dp

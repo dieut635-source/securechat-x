@@ -30,6 +30,7 @@ dependencies {
     implementation(projects.appconfig)
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.core)
+    implementation(projects.libraries.mdm.api)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.featureflag.api)
     implementation(projects.libraries.matrix.api)
@@ -44,6 +45,7 @@ dependencies {
     api(projects.features.share.api)
 
     testCommonDependencies(libs, true)
+    testImplementation(projects.libraries.mdm.test)
     testImplementation(projects.features.share.test)
     testImplementation(projects.libraries.matrix.test)
     testImplementation(projects.libraries.mediaupload.test)
