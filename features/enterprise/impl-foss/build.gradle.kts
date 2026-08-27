@@ -23,8 +23,10 @@ dependencies {
     api(projects.features.enterprise.api)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.matrix.api)
+    implementation(projects.libraries.mdm.api)
     implementation(projects.libraries.wellknown.api)
 
     testCommonDependencies(libs)
     testImplementation(projects.libraries.matrix.test)
+    testImplementation(projects.libraries.mdm.test)
 }

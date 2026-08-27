@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2025 Element Creations Ltd.
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  Managed configurations for Android Enterprise / Samsung Knox Manage.
+
+  The four android:key values are the contract with the Knox console. Renaming one does not fail the
+  build or the push - it silently reverts that setting to its default on every managed device - so
+  they must stay exactly as they are. Keep them in step with
+  libraries/mdm/api/.../MdmConfig.kt, which reads them.
+-->
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <restriction
+        android:key="homeserver_url"
+        android:restrictionType="string"
+        android:title="@string/mdm_homeserver_url_title"
+        android:description="@string/mdm_homeserver_url_description"
+        android:defaultValue="https://chat.securechat.com.au" />
+
+    <restriction
+        android:key="allow_registration"
+        android:restrictionType="bool"
+        android:title="@string/mdm_allow_registration_title"
+        android:description="@string/mdm_allow_registration_description"
+        android:defaultValue="false" />
+
+    <restriction
+        android:key="allow_file_send"
+        android:restrictionType="bool"
+        android:title="@string/mdm_allow_file_send_title"
+        android:description="@string/mdm_allow_file_send_description"
+        android:defaultValue="true" />
+
+    <restriction
+        android:key="auto_logout_minutes"
+        android:restrictionType="integer"
+        android:title="@string/mdm_auto_logout_minutes_title"
+        android:description="@string/mdm_auto_logout_minutes_description"
+        android:defaultValue="0" />
+
+</restrictions>

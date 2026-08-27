@@ -89,6 +89,7 @@ fun DependencyHandlerScope.allLibrariesImpl() {
     implementation(project(":libraries:deeplink:impl"))
     implementation(project(":libraries:designsystem"))
     implementation(project(":libraries:matrix:impl"))
+    implementation(project(":libraries:mdm:impl"))
     implementation(project(":libraries:matrixui"))
     implementation(project(":libraries:matrixmedia:impl"))
     implementation(project(":libraries:network"))

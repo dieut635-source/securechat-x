@@ -39,6 +39,8 @@ import io.element.android.libraries.permissions.api.localnetwork.LocalNetworkPer
 import io.element.android.libraries.permissions.test.FakeLocalNetworkPermissionAdvisor
 import io.element.android.libraries.permissions.test.FakePermissionsPresenterFactory
 import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
@@ -91,7 +93,8 @@ class OnBoardingPresenterTest {
             assertThat(initialState.defaultAccountProvider).isNull()
             assertThat(initialState.canLoginWithQrCode).isFalse()
             assertThat(initialState.productionApplicationName).isEqualTo("B")
-            assertThat(initialState.canCreateAccount).isEqualTo(OnBoardingConfig.CAN_CREATE_ACCOUNT)
+            // allow_registration defaults to false, so account creation is hidden until an admin turns it on
+            assertThat(initialState.canCreateAccount).isFalse()
             assertThat(initialState.canReportBug).isFalse()
             assertThat(initialState.isAddingAccount).isFalse()
             val finalState = awaitItem()
@@ -287,6 +290,26 @@ class OnBoardingPresenterTest {
             }
         }
     }
+
+    @Test
+    fun `present - create account stays hidden while allow_registration is off`() = runTest {
+        val presenter = createPresenter()
+        presenter.test {
+            assertThat(awaitItem().canCreateAccount).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - create account is offered once an administrator pushes allow_registration`() = runTest {
+        val presenter = createPresenter(
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowRegistration = true)),
+        )
+        presenter.test {
+            assertThat(awaitItem().canCreateAccount).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }
 
 private fun createPresenter(
@@ -303,6 +326,7 @@ private fun createPresenter(
     onBoardingLogoResIdProvider: OnBoardingLogoResIdProvider = OnBoardingLogoResIdProvider { null },
     sessionStore: SessionStore = InMemorySessionStore(),
     accountProviderDataSource: AccountProviderDataSource = anAccountProviderDataSource(),
+    mdmService: FakeMdmService = FakeMdmService(),
 ) = OnBoardingPresenter(
     params = params,
     buildMeta = buildMeta,
@@ -316,6 +340,7 @@ private fun createPresenter(
     onBoardingLogoResIdProvider = onBoardingLogoResIdProvider,
     sessionStore = sessionStore,
     accountProviderDataSource = accountProviderDataSource,
+    mdmService = mdmService,
 )
 
 fun createLoginModePresenter(

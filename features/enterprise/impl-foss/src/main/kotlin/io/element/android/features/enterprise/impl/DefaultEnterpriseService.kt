@@ -16,15 +16,31 @@ import io.element.android.features.enterprise.api.BugReportUrl
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.libraries.matrix.api.ClientUrlContentFetcher
 import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.mdm.api.MdmService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 @ContributesBinding(AppScope::class)
-class DefaultEnterpriseService : EnterpriseService {
+class DefaultEnterpriseService(
+    private val mdmService: MdmService,
+) : EnterpriseService {
     override suspend fun isEnterpriseUser(sessionId: SessionId) = false
     override suspend fun tweakMasUrl(url: String, urlContentFetcher: ClientUrlContentFetcher) = url
-    override fun homeserverAllowList(): List<String> = emptyList()
-    override suspend fun isAllowedToConnectToHomeserver(homeserverUrl: String) = true
+
+    /**
+     * SecureChat always pins sign-in to a single homeserver: the one an administrator pushed with the
+     * `homeserver_url` managed configuration, or chat.securechat.com.au on an unmanaged device.
+     * Returning a non-empty list without the "*" wildcard is what makes the app hide the
+     * "change server" affordance, so this is also what locks the login screen down.
+     */
+    override fun homeserverAllowList(): List<String> = listOf(mdmService.config.value.homeserverUrl)
+
+    override suspend fun isAllowedToConnectToHomeserver(homeserverUrl: String): Boolean {
+        return homeserverUrl.normalisedForComparison() == mdmService.config.value.homeserverUrl.normalisedForComparison()
+    }
+
+    private fun String.normalisedForComparison(): String = trim().trimEnd('/').lowercase()
+
     override suspend fun isElementProEnforced(serverName: String): Boolean = false
 
     override suspend fun overrideBrandColor(sessionId: SessionId?, brandColor: String?) = Unit

@@ -25,6 +25,11 @@
         android:theme="@style/Theme.ElementX"
         tools:targetApi="33">
 
+        <!-- Managed configurations for Android Enterprise / Samsung Knox Manage. -->
+        <meta-data
+            android:name="android.content.APP_RESTRICTIONS"
+            android:resource="@xml/app_restrictions" />
+
         <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />

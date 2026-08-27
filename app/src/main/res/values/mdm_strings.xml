@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2025 Element Creations Ltd.
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  Shown to the administrator in the Knox Manage / Android Enterprise console, never to end users.
+  English only, on purpose: the console is used by IT staff, not by the people using the app.
+-->
+<resources>
+    <string name="mdm_homeserver_url_title" translatable="false">Homeserver URL</string>
+    <string name="mdm_homeserver_url_description" translatable="false">The SecureChat server users sign in to. Must start with https://. Leave empty to use https://chat.securechat.com.au.</string>
+
+    <string name="mdm_allow_registration_title" translatable="false">Allow creating accounts</string>
+    <string name="mdm_allow_registration_description" translatable="false">When off, the app only offers Sign in. Accounts must be created by an administrator on the server.</string>
+
+    <string name="mdm_allow_file_send_title" translatable="false">Allow sending files</string>
+    <string name="mdm_allow_file_send_description" translatable="false">When off, the attachment button, voice messages and sharing into SecureChat from other apps are all disabled. Users can still receive files.</string>
+
+    <string name="mdm_auto_logout_minutes_title" translatable="false">Automatic sign-out (minutes)</string>
+    <string name="mdm_auto_logout_minutes_description" translatable="false">Sign the user out after the app has been in the background this many minutes. 0 disables automatic sign-out.</string>
+</resources>

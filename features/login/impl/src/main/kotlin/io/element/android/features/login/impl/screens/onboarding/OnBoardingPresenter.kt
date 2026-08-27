@@ -31,6 +31,7 @@ import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
+import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.ui.utils.MultipleTapToUnlock
 import kotlinx.coroutines.launch
@@ -46,6 +47,7 @@ class OnBoardingPresenter(
     private val onBoardingLogoResIdProvider: OnBoardingLogoResIdProvider,
     private val sessionStore: SessionStore,
     private val accountProviderDataSource: AccountProviderDataSource,
+    private val mdmService: MdmService,
 ) : Presenter<OnBoardingState> {
     @AssistedFactory
     interface Factory {
@@ -126,6 +128,8 @@ class OnBoardingPresenter(
             }
         }
 
+        val mdmConfig by mdmService.config.collectAsState()
+
         return OnBoardingState(
             isAddingAccount = isAddingAccount,
             showBackButton = params.showBackButton,
@@ -134,7 +138,10 @@ class OnBoardingPresenter(
             defaultAccountProvider = defaultAccountProvider,
             mustChooseAccountProvider = mustChooseAccountProvider,
             canLoginWithQrCode = canLoginWithQrCode,
-            canCreateAccount = defaultAccountProvider == null && canConnectToAnyHomeserver && OnBoardingConfig.CAN_CREATE_ACCOUNT,
+            // SecureChat pins the app to one homeserver, so `canConnectToAnyHomeserver` is false and the
+            // upstream condition would always hide "Create account". Whether it is offered is an
+            // administrator's decision instead, pushed as the `allow_registration` managed configuration.
+            canCreateAccount = mdmConfig.allowRegistration && OnBoardingConfig.CAN_CREATE_ACCOUNT,
             canReportBug = canReportBug && showReportBug,
             loginModeState = loginModeState,
             version = buildMeta.versionName,
