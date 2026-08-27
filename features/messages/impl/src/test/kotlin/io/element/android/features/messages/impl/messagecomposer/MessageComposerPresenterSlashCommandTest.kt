@@ -34,6 +34,7 @@ import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.test.A_FAILURE_REASON
 import io.element.android.libraries.matrix.test.A_MESSAGE
 import io.element.android.libraries.matrix.test.A_USER_ID
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.matrix.test.permalink.FakePermalinkBuilder
 import io.element.android.libraries.matrix.test.permalink.FakePermalinkParser
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
@@ -318,6 +319,7 @@ class MessageComposerPresenterSlashCommandTest {
         featureFlagService = featureFlagService,
         contentScannerService = { _, _ -> },
         contentValidationCache = InMemoryEventContentValidationCache(),
+        mdmService = FakeMdmService(),
     ).apply {
         isTesting = true
         showTextFormatting = isRichTextEditorEnabled
