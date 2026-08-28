@@ -90,6 +90,19 @@ android {
             storeFile = file("./signature/debug.keystore")
             storePassword = "android"
         }
+        // Ký bản phát hành của SecureChat. Đọc từ biến môi trường nên khoá KHÔNG bao giờ
+        // nằm trong repo. CI nạp khoá từ GitHub Secrets; máy cá nhân không có biến này thì
+        // cấu hình bên dưới không được tạo và bản release lùi về khoá debug (có cảnh báo).
+        val scKeystore = System.getenv("SECURECHAT_KEYSTORE_FILE")
+        if (!scKeystore.isNullOrBlank() && file(scKeystore).exists()) {
+            register("securechat") {
+                storeFile = file(scKeystore)
+                storePassword = System.getenv("SECURECHAT_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("SECURECHAT_KEY_ALIAS") ?: "securechat"
+                keyPassword = System.getenv("SECURECHAT_KEY_PASSWORD")
+            }
+        }
+
         register("nightly") {
             keyAlias = System.getenv("ELEMENT_ANDROID_NIGHTLY_KEYID")
                 ?: project.property("signing.element.nightly.keyId") as? String?
@@ -125,7 +138,16 @@ android {
                 "login_redirect_scheme",
                 oAuthRedirectSchemeBase,
             )
-            signingConfig = signingConfigs.getByName("debug")
+            // Upstream ký bản release bằng khoá DEBUG — khoá đó nằm công khai trong repo,
+            // nghĩa là ai cũng ký được bản cập nhật giả mạo. Chỉ chấp nhận được khi build thử.
+            signingConfig = signingConfigs.findByName("securechat")
+                ?: signingConfigs.getByName("debug").also {
+                    logger.warnInBox(
+                        "CẢNH BÁO: bản release đang ký bằng khoá DEBUG.\n" +
+                            "Khoá debug nằm công khai trong repo — KHÔNG phát hành bản này cho người dùng.\n" +
+                            "Đặt SECURECHAT_KEYSTORE_FILE/_PASSWORD/_KEY_ALIAS/_KEY_PASSWORD để ký thật."
+                    )
+                }
 
             optimization {
                 enable = true

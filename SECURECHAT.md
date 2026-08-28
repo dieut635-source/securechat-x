@@ -78,3 +78,26 @@ URL `http://` bị từ chối thẳng: gõ nhầm một chữ không đáng đ�
 
 Thử không cần Knox: cài **TestDPC** (Google) lên máy/emulator, mục "Managed configurations" → chọn
 SecureChat → chỉnh bốn khoá.
+
+## Ký bản phát hành
+
+Bản release của upstream ký bằng **khoá debug** — khoá đó nằm công khai trong repo, nghĩa là ai
+cũng ký được bản cập nhật giả. Đã thay bằng cấu hình ký thật đọc từ biến môi trường.
+
+Sinh khoá (chạy trên máy Mac, cần Docker vì Mac không có JDK):
+
+```bash
+bash ~/SecureChat/server/scripts/make-release-keystore.sh
+```
+
+Rồi tạo 4 secret ở Settings → Secrets and variables → Actions:
+`SECURECHAT_KEYSTORE_BASE64`, `SECURECHAT_KEYSTORE_PASSWORD`, `SECURECHAT_KEY_ALIAS`,
+`SECURECHAT_KEY_PASSWORD`.
+
+Build: Actions → **SecureChat Release APK** → Run workflow (hoặc đẩy tag `v*`).
+
+Workflow tự **xác minh chữ ký** sau khi build và **thất bại** nếu APK bị ký bằng khoá debug —
+vì Gradle có thể âm thầm lùi về khoá debug và bản phát ra nhìn bề ngoài không phân biệt được.
+
+⚠️ **Mất keystore = không bao giờ cập nhật được app.** Người dùng phải gỡ cài và cài lại, mất
+toàn bộ tin nhắn đã mã hoá trên máy. Sao lưu keystore và mật khẩu ở **hai nơi tách biệt**.
