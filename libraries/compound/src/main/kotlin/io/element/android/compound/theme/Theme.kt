@@ -54,7 +54,9 @@ private fun isSystemThemeDark(): Boolean {
 
 fun Flow<String?>.mapToTheme(allowBlackTheme: Boolean): Flow<Theme> = map {
     when (it) {
-        null -> Theme.System
+        // SecureChat mặc định giao diện TỐI: bảng màu được thiết kế cho nền tối.
+        // Người dùng vẫn đổi được sang Sáng/Theo hệ thống trong Cài đặt.
+        null -> Theme.Dark
         else -> Theme.valueOf(it)
     }.coerceBlackTheme(allowBlackTheme)
 }

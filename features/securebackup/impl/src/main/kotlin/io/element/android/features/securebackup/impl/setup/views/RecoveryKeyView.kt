@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -55,6 +54,7 @@ import io.element.android.libraries.designsystem.theme.components.TextField
 import io.element.android.libraries.testtags.TestTags
 import io.element.android.libraries.testtags.testTag
 import io.element.android.libraries.ui.strings.CommonStrings
+import io.element.android.compound.tokens.SecureChatFonts
 
 @Composable
 internal fun RecoveryKeyView(
@@ -169,7 +169,7 @@ private fun RecoveryKeyWithCopy(
         Text(
             text = recoveryKey,
             color = ElementTheme.colors.textSecondary,
-            style = ElementTheme.typography.fontBodyLgRegular.copy(fontFamily = FontFamily.Monospace),
+            style = ElementTheme.typography.fontBodyLgRegular.copy(fontFamily = SecureChatFonts.mono),
             modifier = Modifier.weight(1f),
         )
         Icon(

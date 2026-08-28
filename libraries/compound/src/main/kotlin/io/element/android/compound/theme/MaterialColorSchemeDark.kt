@@ -41,7 +41,10 @@ fun SemanticColors.toMaterialColorSchemeDark(): ColorScheme = darkColorScheme(
     onSurfaceVariant = textSecondary,
     surfaceTint = DarkColorTokens.colorGray1000,
     inverseSurface = DarkColorTokens.colorGray1300,
-    inverseOnSurface = textOnSolidPrimary,
+    // SecureChat: KHÔNG dùng textOnSolidPrimary ở đây. Bảng màu của ta đặt token đó thành trắng
+    // (để chữ đọc được trên nút xanh), nhưng inverseSurface lại là xám SÁNG — trắng trên xám sáng
+    // là không đọc nổi. Snackbar của Material dùng đúng cặp này.
+    inverseOnSurface = DarkColorTokens.colorThemeBg,
     error = textCriticalPrimary,
     onError = textOnSolidPrimary,
     errorContainer = DarkColorTokens.colorRed400,

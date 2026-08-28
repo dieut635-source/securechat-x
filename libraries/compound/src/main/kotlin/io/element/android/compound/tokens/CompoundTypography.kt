@@ -30,7 +30,7 @@ internal val compoundHeadingLgRegular = TypographyTokens.fontHeadingLgRegular
 // These are the default M3 values, but we're setting them manually so an update in M3 doesn't break our designs
 @ShowkaseTypography(name = "M3 Headline Small", group = "Compound")
 internal val defaultHeadlineSmall = TextStyle(
-    fontFamily = FontFamily.Default,
+    fontFamily = SecureChatFonts.sans,
     fontWeight = FontWeight.Normal,
     lineHeight = 32.sp,
     fontSize = 24.sp,

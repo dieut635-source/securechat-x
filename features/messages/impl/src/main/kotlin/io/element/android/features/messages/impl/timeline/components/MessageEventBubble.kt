@@ -54,7 +54,8 @@ import io.element.android.libraries.testtags.testTag
 import io.element.android.libraries.ui.utils.a11y.isTalkbackActive
 import io.element.android.libraries.ui.utils.graphics.drawInLayer
 
-private val BUBBLE_RADIUS = 12.dp
+// SecureChat: 8dp thay vì 12dp — góc gọn hơn, hợp phong cách tối giản.
+private val BUBBLE_RADIUS = 8.dp
 private val avatarRadius = AvatarSize.TimelineSender.dp / 2
 
 private val MIN_BUBBLE_WIDTH = 80.dp

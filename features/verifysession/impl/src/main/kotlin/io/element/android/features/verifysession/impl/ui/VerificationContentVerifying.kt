@@ -36,6 +36,8 @@ import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.verification.SessionVerificationData
 import io.element.android.libraries.matrix.api.verification.VerificationEmoji
 import io.element.android.libraries.ui.strings.Strings
+import io.element.android.compound.tokens.SecureChatFonts
+import androidx.compose.ui.unit.em
 
 @Composable
 internal fun VerificationContentVerifying(
@@ -58,7 +60,12 @@ internal fun VerificationContentVerifying(
                             contentDescription = data.decimals.joinToString()
                         },
                     text = text,
-                    style = ElementTheme.typography.fontHeadingLgBold,
+                    // Font đều bề rộng: người dùng phải đọc từng chữ số và đối chiếu với máy kia,
+                    // nên 0/O và 1/l/I phải phân biệt được ngay.
+                    style = ElementTheme.typography.fontHeadingLgBold.copy(
+                        fontFamily = SecureChatFonts.mono,
+                        letterSpacing = 0.1.em,
+                    ),
                     color = ElementTheme.colors.textPrimary,
                     textAlign = TextAlign.Center,
                 )
