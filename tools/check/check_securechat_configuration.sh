@@ -509,7 +509,7 @@ PY
 snapshot_hash() {
     local asset="$1"
     local oid
-    oid="$(sed -n 's/^oid sha256://p' "$asset" | head -n 1)"
+    oid="$(LC_ALL=C sed -n 's/^oid sha256://p' "$asset" | head -n 1)"
     if [[ -n "$oid" ]]; then
         printf '%s' "$oid"
     else
