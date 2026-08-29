@@ -40,7 +40,7 @@ class DefaultMdmService(
         override fun onReceive(context: Context?, intent: Intent?) {
             val new = readConfig()
             if (new != _config.value) {
-                Timber.i("MDM configuration changed")
+                Timber.i("MDM configuration changed -> ${new.describe()}")
                 _config.value = new
             }
         }
@@ -55,7 +55,12 @@ class DefaultMdmService(
             IntentFilter(Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED),
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
-        Timber.i("MDM configuration loaded: managed=${restrictionsManager?.applicationRestrictions?.isEmpty == false}")
+        // In ra CẢ BỐN giá trị, không chỉ "có bị quản lý hay không".
+        // Khi test trên máy thật, đây là cách duy nhất phân biệt "app đọc được MDM" với
+        // "app đang dùng giá trị mặc định trùng với giá trị quản trị viên đặt" — hai thứ
+        // nhìn từ giao diện thì giống hệt nhau. Không có giá trị nào ở đây là bí mật.
+        val managed = restrictionsManager?.applicationRestrictions?.isEmpty == false
+        Timber.i("MDM configuration loaded: managed=$managed ${_config.value.describe()}")
     }
 
     private fun readConfig(): MdmConfig {

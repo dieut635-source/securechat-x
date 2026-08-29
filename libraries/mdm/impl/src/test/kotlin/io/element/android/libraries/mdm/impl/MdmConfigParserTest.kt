@@ -99,4 +99,18 @@ class MdmConfigParserTest {
     fun `a trailing slash is removed so the url matches what the app stores`() {
         assertThat(MdmConfigParser.parseHomeserverUrl("https://matrix.example.com/")).isEqualTo("https://matrix.example.com")
     }
+
+    @Test
+    fun `describe lists all four keys so a log line is enough to diagnose a device`() {
+        val text = MdmConfig.default.copy(
+            homeserverUrl = "https://matrix.example.com",
+            allowRegistration = true,
+            allowFileSend = false,
+            autoLogoutMinutes = 15,
+        ).describe()
+        assertThat(text).contains("homeserver_url=https://matrix.example.com")
+        assertThat(text).contains("allow_registration=true")
+        assertThat(text).contains("allow_file_send=false")
+        assertThat(text).contains("auto_logout_minutes=15")
+    }
 }

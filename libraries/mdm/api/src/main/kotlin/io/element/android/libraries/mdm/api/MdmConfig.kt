@@ -25,6 +25,16 @@ data class MdmConfig(
     /** Sign the user out after this many minutes in the background. 0 disables it. Key: `auto_logout_minutes`. */
     val autoLogoutMinutes: Int,
 ) {
+    /**
+     * Một dòng gọn để ghi log. Cả bốn khoá đều là chính sách của quản trị viên, không phải
+     * dữ liệu cá nhân, nên in ra được. Dùng khi chẩn đoán trên máy thật:
+     *
+     *     adb logcat | grep "MDM configuration"
+     */
+    fun describe(): String =
+        "homeserver_url=$homeserverUrl allow_registration=$allowRegistration " +
+            "allow_file_send=$allowFileSend auto_logout_minutes=$autoLogoutMinutes"
+
     companion object {
         const val KEY_HOMESERVER_URL = "homeserver_url"
         const val KEY_ALLOW_REGISTRATION = "allow_registration"
