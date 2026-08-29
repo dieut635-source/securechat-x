@@ -8,7 +8,6 @@ android_gradle_plugin = "9.3.1"
 kotlin = "2.4.10"
 kotlinpoet = "2.3.0"
 ksp = "2.3.11"
-firebaseAppDistribution = "5.3.0"
 
 # AndroidX
 core = "1.18.0"
@@ -85,7 +84,6 @@ kover_gradle_plugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", ve
 ksp_gradle_plugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 # https://firebase.google.com/docs/android/setup#available-libraries
 google_firebase_bom = "com.google.firebase:firebase-bom:34.17.0"
-firebase_appdistribution_gradle = { module = "com.google.firebase:firebase-appdistribution-gradle", version.ref = "firebaseAppDistribution" }
 autonomousapps_dependencyanalysis_plugin = { module = "com.autonomousapps:dependency-analysis-gradle-plugin", version.ref = "dependencyAnalysis" }
 ksp_plugin = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 google_tink = "com.google.crypto.tink:tink-android:1.23.0"
@@ -275,7 +273,6 @@ dependencyanalysis = { id = "com.autonomousapps.dependency-analysis", version.re
 paparazzi = "app.cash.paparazzi:2.0.0-alpha05"
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
-firebaseAppDistribution = { id = "com.google.firebase.appdistribution", version.ref = "firebaseAppDistribution" }
 sonarqube = "org.sonarqube:7.4.0.8496"
 licensee = "app.cash.licensee:1.14.1"
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

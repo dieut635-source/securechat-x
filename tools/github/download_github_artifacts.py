@@ -60,7 +60,7 @@ if args.verbose:
 
 
 # Split the artifact URL to get information
-# Ex: https://github.com/element-hq/element-x-android/actions/runs/7299827320/artifacts/1131077517
+# Ex: https://github.com/dieut635-source/securechat-x/actions/runs/7299827320/artifacts/1131077517
 artifactUrl = args.artifactUrl
 
 # if artifactUrl starts with https://github.com
@@ -71,7 +71,7 @@ if artifactUrl.startswith('https://github.com'):
     if result is None:
         print(
             "❌ Invalid parameter --artifactUrl '%s'. Please check the format.\nIt should be something like: %s" %
-            (artifactUrl, 'https://github.com/element-hq/element-x-android/actions/runs/7299827320/artifacts/1131077517')
+            (artifactUrl, 'https://github.com/dieut635-source/securechat-x/actions/runs/7299827320/artifacts/1131077517')
         )
         exit(1)
 else:
@@ -80,7 +80,7 @@ else:
     if result is None:
         print(
             "❌ Invalid parameter --artifactUrl '%s'. Please check the format.\nIt should be something like: %s" %
-            (artifactUrl, 'https://api.github.com/repos/element-hq/element-x-android/actions/artifacts/1131077517')
+            (artifactUrl, 'https://api.github.com/repos/dieut635-source/securechat-x/actions/artifacts/1131077517')
         )
         exit(1)
 

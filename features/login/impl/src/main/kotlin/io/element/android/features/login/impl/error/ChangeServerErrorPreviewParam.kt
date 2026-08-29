@@ -18,11 +18,11 @@ class ChangeServerErrorPreviewParam : PreviewParameterProvider<ChangeServerError
                 messageStr = "An error description",
             ),
             ChangeServerError.NeedElementPro(
-                unauthorisedAccountProviderTitle = "element.io",
-                applicationId = "io.element.enterprise",
+                unauthorisedAccountProviderTitle = "chat.securechat.com.au",
+                applicationId = "com.securechat.enterprise",
             ),
             ChangeServerError.UnauthorizedAccountProvider(
-                unauthorisedAccountProviderTitle = "element.io",
+                unauthorisedAccountProviderTitle = "chat.securechat.com.au",
                 authorisedAccountProviderTitles = listOf("provider.org", "provider.io"),
             ),
             ChangeServerError.SlidingSyncAlert,

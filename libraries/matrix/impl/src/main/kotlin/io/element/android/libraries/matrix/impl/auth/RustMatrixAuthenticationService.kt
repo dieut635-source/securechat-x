@@ -13,6 +13,7 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
 import io.element.android.features.enterprise.api.ClientEnterpriseHook
 import io.element.android.features.enterprise.api.EnterpriseService
+import io.element.android.features.enterprise.api.canConnectToAnyHomeserver
 import io.element.android.libraries.androidutils.crypto.ClientSecret
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.extensions.mapFailure
@@ -45,10 +46,16 @@ import io.element.android.libraries.matrix.impl.keys.SecretGenerator
 import io.element.android.libraries.matrix.impl.mapper.toSessionData
 import io.element.android.libraries.matrix.impl.paths.SessionPathsFactory
 import io.element.android.libraries.matrix.impl.toSession
+import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.sessionstorage.api.LoginType
+import io.element.android.libraries.sessionstorage.api.SessionData
+import io.element.android.libraries.sessionstorage.api.SessionSecurityCoordinator
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.matrix.rustcomponents.sdk.Client
@@ -75,6 +82,8 @@ class RustMatrixAuthenticationService(
     private val enterpriseService: EnterpriseService,
     private val featureFlagService: FeatureFlagService,
     private val clientEnterpriseHook: ClientEnterpriseHook,
+    private val mdmService: MdmService,
+    private val sessionSecurityCoordinator: SessionSecurityCoordinator,
 ) : MatrixAuthenticationService {
     // Any existing Element Classic session that we want to try to import secrets from during login.
     private var elementClassicSession: ElementClassicSession? = null
@@ -83,34 +92,62 @@ class RustMatrixAuthenticationService(
     // stored in the SessionData.
     private val pendingKey by lazy { getDatabaseKey() }
 
-    // Need to keep a copy of the current session path to eventually delete it.
-    // Ideally it would be possible to get the sessionPath from the Client to avoid doing this.
-    private var sessionPaths: SessionPaths? = null
-    private var currentClient: Client? = null
+    @Volatile
+    private var currentAttempt: AuthenticationAttempt? = null
+    private val replaceAttemptMutex = Mutex()
+
+    @Volatile
+    private var pendingOAuth: PendingOAuth? = null
 
     private val newMatrixClientObservers = mutableListOf<(MatrixClient) -> Unit>()
     override fun listenToNewMatrixClients(lambda: (MatrixClient) -> Unit) {
         newMatrixClientObservers.add(lambda)
     }
 
-    private fun rotateSessionPath(): SessionPaths {
-        sessionPaths?.deleteRecursively()
-        return sessionPathsFactory.create()
-            .also { sessionPaths = it }
-    }
+    private data class AuthenticationAttempt(
+        val client: Client,
+        val sessionPaths: SessionPaths,
+        val accountProvider: String?,
+        val securityToken: Long,
+    )
+
+    private data class PendingOAuth(
+        val authorizationData: OAuthAuthorizationData,
+        val attempt: AuthenticationAttempt,
+        val prompt: OAuthPrompt,
+    )
 
     override suspend fun restoreSession(sessionId: SessionId): Result<MatrixClient> = withContext(coroutineDispatchers.io) {
         runCatchingExceptions {
             val sessionData = sessionStore.getSession(sessionId.value)
             if (sessionData != null) {
                 if (sessionData.isTokenValid) {
+                    if (!isStoredSessionAllowed(sessionData)) {
+                        // A managed homeserver change is a security boundary. Forget the token
+                        // before returning a failure so startup and background workers cannot keep
+                        // retrying a session that is no longer permitted.
+                        discardBlockedStoredSession(sessionData)
+                        throw AuthenticationException.InvalidServerName(
+                            "The stored session is blocked by managed configuration"
+                        )
+                    }
                     // Use the sessionData.passphrase, which can be null for a previously created session
                     if (sessionData.passphrase == null) {
                         Timber.w("Restoring a session without a passphrase")
                     } else {
                         Timber.w("Restoring a session with a passphrase")
                     }
-                    rustMatrixClientFactory.create(sessionData)
+                    val matrixClient = rustMatrixClientFactory.create(sessionData)
+                    if (!isStoredSessionAllowed(sessionData)) {
+                        // Client creation restores the SDK session and can suspend on disk and SDK
+                        // work. Re-check after it completes so a policy update in that window cannot
+                        // publish a client for a provider that is no longer allowed.
+                        discardBlockedStoredSession(sessionData, matrixClient)
+                        throw AuthenticationException.InvalidServerName(
+                            "The stored session is blocked by managed configuration"
+                        )
+                    }
+                    matrixClient
                 } else {
                     throw SessionRestorationException.InvalidToken()
                 }
@@ -127,36 +164,56 @@ class RustMatrixAuthenticationService(
         return secretGenerator.generateKey()
     }
 
-    override suspend fun setHomeserver(homeserver: String): Result<MatrixHomeServerDetails> =
+    override suspend fun setHomeserver(
+        homeserver: String,
+        accountProvider: String,
+    ): Result<MatrixHomeServerDetails> =
         withContext(coroutineDispatchers.io) {
-            val emptySessionPath = rotateSessionPath()
-            runCatchingExceptions {
-                val client = makeClient(sessionPaths = emptySessionPath) {
-                    serverNameOrHomeserverUrl(homeserver)
+            val securityToken = sessionSecurityCoordinator.beginAuthentication()
+            replaceAttemptMutex.withLock {
+                discardCurrentAttempt()
+                val emptySessionPath = sessionPathsFactory.create()
+                var attempt: AuthenticationAttempt? = null
+                runCatchingExceptions {
+                    assertAccountProviderAllowed(accountProvider)
+                    val client = makeClient(sessionPaths = emptySessionPath) {
+                        serverNameOrHomeserverUrl(homeserver)
+                    }
+                    attempt = AuthenticationAttempt(
+                        client = client,
+                        sessionPaths = emptySessionPath,
+                        accountProvider = accountProvider,
+                        securityToken = securityToken,
+                    ).also { currentAttempt = it }
+
+                    client.homeserverLoginDetails().map().also {
+                        // Re-check after discovery: policy or the active attempt may have changed
+                        // during the network request.
+                        assertAuthenticationAttemptAllowed(attempt)
+                    }
+                }.onFailure {
+                    attempt?.let { clearAttempt(it, destroyClient = true, deleteSessionPaths = true) }
+                        ?: emptySessionPath.deleteRecursively()
+                }.mapFailure { failure ->
+                    Timber.e(failure, "Failed to set homeserver to $homeserver")
+                    failure.mapAuthenticationException()
                 }
-
-                currentClient = client
-
-                client.homeserverLoginDetails().map()
-            }.onFailure {
-                clear(destroyClient = true)
-            }.mapFailure { failure ->
-                Timber.e(failure, "Failed to set homeserver to $homeserver")
-                failure.mapAuthenticationException()
             }
         }
 
     override suspend fun login(username: String, password: String): Result<SessionId> =
         withContext(coroutineDispatchers.io) {
             runCatchingExceptions {
-                val client = currentClient ?: error("You need to call `setHomeserver()` first")
-                val currentSessionPaths = sessionPaths ?: error("You need to call `setHomeserver()` first")
+                val attempt = requireCurrentAttempt()
+                assertAuthenticationAttemptAllowed(attempt)
+                val client = attempt.client
                 client.login(
                     username = username,
                     password = password,
-                    initialDeviceName = "Element X Android",
+                    initialDeviceName = "SecureChat Android",
                     deviceId = null,
                 )
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
                 // Ensure that the user is not already logged in with the same account
                 ensureNotAlreadyLoggedIn(client)
                 tryToImportSecretForElementClassicSession(client)
@@ -165,18 +222,16 @@ class RustMatrixAuthenticationService(
                         isTokenValid = true,
                         loginType = LoginType.PASSWORD,
                         passphrase = pendingKey.formattedAsString(),
-                        sessionPaths = currentSessionPaths,
+                        sessionPaths = attempt.sessionPaths,
+                        accountProvider = attempt.accountProvider,
                     )
                 val matrixClient = rustMatrixClientFactory.create(client, sessionData, isMessageSearchAvailable())
 
                 // Apply enterprise hooks to the newly created client as soon as possible
                 clientEnterpriseHook(matrixClient)
 
-                newMatrixClientObservers.forEach { it.invoke(matrixClient) }
-                sessionStore.addSession(sessionData)
-
-                // Clean up the strong reference held here since it's no longer necessary
-                clear(destroyClient = false)
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
+                commitAuthenticatedSession(attempt, matrixClient, sessionData)
 
                 SessionId(sessionData.userId)
             }.mapFailure { failure ->
@@ -195,9 +250,9 @@ class RustMatrixAuthenticationService(
                 val secrets = it.secrets
                 val roomKeysVersion = it.roomKeysVersion
                 if (secrets == null || roomKeysVersion == null) {
-                    Timber.d("No secrets or roomKeysVersion found for Element Classic session ${it.userId}, skipping import")
+                    Timber.d("No secrets or roomKeysVersion found for previous Matrix app session ${it.userId}; skipping import")
                 } else {
-                    Timber.d("Trying to import secrets for Element Classic session ${it.userId}")
+                    Timber.d("Trying to import secrets for previous Matrix app session ${it.userId}")
                     runCatchingExceptions {
                         SecretsBundleWithUserId.fromStr(
                             userId = it.userId.value,
@@ -207,7 +262,7 @@ class RustMatrixAuthenticationService(
                             client.encryption().importSecretsBundle(secretsBundle)
                         }
                     }.onFailure { failure ->
-                        Timber.e(failure, "Failed to import secrets for Element Classic session ${it.userId}")
+                        Timber.e(failure, "Failed to import secrets for previous Matrix app session ${it.userId}")
                     }
                 }
             }
@@ -227,7 +282,7 @@ class RustMatrixAuthenticationService(
                 secretsBundle.containsBackupKey()
             }
         } catch (failure: Exception) {
-            Timber.e(failure, "Failed to parse secrets for Element Classic session $userId")
+            Timber.e(failure, "Failed to parse secrets for previous Matrix app session $userId")
             false
         }
     }
@@ -235,17 +290,20 @@ class RustMatrixAuthenticationService(
     override suspend fun importCreatedSession(externalSession: ExternalSession): Result<SessionId> =
         withContext(coroutineDispatchers.io) {
             runCatchingExceptions {
-                val client = currentClient ?: error("You need to call `setHomeserver()` first")
-                val currentSessionPaths = sessionPaths ?: error("You need to call `setHomeserver()` first")
+                val attempt = requireCurrentAttempt()
+                assertAuthenticationAttemptAllowed(attempt)
+                val client = attempt.client
                 val sessionData = externalSession.toSessionData(
                     isTokenValid = true,
                     loginType = LoginType.PASSWORD,
                     passphrase = pendingKey.formattedAsString(),
-                    sessionPaths = currentSessionPaths,
+                    sessionPaths = attempt.sessionPaths,
+                    accountProvider = attempt.accountProvider,
                 )
 
                 // We restore the client using the just retrieved session data
                 client.restoreSession(sessionData.toSession())
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
                 val matrixClient = rustMatrixClientFactory.create(client, sessionData, isMessageSearchAvailable())
 
                 // Apply enterprise hooks to the newly created client as soon as possible
@@ -255,17 +313,12 @@ class RustMatrixAuthenticationService(
                 matrixClient.waitForKnownVerificationState()
 
                 // And once it's ready we share it and save the actual session data
-                newMatrixClientObservers.forEach { it.invoke(matrixClient) }
-                sessionStore.addSession(sessionData)
-
-                // Clean up the strong reference held here since it's no longer necessary
-                clear(destroyClient = false)
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
+                commitAuthenticatedSession(attempt, matrixClient, sessionData)
 
                 SessionId(sessionData.userId)
             }
         }
-
-    private var pendingOAuthAuthorizationData: OAuthAuthorizationData? = null
 
     override suspend fun getOAuthUrl(
         prompt: OAuthPrompt,
@@ -273,7 +326,9 @@ class RustMatrixAuthenticationService(
     ): Result<OAuthDetails> {
         return withContext(coroutineDispatchers.io) {
             runCatchingExceptions {
-                val client = currentClient ?: error("You need to call `setHomeserver()` first")
+                val attempt = requireCurrentAttempt()
+                assertAuthenticationAttemptAllowed(attempt)
+                val client = attempt.client
                 val oAuthAuthorizationData = client.urlForOauth(
                     oauthConfiguration = oAuthConfigurationProvider.get(),
                     prompt = prompt.toRustPrompt(),
@@ -282,7 +337,9 @@ class RustMatrixAuthenticationService(
                     deviceId = null,
                     additionalScopes = emptyList(),
                 )
-                val getUrlResolver = RustTemporaryMatrixClient(client, sessionPaths)
+                // Policy may change while MAS metadata is being resolved.
+                assertAuthenticationAttemptAllowed(attempt)
+                val getUrlResolver = RustTemporaryMatrixClient(client, attempt.sessionPaths)
                 val url = oAuthAuthorizationData.loginUrl()
                     .let {
                         enterpriseService.tweakMasUrl(
@@ -290,7 +347,13 @@ class RustMatrixAuthenticationService(
                             urlContentFetcher = getUrlResolver,
                         )
                     }
-                pendingOAuthAuthorizationData = oAuthAuthorizationData
+                assertAuthenticationAttemptAllowed(attempt)
+                pendingOAuth?.authorizationData?.close()
+                pendingOAuth = PendingOAuth(
+                    authorizationData = oAuthAuthorizationData,
+                    attempt = attempt,
+                    prompt = prompt,
+                )
                 OAuthDetails(url)
             }.mapFailure { failure ->
                 Timber.e(failure, "Failed to get OAuth URL")
@@ -302,10 +365,11 @@ class RustMatrixAuthenticationService(
     override suspend fun cancelOAuthLogin(): Result<Unit> {
         return withContext(coroutineDispatchers.io) {
             runCatchingExceptions {
-                pendingOAuthAuthorizationData?.use {
-                    currentClient?.abortOauthAuth(it)
+                pendingOAuth?.let { pending ->
+                    pending.attempt.client.abortOauthAuth(pending.authorizationData)
+                    pending.authorizationData.close()
                 }
-                pendingOAuthAuthorizationData = null
+                pendingOAuth = null
             }.mapFailure { failure ->
                 Timber.e(failure, "Failed to cancel OAuth login")
                 failure.mapAuthenticationException()
@@ -323,14 +387,17 @@ class RustMatrixAuthenticationService(
     override suspend fun loginWithOAuth(callbackUrl: String): Result<SessionId> {
         return withContext(coroutineDispatchers.io) {
             runCatchingExceptions {
-                val client = currentClient ?: error("You need to call `setHomeserver()` first")
-                val currentSessionPaths = sessionPaths ?: error("You need to call `setHomeserver()` first")
+                val pending = pendingOAuth ?: error("You need to call `getOAuthUrl()` first")
+                val attempt = pending.attempt
+                assertAuthenticationAttemptAllowed(attempt)
+                val client = attempt.client
                 client.loginWithOauthCallback(
                     callbackUrl = callbackUrl,
                 )
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
                 // Free the pending data since we won't use it to abort the flow anymore
-                pendingOAuthAuthorizationData?.close()
-                pendingOAuthAuthorizationData = null
+                pending.authorizationData.close()
+                if (pendingOAuth === pending) pendingOAuth = null
                 // Ensure that the user is not already logged in with the same account
                 ensureNotAlreadyLoggedIn(client)
                 tryToImportSecretForElementClassicSession(client)
@@ -338,7 +405,8 @@ class RustMatrixAuthenticationService(
                     isTokenValid = true,
                     loginType = LoginType.OIDC,
                     passphrase = pendingKey.formattedAsString(),
-                    sessionPaths = currentSessionPaths,
+                    sessionPaths = attempt.sessionPaths,
+                    accountProvider = attempt.accountProvider,
                 )
                 val matrixClient = rustMatrixClientFactory.create(client, sessionData, isMessageSearchAvailable())
 
@@ -347,11 +415,15 @@ class RustMatrixAuthenticationService(
 
                 matrixClient.waitForKnownVerificationState()
 
-                newMatrixClientObservers.forEach { it.invoke(matrixClient) }
-                sessionStore.addSession(sessionData)
-
-                // Clean up the strong reference held here since it's no longer necessary
-                clear(destroyClient = false)
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
+                commitAuthenticatedSession(attempt, matrixClient, sessionData) {
+                    assertAuthenticationAttemptAllowed(attempt)
+                    if (pending.prompt == OAuthPrompt.Create && !mdmService.config.value.allowRegistration) {
+                        throw AuthenticationException.InvalidServerName(
+                            "Account registration is blocked by managed configuration"
+                        )
+                    }
+                }
 
                 SessionId(sessionData.userId)
             }.mapFailure { failure ->
@@ -379,7 +451,7 @@ class RustMatrixAuthenticationService(
     override suspend fun loginWithQrCode(qrCodeData: MatrixQrCodeLoginData, progress: (QrCodeLoginStep) -> Unit) =
         withContext(coroutineDispatchers.io) {
             val sdkQrCodeLoginData = (qrCodeData as SdkQrCodeLoginData).rustQrCodeData
-            val emptySessionPaths = rotateSessionPath()
+            val securityToken = sessionSecurityCoordinator.beginAuthentication()
             val oAuthConfiguration = oAuthConfigurationProvider.get()
             val progressListener = object : QrLoginProgressListener {
                 override fun onUpdate(state: QrLoginProgress) {
@@ -388,10 +460,27 @@ class RustMatrixAuthenticationService(
                 }
             }
             runCatchingExceptions {
-                val client = makeQrCodeLoginClient(
-                    sessionPaths = emptySessionPaths,
-                    qrCodeData = sdkQrCodeLoginData,
-                )
+                assertQrCodeAccountProviderAllowed(qrCodeData)
+                val attempt = replaceAttemptMutex.withLock {
+                    discardCurrentAttempt()
+                    val emptySessionPaths = sessionPathsFactory.create()
+                    val client = try {
+                        makeQrCodeLoginClient(
+                            sessionPaths = emptySessionPaths,
+                            qrCodeData = sdkQrCodeLoginData,
+                        )
+                    } catch (failure: Exception) {
+                        emptySessionPaths.deleteRecursively()
+                        throw failure
+                    }
+                    AuthenticationAttempt(
+                        client = client,
+                        sessionPaths = emptySessionPaths,
+                        accountProvider = qrCodeData.serverName(),
+                        securityToken = securityToken,
+                    ).also { currentAttempt = it }
+                }
+                val client = attempt.client
                 client.newLoginWithQrCodeHandler(
                     oauthConfiguration = oAuthConfiguration,
                 ).use {
@@ -400,6 +489,7 @@ class RustMatrixAuthenticationService(
                         progressListener = progressListener,
                     )
                 }
+                assertQrCodeAccountProviderAllowedAfterAuthentication(qrCodeData, attempt)
                 // Ensure that the user is not already logged in with the same account
                 ensureNotAlreadyLoggedIn(client)
                 val sessionData = client.session()
@@ -407,18 +497,18 @@ class RustMatrixAuthenticationService(
                         isTokenValid = true,
                         loginType = LoginType.QR,
                         passphrase = pendingKey.formattedAsString(),
-                        sessionPaths = emptySessionPaths,
+                        sessionPaths = attempt.sessionPaths,
+                        accountProvider = attempt.accountProvider,
                     )
                 val matrixClient = rustMatrixClientFactory.create(client, sessionData, isMessageSearchAvailable())
 
                 // Apply enterprise hooks to the newly created client as soon as possible
                 clientEnterpriseHook(matrixClient)
 
-                newMatrixClientObservers.forEach { it.invoke(matrixClient) }
-                sessionStore.addSession(sessionData)
-
-                // Clean up the strong reference held here since it's no longer necessary
-                clear(destroyClient = false)
+                assertQrCodeAccountProviderAllowedAfterAuthentication(qrCodeData, attempt)
+                commitAuthenticatedSession(attempt, matrixClient, sessionData) {
+                    assertQrCodeAccountProviderAllowed(qrCodeData)
+                }
 
                 SessionId(sessionData.userId)
             }.mapFailure {
@@ -484,11 +574,173 @@ class RustMatrixAuthenticationService(
             .build()
     }
 
-    private fun clear(destroyClient: Boolean) {
-        if (destroyClient) {
-            currentClient?.close()
+    private fun requireCurrentAttempt(): AuthenticationAttempt = currentAttempt
+        ?: throw AuthenticationException.InvalidServerName("No account provider has been configured")
+
+    private fun discardCurrentAttempt() {
+        val attempt = currentAttempt ?: return
+        pendingOAuth?.takeIf { it.attempt === attempt }?.let {
+            runCatching { it.authorizationData.close() }
+            pendingOAuth = null
         }
-        currentClient = null
+        clearAttempt(attempt, destroyClient = true, deleteSessionPaths = true)
+    }
+
+    private fun clearAttempt(
+        attempt: AuthenticationAttempt,
+        destroyClient: Boolean,
+        deleteSessionPaths: Boolean,
+    ) {
+        if (currentAttempt === attempt) currentAttempt = null
+        if (destroyClient) {
+            try {
+                attempt.client.close()
+            } catch (failure: Exception) {
+                Timber.e(failure, "Failed to close an authentication client")
+            }
+        }
+        if (deleteSessionPaths) attempt.sessionPaths.deleteRecursively()
+    }
+
+    private suspend fun assertAuthenticationAttemptAllowed(attempt: AuthenticationAttempt) {
+        if (currentAttempt !== attempt) {
+            throw AuthenticationException.InvalidServerName("The authentication attempt was superseded")
+        }
+        val accountProvider = attempt.accountProvider
+            ?: throw AuthenticationException.InvalidServerName("No account provider has been configured")
+        assertAccountProviderAllowed(accountProvider)
+    }
+
+    private suspend fun assertAuthenticationAttemptAllowedAfterAuthentication(attempt: AuthenticationAttempt) {
+        abortAuthenticatedClientIfBlocked(attempt) {
+            assertAuthenticationAttemptAllowed(attempt)
+        }
+    }
+
+    private suspend fun assertAccountProviderAllowed(accountProvider: String) {
+        if (!enterpriseService.isAllowedToConnectToHomeserver(accountProvider)) {
+            throw AuthenticationException.InvalidServerName("The account provider is blocked by managed configuration")
+        }
+    }
+
+    private suspend fun assertQrCodeAccountProviderAllowed(qrCodeData: MatrixQrCodeLoginData) {
+        val accountProvider = qrCodeData.serverName()
+        if (accountProvider == null) {
+            if (!enterpriseService.canConnectToAnyHomeserver()) {
+                throw AuthenticationException.InvalidServerName(
+                    "The QR code does not identify an account provider allowed by managed configuration"
+                )
+            }
+        } else {
+            assertAccountProviderAllowed(accountProvider)
+        }
+    }
+
+    private suspend fun assertQrCodeAccountProviderAllowedAfterAuthentication(
+        qrCodeData: MatrixQrCodeLoginData,
+        attempt: AuthenticationAttempt,
+    ) {
+        abortAuthenticatedClientIfBlocked(attempt) {
+            if (currentAttempt !== attempt) {
+                throw AuthenticationException.InvalidServerName("The QR authentication attempt was superseded")
+            }
+            assertQrCodeAccountProviderAllowed(qrCodeData)
+        }
+    }
+
+    private suspend fun commitAuthenticatedSession(
+        attempt: AuthenticationAttempt,
+        matrixClient: MatrixClient,
+        sessionData: SessionData,
+        policyCheck: suspend () -> Unit = { assertAuthenticationAttemptAllowed(attempt) },
+    ) {
+        // A replacement and a publication transfer ownership of the same temporary client. Keep
+        // both operations under one mutex so replacement cannot destroy a client after it has been
+        // persisted but before the successful attempt releases its strong reference.
+        replaceAttemptMutex.withLock {
+            var sessionWasAdded = false
+            try {
+                sessionSecurityCoordinator.commitAuthentication(attempt.securityToken) {
+                    if (currentAttempt !== attempt) {
+                        throw AuthenticationException.InvalidServerName("The authentication attempt was superseded")
+                    }
+                    policyCheck()
+                    sessionStore.addSession(sessionData)
+                    sessionWasAdded = true
+                    newMatrixClientObservers.forEach { it.invoke(matrixClient) }
+                    clearAttempt(attempt, destroyClient = false, deleteSessionPaths = false)
+                }
+            } catch (failure: Exception) {
+                if (sessionWasAdded) {
+                    withContext(NonCancellable) {
+                        try {
+                            sessionStore.removeSession(sessionData.userId)
+                        } catch (rollbackFailure: Exception) {
+                            failure.addSuppressed(rollbackFailure)
+                            Timber.e(rollbackFailure, "Failed to roll back a session after publication failed")
+                        }
+                    }
+                }
+                abortAuthenticatedClientIfBlocked(attempt) { throw failure }
+            }
+        }
+    }
+
+    private suspend fun isStoredSessionAllowed(sessionData: SessionData): Boolean {
+        val accountProvider = sessionData.accountProvider ?: sessionData.homeserverUrl
+        return enterpriseService.isAllowedToConnectToHomeserver(accountProvider)
+    }
+
+    private suspend fun discardBlockedStoredSession(
+        sessionData: SessionData,
+        matrixClient: MatrixClient? = null,
+    ) = withContext(NonCancellable) {
+        if (matrixClient != null) {
+            try {
+                // Ignore any remote logout error: local client shutdown and session-directory
+                // deletion remain mandatory after policy rejects the restored provider.
+                matrixClient.logout(userInitiated = false, ignoreSdkError = true)
+            } catch (failure: Exception) {
+                Timber.e(failure, "Failed to close a restored client rejected by managed policy")
+            }
+        }
+        try {
+            sessionStore.removeSession(sessionData.userId)
+        } catch (failure: Exception) {
+            Timber.e(failure, "Failed to remove a stored session rejected by managed policy")
+        }
+    }
+
+    /**
+     * Authentication can complete while device policy changes in another process callback. Fail
+     * closed before observers see the client or the session is persisted, and discard the
+     * authenticated temporary client so it cannot be retried under the new policy.
+     */
+    private suspend fun abortAuthenticatedClientIfBlocked(
+        attempt: AuthenticationAttempt,
+        policyCheck: suspend () -> Unit,
+    ) {
+        try {
+            policyCheck()
+        } catch (failure: Exception) {
+            // Cancellation must not interrupt token invalidation/local cleanup at this security
+            // boundary. Always preserve and rethrow the original policy/epoch failure.
+            withContext(NonCancellable) {
+                try {
+                    attempt.client.logout()
+                } catch (logoutFailure: Exception) {
+                    Timber.e(logoutFailure, "Failed to log out an authentication client rejected by managed policy")
+                }
+                try {
+                    attempt.client.close()
+                } catch (closeFailure: Exception) {
+                    Timber.e(closeFailure, "Failed to close an authentication client rejected by managed policy")
+                } finally {
+                    clearAttempt(attempt, destroyClient = false, deleteSessionPaths = true)
+                }
+            }
+            throw failure
+        }
     }
 
     private suspend fun isMessageSearchAvailable(): Boolean =

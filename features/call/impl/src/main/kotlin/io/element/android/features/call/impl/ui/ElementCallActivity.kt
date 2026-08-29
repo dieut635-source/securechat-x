@@ -62,7 +62,7 @@ import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import timber.log.Timber
 
-private val loggerTag = LoggerTag("ElementCallActivity")
+private val loggerTag = LoggerTag("SecureChatCall")
 
 class ElementCallActivity :
     AppCompatActivity(),
@@ -111,7 +111,7 @@ class ElementCallActivity :
 
         pictureInPicturePresenter.setPipView(this)
 
-        Timber.d("Created ElementCallActivity with call type: ${webViewTarget.value}")
+        Timber.d("Created SecureChat call activity with call type: ${webViewTarget.value}")
 
         setContent {
             val pipState = pictureInPicturePresenter.present()
@@ -161,7 +161,7 @@ class ElementCallActivity :
                         state = state,
                         pipState = pipState,
                         onConsoleMessage = {
-                            consoleMessageLogger.log("ElementCall", it)
+                            consoleMessageLogger.log("SecureChatCall", it)
                         },
                         requestPermissions = { permissions, callback ->
                             requestPermissionCallback = callback

@@ -1,49 +1,18 @@
-This file contains some rough notes about OAuth implementation, with some examples of actual data.
+# OAuth configuration
 
-[ios implementation](https://github.com/element-hq/element-x-ios/compare/develop...doug/oidc-temp)
+SecureChat delegates Matrix OAuth/OIDC discovery and authentication to the Matrix Rust SDK. Client
+metadata is built from `plugins/src/main/kotlin/config/BuildTimeConfig.kt`:
 
-Rust sdk branch: https://github.com/matrix-org/matrix-rust-sdk/tree/oidc-ffi
+- client name: `SecureChat`
+- client URI, terms, and privacy URI: `https://chat.securechat.com.au`
+- logo URI: `https://chat.securechat.com.au/securechat/favicon.svg`
+- release redirect URI: `com.securechat:/`
+- debug redirect URI: `com.securechat.debug:/`
 
-Figma https://www.figma.com/file/o9p34zmiuEpZRyvZXJZAYL/FTUE?node-id=133-5426&t=yQXKeANatk6keoZF-0
+The redirect schemes are declared through `login_redirect_scheme` in `app/build.gradle.kts` and
+consumed by `app/src/main/AndroidManifest.xml`. Any OAuth client registration on the homeserver must
+use the exact scheme for the installed build type.
 
-Metadata iOS: (from https://github.com/element-hq/element-x-ios/blob/5f9d07377cebc4f21d9668b1a25f6e3bb22f64a1/ElementX/Sources/Services/Authentication/AuthenticationServiceProxy.swift#L28)
-
-clientName: InfoPlistReader.main.bundleDisplayName,
-redirectUri: "io.element.android:/",
-clientUri: "https://element.io",
-tosUri: "https://element.io/user-terms-of-service",
-policyUri: "https://element.io/privacy"
-
-
-Android:
-clientName = "Element",
-redirectUri = "io.element.android:/",
-clientUri = "https://element.io",
-tosUri = "https://element.io/user-terms-of-service",
-policyUri = "https://element.io/privacy"
-
-
-Example of OAuthData (from presentUrl callback):
-url: https://auth-oidc.lab.element.dev/authorize?response_type=code&client_id=01GYCAGG3PA70CJ97ZVP0WFJY3&redirect_uri=io.element%3A%2Fcallback&scope=openid+urn%3Amatrix%3Aorg.matrix.msc2967.client%3Aapi%3A*+urn%3Amatrix%3Aorg.matrix.msc2967.client%3Adevice%3AYAgcPW4mcG&state=ex6mNJVFZ5jn9wL8&nonce=NZ93DOyIGQd9exPQ&code_challenge_method=S256&code_challenge=FFRcPALNSPCh-ZgpyTRFu_h8NZJVncfvihbfT9CyX8U&prompt=consent
-
-Formatted url:
-https://auth-oidc.lab.element.dev/authorize?
-    response_type=code&
-    client_id=01GYCAGG3PA70CJ97ZVP0WFJY3&
-    redirect_uri=io.element%3A%2Fcallback&
-    scope=openid+urn%3Amatrix%3Aorg.matrix.msc2967.client%3Aapi%3A*+urn%3Amatrix%3Aorg.matrix.msc2967.client%3Adevice%3AYAgcPW4mcG&
-    state=ex6mNJVFZ5jn9wL8&
-    nonce=NZ93DOyIGQd9exPQ&
-    code_challenge_method=S256&
-    code_challenge=FFRcPALNSPCh-ZgpyTRFu_h8NZJVncfvihbfT9CyX8U&
-    prompt=consent
-
-state: ex6mNJVFZ5jn9wL8
-
-
-OAuth client example: https://github.com/matrix-org/matrix-rust-sdk/blob/39ad8a46801fb4317a777ebf895822b3675b709c/examples/oidc_cli/src/main.rs
-OAuth sdk doc: https://github.com/matrix-org/matrix-rust-sdk/blob/39ad8a46801fb4317a777ebf895822b3675b709c/crates/matrix-sdk/src/oidc.rs
-
-
-Test server:
-synapse-oidc.lab.element.dev
+Do not add real authorization codes, state values, test-account credentials, or production tokens to
+documentation or fixtures. Protocol-level SDK references belong to the Matrix Rust SDK and are not
+SecureChat product branding.

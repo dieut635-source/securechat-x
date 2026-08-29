@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"Sisesta aadress…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Leidsime vastava jututoa"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"Jututuba ei leidu"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"nt. #jututoa-nimi:matrix.org"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"nt. #jututoa-nimi:chat.securechat.com.au"</string>
 </resources>

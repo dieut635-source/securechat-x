@@ -47,6 +47,40 @@ class DefaultEnterpriseServiceTest {
     }
 
     @Test
+    fun `comparing homeservers accepts a bare host and the default HTTPS port`() = runTest {
+        val service = DefaultEnterpriseService(FakeMdmService())
+        assertThat(service.isAllowedToConnectToHomeserver("chat.securechat.com.au")).isTrue()
+        assertThat(service.isAllowedToConnectToHomeserver("https://chat.securechat.com.au:443")).isTrue()
+    }
+
+    @Test
+    fun `comparing homeservers preserves case-sensitive paths`() = runTest {
+        val service = DefaultEnterpriseService(
+            FakeMdmService(MdmConfig.default.copy(homeserverUrl = "https://chat.securechat.com.au/Matrix"))
+        )
+        assertThat(service.isAllowedToConnectToHomeserver("https://CHAT.SECURECHAT.COM.AU/Matrix/")).isTrue()
+        assertThat(service.isAllowedToConnectToHomeserver("https://chat.securechat.com.au/matrix")).isFalse()
+    }
+
+    @Test
+    fun `comparing homeservers rejects credentials query fragments and non-HTTPS URLs`() = runTest {
+        val service = DefaultEnterpriseService(FakeMdmService())
+        assertThat(service.isAllowedToConnectToHomeserver("http://chat.securechat.com.au")).isFalse()
+        assertThat(service.isAllowedToConnectToHomeserver("https://user@chat.securechat.com.au")).isFalse()
+        assertThat(service.isAllowedToConnectToHomeserver("https://chat.securechat.com.au?next=elsewhere")).isFalse()
+        assertThat(service.isAllowedToConnectToHomeserver("https://chat.securechat.com.au#elsewhere")).isFalse()
+    }
+
+    @Test
+    fun `two malformed homeservers are never treated as equivalent`() = runTest {
+        val service = DefaultEnterpriseService(
+            FakeMdmService(MdmConfig.default.copy(homeserverUrl = "not a valid host"))
+        )
+
+        assertThat(service.isAllowedToConnectToHomeserver("not a valid host")).isFalse()
+    }
+
+    @Test
     fun `isEnterpriseUser always return false`() = runTest {
         val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
         assertThat(defaultEnterpriseService.isEnterpriseUser(A_SESSION_ID)).isFalse()

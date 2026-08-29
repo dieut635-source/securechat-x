@@ -3,8 +3,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"აირჩიეთ, თუ როგორ გსურთ შეტყობინებების მიღება"</string>
   <string name="screen_advanced_settings_developer_mode">"დეველოპერის რეჟიმი"</string>
   <string name="screen_advanced_settings_developer_mode_description">"ჩართეთ დეველოპერების ფუნქციებზე წვდომა."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"მორგებული Element-ის ზარის საბაზისო URL"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"დააყენეთ საბაზისო URL Element-ის ზარებისათვის."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"მორგებული SecureChat-ის ზარის საბაზისო URL"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"დააყენეთ საბაზისო URL SecureChat-ის ზარებისათვის."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"არასწორი URL, გთხოვთ, დარწმუნდეთ, რომ შეიტანეთ პროტოკოლი (http/https) და სწორი მისამართი."</string>
   <string name="screen_advanced_settings_rich_text_editor_description">"გამორთეთ მდიდარი ტექსტის რედაქტორი, რათა ხელით აკრიფოთ Markdown."</string>
   <string name="screen_advanced_settings_send_read_receipts">"წაკითხვის შეტყობინებები"</string>

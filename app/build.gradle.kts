@@ -11,7 +11,6 @@
 import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import com.android.build.gradle.tasks.GenerateBuildConfig
-import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import config.BuildTimeConfig
 import extension.AssetCopyTask
 import extension.GitBranchNameValueSource
@@ -28,17 +27,24 @@ import java.util.Locale
 
 plugins {
     id("io.element.android-compose-application")
-    // When using precompiled plugins, we need to apply the firebase plugin like this
-    id(libs.plugins.firebaseAppDistribution.get().pluginId)
     id("kotlin-parcelize")
     alias(libs.plugins.licensee)
     alias(libs.plugins.kotlin.serialization)
-    // To be able to update the firebase.xml files, uncomment and build the project
-    // alias(libs.plugins.gms.google.services)
 }
 
 android {
     namespace = "io.element.android.x"
+
+    lint {
+        // Keep CI deterministic: dependency freshness is managed by Dependabot, while all
+        // actionable Android lint warnings in the app remain release-blocking.
+        warningsAsErrors = true
+        disable += setOf(
+            "AndroidGradlePluginVersion",
+            "GradleDependency",
+            "NewerVersionAvailable",
+        )
+    }
 
     defaultConfig {
         applicationId = BuildTimeConfig.APPLICATION_ID
@@ -75,9 +81,7 @@ android {
         }
 
         androidResources {
-            // SecureChat ships in English only (users are in Australia). This also keeps the upstream
-            // translations - which still say "Element" in the call/notification strings overridden in
-            // app/src/main/res/values/securechat_strings.xml - out of the APK. Add locales back here
+            // SecureChat ships in English only (users are in Australia). Add locales back here
             // (e.g. `setOf("en", "en-rUS", "vi")`) if other languages are ever needed.
             localeFilters += setOf("en", "en-rUS")
         }
@@ -104,13 +108,13 @@ android {
         }
 
         register("nightly") {
-            keyAlias = System.getenv("ELEMENT_ANDROID_NIGHTLY_KEYID")
-                ?: project.property("signing.element.nightly.keyId") as? String?
-            keyPassword = System.getenv("ELEMENT_ANDROID_NIGHTLY_KEYPASSWORD")
-                ?: project.property("signing.element.nightly.keyPassword") as? String?
+            keyAlias = System.getenv("SECURECHAT_NIGHTLY_KEY_ID")
+                ?: project.property("signing.securechat.nightly.keyId") as? String?
+            keyPassword = System.getenv("SECURECHAT_NIGHTLY_KEY_PASSWORD")
+                ?: project.property("signing.securechat.nightly.keyPassword") as? String?
             storeFile = file("./signature/nightly.keystore")
-            storePassword = System.getenv("ELEMENT_ANDROID_NIGHTLY_STOREPASSWORD")
-                ?: project.property("signing.element.nightly.storePassword") as? String?
+            storePassword = System.getenv("SECURECHAT_NIGHTLY_STORE_PASSWORD")
+                ?: project.property("signing.securechat.nightly.storePassword") as? String?
         }
     }
 
@@ -119,7 +123,7 @@ android {
     logger.warnInBox("Building ${defaultConfig.applicationId} ($baseAppName) [$buildType]")
 
     buildTypes {
-        val oAuthRedirectSchemeBase = BuildTimeConfig.METADATA_HOST_REVERSED ?: "io.element.android"
+        val oAuthRedirectSchemeBase = BuildTimeConfig.METADATA_HOST_REVERSED ?: "com.securechat"
         getByName("debug") {
             resValue("string", "app_name", "$baseAppName dbg")
             resValue(
@@ -173,29 +177,6 @@ android {
             )
             matchingFallbacks += listOf("release")
             signingConfig = signingConfigs.getByName("nightly")
-
-            firebaseAppDistribution {
-                artifactType = "APK"
-                // We upload the universal APK to fix this error:
-                // "App Distribution found more than 1 output file for this variant.
-                // Please contact firebase-support@google.com for help using APK splits with App Distribution."
-                artifactPath = "$rootDir/app/build/outputs/apk/gplay/nightly/app-gplay-universal-nightly.apk"
-                // artifactType = "AAB"
-                // artifactPath = "$rootDir/app/build/outputs/bundle/nightly/app-nightly.aab"
-                releaseNotesFile = "tools/release/ReleaseNotesNightly.md"
-                groups = if (isEnterpriseBuild) {
-                    "enterprise-testers"
-                } else {
-                    "external-testers"
-                }
-                // This should not be required, but if I do not add the appId, I get this error:
-                // "App Distribution halted because it had a problem uploading the APK: [404] Requested entity was not found."
-                appId = if (isEnterpriseBuild) {
-                    "1:912726360885:android:3f7e1fe644d99d5a00427c"
-                } else {
-                    "1:912726360885:android:e17435e0beb0303000427c"
-                }
-            }
         }
     }
 
@@ -226,6 +207,10 @@ android {
         jniLibs {
             useLegacyPackaging = project.findProperty("useLegacyPackaging")?.toString()?.toBoolean()
         }
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -348,14 +333,10 @@ licensee {
     allow("MIT")
     allow("BSD-2-Clause")
     allow("BSD-3-Clause")
-    allow("EPL-1.0")
     allowUrl("https://opensource.org/license/bsd-3-clause")
-    allowUrl("https://opensource.org/licenses/MIT")
-    allowUrl("https://developer.android.com/studio/terms.html")
     allowUrl("https://www.zetetic.net/sqlcipher/license/")
     allowUrl("https://jsoup.org/license")
     allowUrl("https://asm.ow2.io/license.html")
-    allowUrl("https://www.gnu.org/licenses/agpl-3.0.txt")
     allowUrl("https://github.com/mhssn95/compose-color-picker/blob/main/LICENSE")
     ignoreDependencies("com.github.matrix-org", "matrix-analytics-events")
     // Ignore dependency that are not third-party licenses to us.

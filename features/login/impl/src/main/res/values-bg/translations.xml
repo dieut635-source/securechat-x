@@ -9,7 +9,7 @@
   <string name="screen_account_provider_signin_title">"На път сте да влезете в %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Това е мястото, където ще живеят вашите разговори — точно както бихте използвали имейл доставчик, за да съхранявате вашите имейли."</string>
   <string name="screen_account_provider_signup_title">"На път сте да създадете акаунт в %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org е голям, безплатен сървър в публичната мрежа на Matrix за сигурна, децентрализирана комуникация, управляван от фондация Matrix.org."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
   <string name="screen_change_account_provider_other">"Друг"</string>
   <string name="screen_change_account_provider_subtitle">"Използвайте друг доставчик на акаунт, като например собствен частен сървър или работен акаунт."</string>
   <string name="screen_change_account_provider_title">"Промяна на доставчика на акаунт"</string>
@@ -32,11 +32,11 @@
   <string name="screen_onboarding_sign_up">"Създаване на акаунт"</string>
   <string name="screen_onboarding_welcome_message">"Добре дошли в най-бързия %1$s досега. Супер зареден за скорост и простота."</string>
   <string name="screen_onboarding_welcome_subtitle">"Добре дошли в %1$s. Супер зареден за скорост и простота."</string>
-  <string name="screen_onboarding_welcome_title">"Бъдете в стихията си"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_invalid_scan_state_retry_button">"Повторен опит"</string>
   <string name="screen_qr_code_login_verify_code_title">"Вашият код за потвърждение"</string>
   <string name="screen_server_confirmation_change_server">"Промяна на доставчика на акаунт"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Частен сървър за служителите на Element."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix е отворена мрежа за сигурна, децентрализирана комуникация."</string>
   <string name="screen_server_confirmation_message_register">"Това е мястото, където ще живеят вашите разговори — точно както бихте използвали имейл доставчик, за да съхранявате вашите имейли."</string>
   <string name="screen_server_confirmation_title_login">"На път сте да влезете в %1$s"</string>

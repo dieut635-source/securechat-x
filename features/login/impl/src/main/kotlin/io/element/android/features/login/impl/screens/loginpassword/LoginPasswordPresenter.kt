@@ -19,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
+import io.element.android.features.login.impl.accesscontrol.DefaultAccountProviderAccessControl
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
 import io.element.android.features.login.impl.accountprovider.SaveAccountProviderToHistory
 import io.element.android.libraries.architecture.AsyncData
@@ -27,6 +28,7 @@ import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.api.core.SessionId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 @AssistedInject
 class LoginPasswordPresenter(
@@ -35,6 +37,7 @@ class LoginPasswordPresenter(
     private val authenticationService: MatrixAuthenticationService,
     private val accountProviderDataSource: AccountProviderDataSource,
     private val saveAccountProviderToHistory: SaveAccountProviderToHistory,
+    private val accountProviderAccessControl: DefaultAccountProviderAccessControl,
 ) : Presenter<LoginPasswordState> {
     @AssistedFactory
     interface Factory {
@@ -83,6 +86,21 @@ class LoginPasswordPresenter(
 
     private fun CoroutineScope.submit(formState: LoginFormState, loggedInState: MutableState<AsyncData<SessionId>>) = launch {
         loggedInState.value = AsyncData.Loading()
+        val configuredAccountProvider = accountProviderDataSource.lastSelectedAccountProviderUrl
+            ?: accountProviderDataSource.flow.value.url
+        try {
+            // The screen can remain alive while MDM replaces the visible default. Validate the
+            // provider that actually configured MatrixAuthenticationService, not that new label.
+            accountProviderAccessControl.assertIsAllowedToConnectToAccountProvider(
+                title = configuredAccountProvider,
+                accountProviderUrl = configuredAccountProvider,
+            )
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (failure: Exception) {
+            loggedInState.value = AsyncData.Failure(failure)
+            return@launch
+        }
         authenticationService.login(formState.login.trim(), formState.password)
             .onSuccess { sessionId ->
                 saveAccountProviderToHistory()

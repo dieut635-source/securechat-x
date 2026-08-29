@@ -81,7 +81,7 @@ class LoginWithClassicPresenter(
                             }
                         }
                     } else {
-                        loginWithClassicAction = AsyncAction.Failure(IllegalStateException("Element Classic is not ready"))
+                        loginWithClassicAction = AsyncAction.Failure(IllegalStateException("The previous Matrix app is not ready"))
                     }
                 }
                 LoginWithClassicEvent.ClearError -> {

@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"Válassza ki az értesítések fogadási módját"</string>
   <string name="screen_advanced_settings_developer_mode">"Fejlesztői mód"</string>
   <string name="screen_advanced_settings_developer_mode_description">"Engedélyezze, hogy elérje a fejlesztőknek szánt funkciókat."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"Egyéni Element Call alapwebcím"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"Egyéni alapwebcím beállítása az Element Callhoz."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"Egyéni SecureChat Calls alapwebcím"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"Egyéni alapwebcím beállítása az SecureChat Callshoz."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"Érvénytelen webcím, győződjön meg arról, hogy szerepel-e benne a protokoll (http/https), és hogy helyes-e a cím."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Profilképek elrejtése a szobameghívókban"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"Médiaelőnézetek elrejtése az idővonalon"</string>
@@ -88,8 +88,8 @@ Ha folytatja, egyes beállítások megváltozhatnak."</string>
   <string name="screen_notification_settings_sound_custom_fallback">"Egyedi"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"Egyedi hang…"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"Hiba a fájl törlésekor"</string>
-  <string name="screen_notification_settings_sound_element_default">"Element alapértelmezett"</string>
-  <string name="screen_notification_settings_sound_element_fade">"Element Fade"</string>
+  <string name="screen_notification_settings_sound_element_default">"SecureChat alapértelmezett"</string>
+  <string name="screen_notification_settings_sound_element_fade">"SecureChat Fade"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"Hiba a fájl importálásakor"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"Probléma a riasztási hang előnézetekor"</string>
   <string name="screen_notification_settings_sound_section_title">"Hang"</string>

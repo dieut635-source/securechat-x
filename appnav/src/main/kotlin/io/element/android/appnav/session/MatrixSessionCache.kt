@@ -118,11 +118,13 @@ class MatrixSessionCache(
             matrixClient = matrixClient,
             sessionCoroutineScope = matrixClient.sessionCoroutineScope,
         )
+        // Only publish the client in memory once sync startup succeeds. Authentication rolls back
+        // the persisted session if this observer throws, so the cache must remain transactional too.
+        syncOrchestrator.start()
         sessionIdsToMatrixSession[matrixClient.sessionId] = InMemoryMatrixSession(
             matrixClient = matrixClient,
             syncOrchestrator = syncOrchestrator,
         )
-        syncOrchestrator.start()
     }
 }
 

@@ -77,7 +77,7 @@ fun RoomPreviewAliasAtom(
 @Composable
 internal fun RoomPreviewAliasAtomPreview() = ElementPreview {
     RoomPreviewAliasAtom(
-        alias = "#room-alias:matrix.org",
+        alias = "#room-alias:chat.securechat.com.au",
         copiable = true
     )
 }

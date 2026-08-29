@@ -24,9 +24,9 @@ open class SpaceSettingsStatePreviewParam : PreviewParameterProvider<SpaceSettin
 }
 
 fun aSpaceSettingsState(
-    roomId: RoomId = RoomId("!aRoomId:element.io"),
+    roomId: RoomId = RoomId("!aRoomId:chat.securechat.com.au"),
     name: String = SPACE_NAME,
-    alias: RoomAlias? = RoomAlias("#spacename:element.io"),
+    alias: RoomAlias? = RoomAlias("#spacename:chat.securechat.com.au"),
     avatarUrl: String? = null,
     memberCount: Long = 100,
     showRolesAndPermissions: Boolean = false,

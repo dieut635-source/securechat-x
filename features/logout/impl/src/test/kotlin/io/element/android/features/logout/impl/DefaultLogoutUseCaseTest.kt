@@ -10,10 +10,12 @@
 
 package io.element.android.features.logout.impl
 
+import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.A_USER_ID_2
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.FakeMatrixClientProvider
+import io.element.android.libraries.sessionstorage.test.FakeSessionSecurityCoordinator
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.tests.testutils.lambda.lambdaRecorder
@@ -43,6 +45,7 @@ class DefaultLogoutUseCaseTest {
                     }
                 }
             ),
+            sessionSecurityCoordinator = FakeSessionSecurityCoordinator(),
         )
         sut.logoutAll(ignoreSdkError = true)
         logoutLambda1.assertions().isCalledOnce().with(value(true), value(true))
@@ -65,6 +68,7 @@ class DefaultLogoutUseCaseTest {
                     aSessionData(sessionId = A_USER_ID_2.value),
                 )
             ),
+            sessionSecurityCoordinator = FakeSessionSecurityCoordinator(),
             matrixClientProvider = FakeMatrixClientProvider(
                 getClient = { sessionId ->
                     when (sessionId) {
@@ -81,13 +85,14 @@ class DefaultLogoutUseCaseTest {
     }
 
     @Test
-    fun `test logout session not found is ignored`() = runTest {
+    fun `logout with ignored SDK errors removes a session whose client cannot be restored`() = runTest {
+        val sessionStore = InMemorySessionStore(
+            initialList = listOf(
+                aSessionData(sessionId = A_USER_ID.value),
+            )
+        )
         val sut = DefaultLogoutUseCase(
-            sessionStore = InMemorySessionStore(
-                initialList = listOf(
-                    aSessionData(sessionId = A_USER_ID.value),
-                )
-            ),
+            sessionStore = sessionStore,
             matrixClientProvider = FakeMatrixClientProvider(
                 getClient = { sessionId ->
                     when (sessionId) {
@@ -96,9 +101,45 @@ class DefaultLogoutUseCaseTest {
                     }
                 }
             ),
+            sessionSecurityCoordinator = FakeSessionSecurityCoordinator(),
         )
         sut.logoutAll(ignoreSdkError = true)
-        // No error
+        assertThat(sessionStore.getAllSessions()).isEmpty()
+    }
+
+    @Test
+    fun `logout with ignored SDK errors removes a throwing session and continues with later sessions`() = runTest {
+        val logoutLambda1 = lambdaRecorder<Boolean, Boolean, Unit> { _, _ ->
+            throw IllegalStateException("Local SDK cleanup failed")
+        }
+        val logoutLambda2 = lambdaRecorder<Boolean, Boolean, Unit> { _, _ -> }
+        val client1 = FakeMatrixClient(A_USER_ID).apply { logoutLambda = logoutLambda1 }
+        val client2 = FakeMatrixClient(A_USER_ID_2).apply { logoutLambda = logoutLambda2 }
+        val sessionStore = InMemorySessionStore(
+            initialList = listOf(
+                aSessionData(sessionId = A_USER_ID.value),
+                aSessionData(sessionId = A_USER_ID_2.value),
+            )
+        )
+        val sut = DefaultLogoutUseCase(
+            sessionStore = sessionStore,
+            matrixClientProvider = FakeMatrixClientProvider(
+                getClient = { sessionId ->
+                    when (sessionId) {
+                        A_USER_ID -> Result.success(client1)
+                        A_USER_ID_2 -> Result.success(client2)
+                        else -> error("Unexpected sessionId")
+                    }
+                }
+            ),
+            sessionSecurityCoordinator = FakeSessionSecurityCoordinator(),
+        )
+
+        sut.logoutAll(ignoreSdkError = true)
+
+        logoutLambda1.assertions().isCalledOnce().with(value(true), value(true))
+        logoutLambda2.assertions().isCalledOnce().with(value(true), value(true))
+        assertThat(sessionStore.getSession(A_USER_ID.value)).isNull()
     }
 
     @Test
@@ -107,6 +148,7 @@ class DefaultLogoutUseCaseTest {
             sessionStore = InMemorySessionStore(
                 initialList = emptyList()
             ),
+            sessionSecurityCoordinator = FakeSessionSecurityCoordinator(),
             matrixClientProvider = FakeMatrixClientProvider(
                 getClient = { sessionId ->
                     when (sessionId) {

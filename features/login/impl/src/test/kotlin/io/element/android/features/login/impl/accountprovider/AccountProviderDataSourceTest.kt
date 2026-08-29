@@ -13,6 +13,8 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.appconfig.AuthenticationConfig
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.test.FakeEnterpriseService
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
 import io.element.android.tests.testutils.WarmUpRule
 import kotlinx.coroutines.test.runTest
@@ -41,21 +43,21 @@ class AccountProviderDataSourceTest {
     }
 
     @Test
-    fun `present - initial state - matrix org`() = runTest {
+    fun `present - a configured provider has no special public branding`() = runTest {
         val sut = anAccountProviderDataSource(
             enterpriseService = FakeEnterpriseService(
-                defaultHomeserverListResult = { listOf(AuthenticationConfig.MATRIX_ORG_URL) }
+                defaultHomeserverListResult = { listOf("https://example.com") }
             ),
         )
         sut.flow.test {
             val initialState = awaitItem()
             assertThat(initialState).isEqualTo(
                 AccountProvider(
-                    url = AuthenticationConfig.MATRIX_ORG_URL,
-                    title = "matrix.org",
+                    url = "https://example.com",
+                    title = "example.com",
                     subtitle = null,
-                    isPublic = true,
-                    isMatrixOrg = true,
+                    isPublic = false,
+                    isMatrixOrg = false,
                 )
             )
         }
@@ -65,18 +67,18 @@ class AccountProviderDataSourceTest {
     fun `present - ensure that default homeserver is not star char`() = runTest {
         val sut = anAccountProviderDataSource(
             enterpriseService = FakeEnterpriseService(
-                defaultHomeserverListResult = { listOf(EnterpriseService.ANY_ACCOUNT_PROVIDER, AuthenticationConfig.MATRIX_ORG_URL) }
+                defaultHomeserverListResult = { listOf(EnterpriseService.ANY_ACCOUNT_PROVIDER, AuthenticationConfig.DEFAULT_HOMESERVER_URL) }
             ),
         )
         sut.flow.test {
             val initialState = awaitItem()
             assertThat(initialState).isEqualTo(
                 AccountProvider(
-                    url = AuthenticationConfig.MATRIX_ORG_URL,
-                    title = "matrix.org",
+                    url = AuthenticationConfig.DEFAULT_HOMESERVER_URL,
+                    title = "chat.securechat.com.au",
                     subtitle = null,
-                    isPublic = true,
-                    isMatrixOrg = true,
+                    isPublic = false,
+                    isMatrixOrg = false,
                 )
             )
         }
@@ -132,7 +134,7 @@ class AccountProviderDataSourceTest {
     fun `present - defaults to the most recently used provider from history`() = runTest {
         val sut = anAccountProviderDataSource(
             appPreferencesStore = InMemoryAppPreferencesStore(
-                homeserverHistory = listOf("https://example.com", "https://matrix.org"),
+                homeserverHistory = listOf("https://example.com", "https://other.example.com"),
             ),
         )
         sut.flow.test {
@@ -168,6 +170,28 @@ class AccountProviderDataSourceTest {
             assertThat(awaitItem().url).isEqualTo("https://other.com")
             sut.reset()
             assertThat(awaitItem().url).isEqualTo("https://example.com")
+        }
+    }
+
+    @Test
+    fun `managed homeserver updates replace a provider captured at startup`() = runTest {
+        var configuredHomeserver = "https://one.example.com"
+        val mdmService = FakeMdmService(MdmConfig.default.copy(homeserverUrl = configuredHomeserver))
+        val sut = anAccountProviderDataSource(
+            enterpriseService = FakeEnterpriseService(
+                defaultHomeserverListResult = { listOf(configuredHomeserver) },
+            ),
+            mdmService = mdmService,
+            coroutineScope = backgroundScope,
+        )
+
+        sut.flow.test {
+            assertThat(awaitItem().url).isEqualTo("https://one.example.com")
+
+            configuredHomeserver = "https://two.example.com"
+            mdmService.emit(MdmConfig.default.copy(homeserverUrl = configuredHomeserver))
+
+            assertThat(awaitItem().url).isEqualTo("https://two.example.com")
         }
     }
 }

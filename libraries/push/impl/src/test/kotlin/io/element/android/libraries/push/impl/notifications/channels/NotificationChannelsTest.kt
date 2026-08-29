@@ -186,7 +186,7 @@ class NotificationChannelsTest : RobolectricTest() {
         channels.recreateNoisyChannel(sound = NotificationSound.ElementFade, version = 1)
 
         val context = RuntimeEnvironment.getApplication()
-        val expected = "android.resource://${context.packageName}/${io.element.android.libraries.push.impl.R.raw.element_fade}".toUri()
+        val expected = "android.resource://${context.packageName}/${io.element.android.libraries.push.impl.R.raw.securechat_fade}".toUri()
         assertThat(captured.captured.sound).isEqualTo(expected)
     }
 
@@ -301,7 +301,7 @@ class NotificationChannelsTest : RobolectricTest() {
     @Config(sdk = [Build.VERSION_CODES.TIRAMISU])
     fun `readNoisyChannelSound - classifies the bundled fade URI as ElementFade`() = runTest {
         val context = RuntimeEnvironment.getApplication()
-        val ourFade = "android.resource://${context.packageName}/${io.element.android.libraries.push.impl.R.raw.element_fade}".toUri()
+        val ourFade = "android.resource://${context.packageName}/${io.element.android.libraries.push.impl.R.raw.securechat_fade}".toUri()
         val channel = mockk<android.app.NotificationChannel>(relaxed = true) {
             every { sound } returns ourFade
         }
@@ -352,6 +352,49 @@ class NotificationChannelsTest : RobolectricTest() {
         val config = appPreferencesStore.getNotificationSoundChannelConfig()
         assertThat(config.messageSound).isEqualTo(NotificationSound.ElementDefault)
         assertThat(config.messageSoundVersion).isEqualTo(1)
+    }
+
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.TIRAMISU])
+    fun `init - recreates a fade channel whose packaged resource URI changed exactly once`() = runTest {
+        val context = RuntimeEnvironment.getApplication()
+        val legacySound = "android.resource://${context.packageName}/12345".toUri()
+        val secureChatSound =
+            "android.resource://${context.packageName}/${io.element.android.libraries.push.impl.R.raw.securechat_fade}".toUri()
+        val legacyChannel = mockk<android.app.NotificationChannel>(relaxed = true) {
+            every { sound } returns legacySound
+        }
+        val secureChatChannel = mockk<android.app.NotificationChannel>(relaxed = true) {
+            every { sound } returns secureChatSound
+        }
+        val notificationManager = mockk<NotificationManagerCompat>(relaxed = true) {
+            every { notificationChannels } returns emptyList()
+            every { getNotificationChannel(noisyNotificationChannelId(4)) } returns legacyChannel
+            every { getNotificationChannel(noisyNotificationChannelId(5)) } returns secureChatChannel
+        }
+        val appPreferencesStore = InMemoryAppPreferencesStore(
+            messageSound = NotificationSound.ElementFade,
+            messageSoundChannelVersion = 4,
+        )
+
+        val first = createNotificationChannels(
+            notificationManager = notificationManager,
+            appPreferencesStore = appPreferencesStore,
+        )
+        assertThat(first.getChannelIdForTest()).isEqualTo(noisyNotificationChannelId(5))
+        assertThat(appPreferencesStore.getNotificationSoundChannelConfig().messageSoundVersion).isEqualTo(5)
+        verify {
+            notificationManager.createNotificationChannel(
+                match<NotificationChannelCompat> { it.id == noisyNotificationChannelId(5) && it.sound == secureChatSound }
+            )
+        }
+
+        val second = createNotificationChannels(
+            notificationManager = notificationManager,
+            appPreferencesStore = appPreferencesStore,
+        )
+        assertThat(second.getChannelIdForTest()).isEqualTo(noisyNotificationChannelId(5))
+        assertThat(appPreferencesStore.getNotificationSoundChannelConfig().messageSoundVersion).isEqualTo(5)
     }
 
     @Test

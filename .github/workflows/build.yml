@@ -62,21 +62,19 @@ jobs:
       - name: Assemble debug APKs
         if: ${{ matrix.variant == 'debug' }}
         env:
-          ELEMENT_ANDROID_MAPTILER_API_KEY: ${{ secrets.MAPTILER_KEY }}
-          ELEMENT_ANDROID_MAPTILER_LIGHT_MAP_ID: ${{ secrets.MAPTILER_LIGHT_MAP_ID }}
-          ELEMENT_ANDROID_MAPTILER_DARK_MAP_ID: ${{ secrets.MAPTILER_DARK_MAP_ID }}
-          ELEMENT_ANDROID_SENTRY_DSN: ${{ secrets.ELEMENT_ANDROID_SENTRY_DSN }}
-          ELEMENT_SDK_SENTRY_DSN: ${{ secrets.ELEMENT_SDK_SENTRY_DSN }}
-          ELEMENT_CALL_SENTRY_DSN: ${{ secrets.ELEMENT_CALL_SENTRY_DSN }}
-          ELEMENT_CALL_POSTHOG_API_HOST: ${{ secrets.ELEMENT_CALL_POSTHOG_API_HOST }}
-          ELEMENT_CALL_POSTHOG_API_KEY: ${{ secrets.ELEMENT_CALL_POSTHOG_API_KEY }}
-          ELEMENT_CALL_RAGESHAKE_URL: ${{ secrets.ELEMENT_CALL_RAGESHAKE_URL }}
+          SECURECHAT_MAPTILER_API_KEY: ${{ secrets.SECURECHAT_MAPTILER_API_KEY }}
+          SECURECHAT_MAPTILER_LIGHT_MAP_ID: ${{ secrets.SECURECHAT_MAPTILER_LIGHT_MAP_ID }}
+          SECURECHAT_MAPTILER_DARK_MAP_ID: ${{ secrets.SECURECHAT_MAPTILER_DARK_MAP_ID }}
+          SECURECHAT_CALL_SENTRY_DSN: ${{ secrets.SECURECHAT_CALL_SENTRY_DSN }}
+          SECURECHAT_CALL_POSTHOG_API_HOST: ${{ secrets.SECURECHAT_CALL_POSTHOG_API_HOST }}
+          SECURECHAT_CALL_POSTHOG_API_KEY: ${{ secrets.SECURECHAT_CALL_POSTHOG_API_KEY }}
+          SECURECHAT_CALL_RAGESHAKE_URL: ${{ secrets.SECURECHAT_CALL_RAGESHAKE_URL }}
         run: ./gradlew :app:assembleGplayDebug app:assembleFDroidDebug -PallWarningsAsErrors=true $CI_GRADLE_ARG_PROPERTIES
       - name: Upload debug APKs
         if: ${{ matrix.variant == 'debug' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: elementx-debug
+          name: securechat-debug
           path: |
             app/build/outputs/apk/gplay/debug/*-universal-debug.apk
             app/build/outputs/apk/fdroid/debug/*-universal-debug.apk
@@ -110,12 +108,17 @@ jobs:
       - name: Run aapt dump
         if: ${{ matrix.variant == 'release' }}
         run: |
-          $ANDROID_HOME/build-tools/37.0.0/aapt dump badging \
+          BT=$(ls "$ANDROID_HOME"/build-tools/ | sort -V | tail -1)
+          AAPT="$ANDROID_HOME/build-tools/$BT/aapt"
+          "$AAPT" dump badging \
             ./app/build/outputs/apk/gplay/release/app-gplay-universal-release.apk \
             > /tmp/currentAaptDump.txt
-      - name: Check manifest has not changed
+          "$AAPT" dump xmltree \
+            ./app/build/outputs/apk/gplay/release/app-gplay-universal-release.apk \
+            AndroidManifest.xml >> /tmp/currentAaptDump.txt
+      - name: Check release manifest identity
         if: ${{ matrix.variant == 'release' }}
-        run: diff /tmp/currentAaptDump.txt ./tools/manifest/gplay/release/aaptDump.txt
+        run: bash ./tools/manifest/check_securechat_aapt_dump.sh /tmp/currentAaptDump.txt
       - name: Compile nightly sources
         if: ${{ matrix.variant == 'nightly' }}
         run: ./gradlew compileGplayNightlySources -PallWarningsAsErrors=true $CI_GRADLE_ARG_PROPERTIES

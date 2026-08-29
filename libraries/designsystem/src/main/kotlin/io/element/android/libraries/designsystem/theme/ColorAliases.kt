@@ -39,10 +39,10 @@ val SemanticColors.placeholderBackground
     get() = bgSubtleSecondary
 
 // This color is not present in Semantic color, so put hard-coded value for now
-@OptIn(CoreColorToken::class)
 // SecureChat: tin nhắn gửi đi mang màu thương hiệu, không phải xám như bản gốc.
 // Chữ trong bong bóng dùng textPrimary — ở giao diện tối là #E6EAF0 (sáng) nên đọc tốt trên xanh;
 // ở giao diện sáng textPrimary gần đen nên bản sáng phải là xanh NHẠT, không phải xanh đậm.
+@OptIn(CoreColorToken::class)
 val SemanticColors.messageFromMeBackground
     get() = if (isLight) Color(0xFFD3E0FF) else Color(0xFF2E6BFF)
 

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2026 SecureChat
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,20 L78,29 V50 C78,67 67.5,80.5 54,88 C40.5,80.5 30,67 30,50 V29 Z" />
+    <path
+        android:fillColor="#FF1A73E8"
+        android:pathData="M44,40 H64 C66.2,40 68,41.8 68,44 V56 C68,58.2 66.2,60 64,60 H53 L46,67 V60 H44 C41.8,60 40,58.2 40,56 V44 C40,41.8 41.8,40 44,40 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M45.8,50 a2.2,2.2 0,1 0,4.4 0 a2.2,2.2 0,1 0,-4.4 0 M51.8,50 a2.2,2.2 0,1 0,4.4 0 a2.2,2.2 0,1 0,-4.4 0 M57.8,50 a2.2,2.2 0,1 0,4.4 0 a2.2,2.2 0,1 0,-4.4 0" />
+</vector>

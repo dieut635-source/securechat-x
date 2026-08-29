@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"Введите адрес…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Комната найдена"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"Комната не найдена"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"прим. #room-name:matrix.org"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"прим. #room-name:chat.securechat.com.au"</string>
 </resources>

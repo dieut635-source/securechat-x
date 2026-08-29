@@ -25,6 +25,7 @@ import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.api.canConnectToAnyHomeserver
 import io.element.android.features.login.impl.accesscontrol.DefaultAccountProviderAccessControl
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
+import io.element.android.features.login.impl.changeserver.AccountProviderAccessException
 import io.element.android.features.login.impl.login.LoginModeEvent
 import io.element.android.features.login.impl.login.LoginModeState
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
@@ -61,18 +62,19 @@ class OnBoardingPresenter(
     @Composable
     override fun present(): OnBoardingState {
         val localCoroutineScope = rememberCoroutineScope()
-        val forcedAccountProvider = remember {
+        val mdmConfig by mdmService.config.collectAsState()
+        val forcedAccountProvider = remember(mdmConfig.homeserverUrl) {
             // If homeserverAllowList() returns a singleton list, this is the default account provider.
             // In this case, the user can sign in using this homeserver, or use QrCode login
             enterpriseService.homeserverAllowList().singleOrNull()
         }
-        val canConnectToAnyHomeserver = remember {
+        val canConnectToAnyHomeserver = remember(mdmConfig.homeserverUrl) {
             enterpriseService.canConnectToAnyHomeserver()
         }
-        val mustChooseAccountProvider = remember {
+        val mustChooseAccountProvider = remember(mdmConfig.homeserverUrl) {
             !canConnectToAnyHomeserver && enterpriseService.homeserverAllowList().size > 1
         }
-        val linkAccountProvider by produceState<String?>(initialValue = null) {
+        val linkAccountProvider by produceState<String?>(initialValue = null, mdmConfig.homeserverUrl) {
             // Account provider from the link, if allowed by the enterprise service
             value = params.accountProvider?.takeIf {
                 try {
@@ -83,13 +85,16 @@ class OnBoardingPresenter(
                 }
             }
         }
-        val defaultAccountProvider = remember(linkAccountProvider) {
+        val defaultAccountProvider = remember(forcedAccountProvider, linkAccountProvider) {
             // If there is a forced account provider, this is the default account provider
             // Else use the account provider passed in the params if any and if allowed
             forcedAccountProvider ?: linkAccountProvider
         }
-        val canLoginWithQrCode by produceState(initialValue = false, linkAccountProvider) {
-            value = linkAccountProvider == null
+        val canLoginWithQrCode by produceState(initialValue = false, linkAccountProvider, canConnectToAnyHomeserver) {
+            // QR login transfers whichever account the other device advertises. When an administrator
+            // pins a homeserver we cannot validate that account before entering the QR flow, so do not
+            // offer a route that could bypass the homeserver policy.
+            value = canConnectToAnyHomeserver && linkAccountProvider == null
         }
         val canReportBug by remember { rageshakeFeatureAvailability.isAvailable() }.collectAsState(false)
         var showReportBug by rememberSaveable { mutableStateOf(false) }
@@ -106,6 +111,16 @@ class OnBoardingPresenter(
         fun handleEvent(event: OnBoardingEvent) {
             when (event) {
                 is OnBoardingEvent.OnSignIn -> localCoroutineScope.launch {
+                    // Re-check at click time: an old Composable/event sink can briefly outlive a
+                    // homeserver policy update while the new onboarding state is being rendered.
+                    try {
+                        defaultAccountProviderAccessControl.assertIsAllowedToConnectToAccountProvider(
+                            title = event.defaultAccountProvider,
+                            accountProviderUrl = event.defaultAccountProvider,
+                        )
+                    } catch (_: AccountProviderAccessException) {
+                        return@launch
+                    }
                     // Ensure that the current account provider is set
                     accountProviderDataSource.setUrl(event.defaultAccountProvider)
                     loginModeState.eventSink(
@@ -127,8 +142,6 @@ class OnBoardingPresenter(
                 }
             }
         }
-
-        val mdmConfig by mdmService.config.collectAsState()
 
         return OnBoardingState(
             isAddingAccount = isAddingAccount,

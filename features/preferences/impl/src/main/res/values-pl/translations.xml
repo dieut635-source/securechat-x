@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"Wybierz sposób otrzymywania powiadomień"</string>
   <string name="screen_advanced_settings_developer_mode">"Tryb programisty"</string>
   <string name="screen_advanced_settings_developer_mode_description">"Włącz, aby uzyskać dostęp do funkcji dla deweloperów."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"Własny bazowy URL dla połączeń Element"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"Ustaw własny bazowy URL dla połączeń Element"</string>
+  <string name="screen_advanced_settings_element_call_base_url">"Własny bazowy URL dla połączeń SecureChat"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"Ustaw własny bazowy URL dla połączeń SecureChat"</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"Nieprawidłowy adres URL, upewnij się, że zawiera protokół (http/https) i poprawny adres."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Ukryj awatary w prośbach o dołączenie do pokoju"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"Ukryj podglądy multimediów na osi czasu"</string>
@@ -89,8 +89,8 @@ Niektóre ustawienia mogą ulec zmianie, jeśli kontynuujesz."</string>
   <string name="screen_notification_settings_sound_custom_fallback">"Własny"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"Własny dźwięk…"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"Błąd usuwania pliku"</string>
-  <string name="screen_notification_settings_sound_element_default">"Domyślny Element"</string>
-  <string name="screen_notification_settings_sound_element_fade">"Element Fade"</string>
+  <string name="screen_notification_settings_sound_element_default">"Domyślny SecureChat"</string>
+  <string name="screen_notification_settings_sound_element_fade">"SecureChat Fade"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"Błąd importowania pliku"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"Wystąpił błąd podczas podglądania dźwięku powiadomień"</string>
   <string name="screen_notification_settings_sound_section_title">"Dźwięk"</string>

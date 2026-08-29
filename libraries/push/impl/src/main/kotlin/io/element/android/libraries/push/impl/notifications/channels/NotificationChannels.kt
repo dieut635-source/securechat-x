@@ -122,17 +122,28 @@ class DefaultNotificationChannels(
         // Single-snapshot read; keep this path minimal — extra ContentResolver lookups here would
         // risk a cold-start ANR.
         val config = runBlocking {
-            val initial = appPreferencesStore.getNotificationSoundChannelConfig()
+            var current = appPreferencesStore.getNotificationSoundChannelConfig()
             // Pre-dialog builds mapped the noisy `SystemDefault` to our bundled message.mp3.
             // Now `SystemDefault` means Android's system tone, so untouched legacy state would
             // silently flip sound. Promote it to `ElementDefault` once, gated on version==0 so the
             // migration is idempotent.
-            if (initial.messageSoundVersion == 0 && initial.messageSound == NotificationSound.SystemDefault) {
+            if (current.messageSoundVersion == 0 && current.messageSound == NotificationSound.SystemDefault) {
                 appPreferencesStore.setMessageSoundAndIncrementVersion(NotificationSound.ElementDefault, title = null)
-                appPreferencesStore.getNotificationSoundChannelConfig()
-            } else {
-                initial
+                current = appPreferencesStore.getNotificationSoundChannelConfig()
             }
+
+            // The SecureChat rebrand renamed the bundled fade resource. Android persists a
+            // notification channel's numeric android.resource URI, so recreate only an existing
+            // fade channel whose URI no longer points at the current packaged resource.
+            if (current.messageSound == NotificationSound.ElementFade) {
+                val currentChannelId = noisyNotificationChannelId(current.messageSoundVersion)
+                val existingSound = notificationManager.getNotificationChannel(currentChannelId)?.sound
+                if (existingSound != null && existingSound != bundledFadeSoundUri()) {
+                    appPreferencesStore.setMessageSoundAndIncrementVersion(NotificationSound.ElementFade, title = null)
+                    current = appPreferencesStore.getNotificationSoundChannelConfig()
+                }
+            }
+            current
         }
 
         currentNoisyChannelId = noisyNotificationChannelId(config.messageSoundVersion)
@@ -279,7 +290,7 @@ class DefaultNotificationChannels(
         "${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.message}".toUri()
 
     private fun bundledFadeSoundUri(): Uri =
-        "${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.element_fade}".toUri()
+        "${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.securechat_fade}".toUri()
 
     /**
      * Lets system_server ("android") and SystemUI read our FileProvider sound URI; no-op otherwise.

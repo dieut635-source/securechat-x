@@ -127,7 +127,7 @@ fun aConfigureRoomState(
     avatarActions: List<AvatarAction> = emptyList(),
     createRoomAction: AsyncAction<RoomId> = AsyncAction.Uninitialized,
     cameraPermissionState: PermissionsState = aPermissionsState(showDialog = false),
-    homeserverName: String = "matrix.org",
+    homeserverName: String = "chat.securechat.com.au",
     roomAddressValidity: RoomAddressValidity = RoomAddressValidity.Valid,
     availableVisibilityOptions: List<JoinRuleItem> = if (config.parentSpace != null) {
         listOfNotNull(

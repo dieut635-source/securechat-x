@@ -9,13 +9,13 @@
   <string name="screen_account_provider_signin_title">"Zamierzasz zalogować się do %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Tutaj będą przechowywane Twoje konwersacje - w podobnej formie jak wiadomości widnieją na skrzynce e-mail."</string>
   <string name="screen_account_provider_signup_title">"Zamierzasz założyć konto na %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org jest ogromnym i darmowym serwerem na publicznej sieci Matrix zapewniający bezpieczną i zdecentralizowaną komunikację zarządzaną przez Fundację Matrix.org."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
   <string name="screen_change_account_provider_other">"Inne"</string>
   <string name="screen_change_account_provider_subtitle">"Użyj innego dostawcy konta, takiego jak własny serwer lub konta służbowego."</string>
   <string name="screen_change_account_provider_title">"Zmień dostawcę konta"</string>
   <string name="screen_change_server_error_element_pro_required_action_android">"Google Play"</string>
-  <string name="screen_change_server_error_element_pro_required_message">"Wymagana jest aplikacja Element Pro na %1$s. Znajdziesz ją w sklepie z aplikacjami."</string>
-  <string name="screen_change_server_error_element_pro_required_title">"Wymagany jest Element Pro"</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
   <string name="screen_change_server_error_invalid_homeserver">"Nie mogliśmy połączyć się z tym serwerem domowym. Sprawdź, czy adres URL serwera został wprowadzony poprawnie. Jeśli adres URL jest poprawny, skontaktuj się z administratorem serwera w celu uzyskania dalszej pomocy."</string>
   <string name="screen_change_server_error_invalid_well_known">"Serwer nie jest dostępny z powodu problemu pliku .well-known:
 %1$s"</string>
@@ -29,7 +29,7 @@
   <string name="screen_change_server_navigation_title_register">"Utwórz konto"</string>
   <string name="screen_change_server_subtitle">"Jaki jest adres Twojego serwera?"</string>
   <string name="screen_change_server_textfield_footer_login">"Jeśli uzyskałeś konto od firmy lub społeczności, wprowadź dostawcę konta (na przykład: nazwafirmy.com)"</string>
-  <string name="screen_change_server_textfield_footer_register">"Załóż darmowe konto na matrix.org. Jeśli chcesz założyć konto u innego dostawcy wprowadź własny adres (na przykład: nazwaspołeczności.org)."</string>
+  <string name="screen_change_server_textfield_footer_register">"SecureChat accounts use chat.securechat.com.au. Contact your administrator if you need access."</string>
   <string name="screen_change_server_textfield_header">"Dostawca konta"</string>
   <string name="screen_change_server_textfield_placeholder">"przykład.com"</string>
   <string name="screen_change_server_title">"Wybierz swój serwer"</string>
@@ -45,8 +45,8 @@
   <string name="screen_login_subtitle">"Matrix to otwarta sieć do bezpiecznej i zdecentralizowanej komunikacji."</string>
   <string name="screen_login_title">"Witaj ponownie!"</string>
   <string name="screen_login_title_with_homeserver">"Zaloguj się do %1$s"</string>
-  <string name="screen_missing_key_backup_open_element_classic">"Otwórz Element Classic"</string>
-  <string name="screen_missing_key_backup_step_1">"Otwórz Element Classic na swoim urządzeniu"</string>
+  <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
+  <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
   <string name="screen_missing_key_backup_step_2_android">"Przejdź do Ustawienia &gt; Bezpieczeństwo i prywatność"</string>
   <string name="screen_missing_key_backup_step_3_android">"W Zarządzaniu kluczami kryptograficznymi wybierz przywracanie wiadomości szyfrowanych"</string>
   <string name="screen_missing_key_backup_step_4">"Aby włączyć magazyn kluczy, postępuj zgodnie z instrukcjami"</string>
@@ -61,7 +61,7 @@
   <string name="screen_onboarding_welcome_back">"Witamy ponownie"</string>
   <string name="screen_onboarding_welcome_message">"Witamy w %1$s. Szybszy i prostszy niż kiedykolwiek."</string>
   <string name="screen_onboarding_welcome_subtitle">"Witamy w %1$s. Doładowany, dla szybkości i prostoty."</string>
-  <string name="screen_onboarding_welcome_title">"Be in your element"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Nawiązanie bezpiecznego połączenia"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"Nie udało się nawiązać bezpiecznego połączenia z nowym urządzeniem. Twoje istniejące urządzenia są nadal bezpieczne i nie musisz się o nie martwić."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"Co teraz?"</string>
@@ -108,7 +108,7 @@ Spróbuj zalogować się ręcznie lub zeskanuj kod QR na innym urządzeniu."</st
   <string name="screen_qr_code_login_verify_code_subtitle">"Twój dostawca konta może poprosić o podany kod w celu weryfikacji logowania."</string>
   <string name="screen_qr_code_login_verify_code_title">"Twój kod weryfikacyjny"</string>
   <string name="screen_server_confirmation_change_server">"Zmień dostawcę konta"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Serwer prywatny dla pracowników Element."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix to otwarta sieć do bezpiecznej i zdecentralizowanej komunikacji."</string>
   <string name="screen_server_confirmation_message_register">"Tutaj będą przechowywane Twoje konwersacje - w podobnej formie jak wiadomości widnieją na skrzynce e-mail."</string>
   <string name="screen_server_confirmation_title_login">"Zamierzasz się zalogować do %1$s"</string>

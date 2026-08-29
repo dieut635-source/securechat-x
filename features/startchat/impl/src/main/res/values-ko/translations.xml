@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"입력하다…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"일치하는 방이 발견되었습니다"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"방을 찾을 수 없습니다"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"예: #room-name:matrix.org"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"예: #room-name:chat.securechat.com.au"</string>
 </resources>

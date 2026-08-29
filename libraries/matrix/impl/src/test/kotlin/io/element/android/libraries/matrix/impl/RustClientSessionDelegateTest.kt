@@ -29,6 +29,7 @@ class RustClientSessionDelegateTest {
                 aSessionData(
                     accessToken = "anAccessToken",
                     refreshToken = "aRefreshToken",
+                    accountProvider = "https://account.example.com",
                 )
             )
         )
@@ -42,6 +43,7 @@ class RustClientSessionDelegateTest {
         val result = sessionStore.getLatestSession()
         assertThat(result!!.accessToken).isEqualTo("at")
         assertThat(result.refreshToken).isEqualTo("rt")
+        assertThat(result.accountProvider).isEqualTo("https://account.example.com")
     }
 
     @Test

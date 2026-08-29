@@ -12,9 +12,9 @@ object BuildTimeConfig {
     const val APPLICATION_ID = "com.securechat.app"
     const val APPLICATION_NAME = "SecureChat"
     val METADATA_HOST_REVERSED: String? = "com.securechat"
-    val OAUTH_CLIENT_URL_PATH: String? = "apps/android"
+    val OAUTH_CLIENT_URL_PATH: String? = null
     val URL_WEBSITE: String? = "https://chat.securechat.com.au"
-    val URL_LOGO: String? = "https://chat.securechat.com.au/vector-icons/1024.png"
+    val URL_LOGO: String? = "https://chat.securechat.com.au/securechat/favicon.svg"
     val URL_COPYRIGHT: String? = "https://chat.securechat.com.au"
     val URL_ACCEPTABLE_USE: String? = "https://chat.securechat.com.au"
     val URL_PRIVACY: String? = "https://chat.securechat.com.au"
@@ -29,9 +29,11 @@ object BuildTimeConfig {
     val SERVICES_SENTRY_DSN_RUST: String? = null
     val BUG_REPORT_URL: String? = null
     val BUG_REPORT_APP_NAME: String? = null
-    const val PUSH_CONFIG_INCLUDE_FIREBASE: Boolean = true
+    // Do not compile the inherited Firebase project or push gateway into SecureChat. Enable this
+    // only after adding a SecureChat-owned Firebase project and push gateway configuration.
+    const val PUSH_CONFIG_INCLUDE_FIREBASE: Boolean = false
     const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = true
-    val PUSHER_APP_ID_RELEASE: String? = null
-    val PUSHER_APP_ID_DEBUG: String? = null
-    val PUSHER_APP_ID_NIGHTLY: String? = null
+    val PUSHER_APP_ID_RELEASE: String? = "com.securechat.app.android"
+    val PUSHER_APP_ID_DEBUG: String? = "com.securechat.app.android.debug"
+    val PUSHER_APP_ID_NIGHTLY: String? = "com.securechat.app.android.nightly"
 }

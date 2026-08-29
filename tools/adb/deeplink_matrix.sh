@@ -7,4 +7,4 @@
 # Please see LICENSE files in the repository root for full details.
 
 adb shell am start -a android.intent.action.VIEW \
-   -d "matrix:r/element-android:matrix.org"
+   -d "matrix:r/securechat:chat.securechat.com.au"

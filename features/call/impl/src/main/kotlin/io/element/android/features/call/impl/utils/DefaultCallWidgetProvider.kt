@@ -19,7 +19,7 @@ import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.services.appnavstate.api.ActiveRoomsHolder
 import kotlinx.coroutines.flow.firstOrNull
 
-private const val EMBEDDED_CALL_WIDGET_BASE_URL = "https://appassets.androidplatform.net/element-call/index.html"
+private const val EMBEDDED_CALL_WIDGET_BASE_URL = "https://appassets.androidplatform.net/securechat-call/index.html"
 
 @ContributesBinding(AppScope::class)
 class DefaultCallWidgetProvider(

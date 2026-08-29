@@ -19,17 +19,19 @@ fun aSessionData(
     cachePath: String = "/a/path/to/a/cache",
     accessToken: String = "anAccessToken",
     refreshToken: String? = "aRefreshToken",
+    homeserverUrl: String = "aHomeserverUrl",
     position: Long = 0,
     lastUsageIndex: Long = 0,
     userDisplayName: String? = null,
     userAvatarUrl: String? = null,
+    accountProvider: String? = null,
 ): SessionData {
     return SessionData(
         userId = sessionId,
         deviceId = deviceId,
         accessToken = accessToken,
         refreshToken = refreshToken,
-        homeserverUrl = "aHomeserverUrl",
+        homeserverUrl = homeserverUrl,
         oAuthData = null,
         loginTimestamp = null,
         isTokenValid = isTokenValid,
@@ -41,5 +43,6 @@ fun aSessionData(
         lastUsageIndex = lastUsageIndex,
         userDisplayName = userDisplayName,
         userAvatarUrl = userAvatarUrl,
+        accountProvider = accountProvider,
     )
 }

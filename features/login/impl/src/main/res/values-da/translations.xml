@@ -9,13 +9,13 @@
   <string name="screen_account_provider_signin_title">"Du er ved at logge ind på %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Det er her, dine samtaler vil bo - ligesom du ville bruge en e-mail-udbyder til at opbevare dine e-mails."</string>
   <string name="screen_account_provider_signup_title">"Du er ved at oprette en konto på %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org er en stor, gratis server på det offentlige Matrix-netværk til sikker, decentraliseret kommunikation, drevet af Matrix.org Foundation."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
   <string name="screen_change_account_provider_other">"Anden"</string>
   <string name="screen_change_account_provider_subtitle">"Brug en anden kontoudbyder, f.eks. din egen private server eller en arbejdskonto."</string>
   <string name="screen_change_account_provider_title">"Skift kontoudbyder"</string>
   <string name="screen_change_server_error_element_pro_required_action_android">"Google Play"</string>
-  <string name="screen_change_server_error_element_pro_required_message">"Element Pro-appen er påkrævet på %1$s Download den venligst fra din app store."</string>
-  <string name="screen_change_server_error_element_pro_required_title">"Element Pro kræves"</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
   <string name="screen_change_server_error_invalid_homeserver">"Vi kunne ikke nå denne hjemmeserver. Kontroller, at du har indtastet hjemmeserverens URL korrekt. Hvis URL-adressen er korrekt, skal du kontakte administratoren på din hjemmeserver for at få yderligere hjælp."</string>
   <string name="screen_change_server_error_invalid_well_known">"Serveren er ikke tilgængelig på grund af et problem i .well-known-filen: 
 %1$s"</string>
@@ -37,8 +37,8 @@
   <string name="screen_login_subtitle">"Matrix er et åbent netværk for sikker, decentraliseret kommunikation."</string>
   <string name="screen_login_title">"Velkommen tilbage!"</string>
   <string name="screen_login_title_with_homeserver">"Log ind på %1$s"</string>
-  <string name="screen_missing_key_backup_open_element_classic">"Åbn Element Classic"</string>
-  <string name="screen_missing_key_backup_step_1">"Åbn Element Classic på din enhed"</string>
+  <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
+  <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
   <string name="screen_missing_key_backup_step_2_android">"Gå til Indstillinger &gt; Sikkerhed og privatliv"</string>
   <string name="screen_missing_key_backup_step_3_android">"I Nøgleadministration skal du, under Kryptografi, vælge Gendannelse af krypterede meddelelser"</string>
   <string name="screen_missing_key_backup_step_4">"Følg instruktionerne for at aktivere dit nøglelager"</string>
@@ -53,7 +53,7 @@
   <string name="screen_onboarding_welcome_back">"Velkommen tilbage"</string>
   <string name="screen_onboarding_welcome_message">"Velkommen til den hurtigste %1$s nogensinde. Supercharged til hastighed og enkelhed."</string>
   <string name="screen_onboarding_welcome_subtitle">"Velkommen til %1$s. Ladet med hastighed og enkelhed."</string>
-  <string name="screen_onboarding_welcome_title">"Vær i dit rette Element"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Etablerer en sikker forbindelse"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"Der kunne ikke oprettes en sikker forbindelse til den nye enhed. Dine eksisterende enheder er stadig sikre, og du behøver ikke bekymre dig om dem."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"Hvad nu?"</string>
@@ -100,7 +100,7 @@ Prøv at logge ind manuelt, eller scan QR-koden med en anden enhed."</string>
   <string name="screen_qr_code_login_verify_code_subtitle">"Din kontoudbyder kan bede om følgende kode for at verificere login\'et."</string>
   <string name="screen_qr_code_login_verify_code_title">"Din bekræftelseskode"</string>
   <string name="screen_server_confirmation_change_server">"Skift kontoudbyder"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"En privat server til Element-medarbejdere."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix er et åbent netværk for sikker, decentraliseret kommunikation."</string>
   <string name="screen_server_confirmation_message_register">"Det er her, dine samtaler vil bo - ligesom du ville bruge en e-mail-udbyder til at opbevare dine e-mails."</string>
   <string name="screen_server_confirmation_title_login">"Du er ved at logge ind på %1$s"</string>

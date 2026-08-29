@@ -126,20 +126,19 @@ dependencyAnalysis {
 
 // To run a sonar analysis:
 // Run './gradlew sonar -Dsonar.login=<SONAR_LOGIN>'
-// The SONAR_LOGIN is stored in passbolt as Token Sonar Cloud Bma
-// Sonar result can be found here: https://sonarcloud.io/project/overview?id=element-x-android
+// Sonar result can be found here: https://sonarcloud.io/project/overview?id=dieut635-source_securechat-x
 sonar {
     properties {
-        property("sonar.projectName", "element-x-android")
-        property("sonar.projectKey", "element-x-android")
+        property("sonar.projectName", "SecureChat Android")
+        property("sonar.projectKey", "dieut635-source_securechat-x")
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.projectVersion", "1.0") // TODO project(":app").android.defaultConfig.versionName)
         property("sonar.sourceEncoding", "UTF-8")
-        property("sonar.links.homepage", "https://github.com/element-hq/element-x-android/")
-        property("sonar.links.ci", "https://github.com/element-hq/element-x-android/actions")
-        property("sonar.links.scm", "https://github.com/element-hq/element-x-android/")
-        property("sonar.links.issue", "https://github.com/element-hq/element-x-android/issues")
-        property("sonar.organization", "element-hq")
+        property("sonar.links.homepage", "https://github.com/dieut635-source/securechat-x/")
+        property("sonar.links.ci", "https://github.com/dieut635-source/securechat-x/actions")
+        property("sonar.links.scm", "https://github.com/dieut635-source/securechat-x/")
+        property("sonar.links.issue", "https://github.com/dieut635-source/securechat-x/issues")
+        property("sonar.organization", "dieut635-source")
         property("sonar.login", if (project.hasProperty("SONAR_LOGIN")) project.property("SONAR_LOGIN")!! else "invalid")
 
         // exclude source code from analyses separated by a colon (:)

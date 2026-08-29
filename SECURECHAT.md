@@ -1,7 +1,7 @@
 # SecureChat X — ghi chú fork
 
 Fork của `element-hq/element-x-android`, rebrand thành **SecureChat** cho homeserver
-`https://chat.securechat.com.au`. Kế hoạch chi tiết: `element-x/PLAN.md` trong repo dự án cha (SecureChat).
+`https://chat.securechat.com.au`.
 
 ## Nhánh
 
@@ -17,13 +17,17 @@ Fork của `element-hq/element-x-android`, rebrand thành **SecureChat** cho hom
 - Build `:app:assembleFdroidDebug` (bản **fdroid** dùng UnifiedPush, **không** cần `google-services.json`).
   Khi có Firebase project cho `com.securechat.app` sẽ đổi sang `assembleGplayDebug`.
 - Artifact: **`app-debug.apk`** (bản **arm64-v8a**, ~99 MB — mọi điện thoại Android đời mới đều là arm64).
-  Cần bản universal thì đổi tên file ở bước "Rename arm64 APK" trong workflow.
-- Job thứ hai chạy unit test của hai module ta đã sửa (`features/login/impl`, `features/enterprise/impl-foss`).
-- `-PallWarningsAsErrors=false` (upstream để `true`; ta nới ra để cảnh báo không làm đỏ CI).
+  Cần bản universal thì cập nhật các lệnh sao chép ở bước "Collect APKs" trong workflow.
+- Job audit chạy `tools/check/check_securechat_configuration.sh` để chặn cấu hình thương hiệu,
+  endpoint phân tích và Firebase cũ quay lại.
+- Job test chạy các module đăng nhập, MDM, deeplink, tin nhắn, chia sẻ và enterprise đã sửa.
+- Android lint chạy cho biến thể `fdroidDebug`.
+- `-PallWarningsAsErrors=true` để cảnh báo Kotlin trong mã thay đổi làm đỏ CI thay vì bị bỏ qua.
 
-Các workflow của upstream (build.yml, tests.yml, danger.yml, sonar.yml…) đã bị **disable** trong
-tab Actions vì chúng cần secrets/submodule riêng của Element và sẽ luôn đỏ. File vẫn giữ nguyên
-trong repo để merge upstream không bị xung đột.
+Các workflow build, test, quality/lint, screenshot, LFS, dependency analysis, Maestro và Sonar dùng
+chung đã được giữ lại và đổi cấu hình cho SecureChat. Sonar chỉ upload khi có `SONAR_TOKEN`.
+Những workflow chỉ phục vụ công ty mẹ (private enterprise build, Danger bot, project triage,
+post-release và đồng bộ Localazy của dự án cũ) đã bị xoá; workflow còn lại không cần private submodule.
 
 ## Đồng bộ với upstream
 
@@ -34,28 +38,40 @@ git merge upstream/develop
 
 Remote `upstream` đã cấm push (`no_push`).
 
-## Submodule `enterprise`
+## Enterprise FOSS
 
-`.gitmodules` trỏ tới repo riêng tư `element-android-enterprise` của Element — **không clone được và
-không cần**. Thư mục `enterprise/` rỗng nên Gradle bỏ qua, build chạy ở chế độ FOSS.
+Metadata và gitlink của private enterprise submodule đã bị loại bỏ. Bản build dùng implementation
+FOSS ở `features/enterprise/impl-foss`; Gradle vẫn chạy bình thường khi không có thư mục `enterprise/`.
 
 ## Rebrand (đã làm)
 
 | Việc | Ở đâu |
 |---|---|
 | Tên app, package `com.securechat.app`, OAuth scheme `com.securechat`, URL chính sách | `plugins/src/main/kotlin/config/BuildTimeConfig.kt` |
+| Deeplink nội bộ `securechat://` | `libraries/deeplink/impl`, `AndroidManifest.xml` |
 | Homeserver mặc định | `appconfig/.../AuthenticationConfig.kt` → `DEFAULT_HOMESERVER_URL` |
 | Màu thương hiệu (accent xanh #1A73E8) | `features/enterprise/impl-foss/.../SecureChatColors.kt`, trả về từ `DefaultEnterpriseService` |
-| Icon | `appicon/element/src/main/res/drawable/ic_launcher_{foreground,monochrome}.xml` (vector) + `mipmap-*/ic_launcher*.png` cho Android 7/7.1 |
-| Chuỗi còn tên Element | `app/src/main/res/values/securechat_strings.xml` (ghi đè module thư viện) |
+| Icon | module `appicon/element` (tên module kỹ thuật giữ lại), tài nguyên launcher SecureChat |
+| Chuỗi hiển thị | tài nguyên ứng dụng và module đã đổi sang SecureChat; overlay cuối ở `app/src/main/res/values/securechat_strings.xml` |
 | Chỉ đóng gói tiếng Anh | `app/build.gradle.kts` → `localeFilters` |
-| Link "Learn more" (trỏ element.io) | `appconfig/.../LearnMoreConfig.kt` |
-| Tắt gửi log lỗi về rageshakes.element.io | `DefaultEnterpriseService.bugReportUrlFlow` → `Disabled` |
+| Link "Learn more" | `appconfig/.../LearnMoreConfig.kt` → domain SecureChat |
+| Tắt gửi log lỗi từ xa | `DefaultEnterpriseService.bugReportUrlFlow` → `Disabled` |
 | URL chính sách, tên app trong bug report | `appconfig/build.gradle.kts` |
+| Store listing và changelog | `fastlane/metadata/android/en-US` |
 
 Còn tên "Element" ở những chỗ **không hiển thị cho người dùng**: package Java `io.element.android.*`,
-`namespace` của module app, tên style `Theme.ElementX`, tên thư mục `appicon/element`. Đổi những thứ này
+`namespace` của module app và tên thư mục `appicon/element`. Đổi những thứ này
 tốn công và làm mọi lần merge upstream xung đột, trong khi người dùng không bao giờ thấy.
+
+## Quyền riêng tư và dịch vụ bên ngoài
+
+- PostHog và Sentry chỉ được biên dịch khi có endpoint/khoá do SecureChat cấu hình. Mặc định cả hai tắt.
+- Không có endpoint upload bug report mặc định.
+- Firebase bị loại khỏi build vì repo chưa có Firebase project và push gateway thuộc SecureChat.
+  Bản F-Droid vẫn hỗ trợ UnifiedPush. Chỉ bật lại `PUSH_CONFIG_INCLUDE_FIREBASE` sau khi thay toàn bộ
+  cấu hình placeholder trong module Firebase và triển khai push gateway riêng.
+- Các app-link web cũ đã được bỏ khỏi manifest. Scheme chuẩn `matrix:` vẫn được hỗ trợ để tương tác
+  với hệ sinh thái Matrix.
 
 ## Managed Configurations (Knox Manage)
 
@@ -84,20 +100,39 @@ SecureChat → chỉnh bốn khoá.
 Bản release của upstream ký bằng **khoá debug** — khoá đó nằm công khai trong repo, nghĩa là ai
 cũng ký được bản cập nhật giả. Đã thay bằng cấu hình ký thật đọc từ biến môi trường.
 
-Sinh khoá (chạy trên máy Mac, cần Docker vì Mac không có JDK):
+Từ thư mục gốc của repo, dùng `keytool` đi kèm JDK 21 để sinh keystore **bên ngoài** repo:
 
 ```bash
-bash ~/SecureChat/server/scripts/make-release-keystore.sh
+keytool -genkeypair -v \
+  -keystore ../securechat-release.keystore \
+  -storetype PKCS12 \
+  -alias securechat \
+  -keyalg RSA \
+  -keysize 4096 \
+  -validity 10000
 ```
 
-Rồi tạo 4 secret ở Settings → Secrets and variables → Actions:
-`SECURECHAT_KEYSTORE_BASE64`, `SECURECHAT_KEYSTORE_PASSWORD`, `SECURECHAT_KEY_ALIAS`,
-`SECURECHAT_KEY_PASSWORD`.
+Mã hoá file để tạo giá trị secret mà không thêm keystore vào Git:
+
+```bash
+base64 < ../securechat-release.keystore | tr -d '\n'
+```
+
+Lấy vân tay chứng chỉ phát hành (giá trị `SHA256`) bằng:
+
+```bash
+keytool -list -v -keystore ../securechat-release.keystore -alias securechat
+```
+
+Rồi tạo 5 secret ở Settings → Secrets and variables → Actions: đặt kết quả base64 trên vào
+`SECURECHAT_KEYSTORE_BASE64`, và tạo `SECURECHAT_KEYSTORE_PASSWORD`,
+`SECURECHAT_KEY_ALIAS` (`securechat`), `SECURECHAT_KEY_PASSWORD` theo giá trị đã nhập khi sinh khoá,
+và đặt vân tay chứng chỉ vào `SECURECHAT_RELEASE_CERT_SHA256` (có hoặc không có dấu `:` đều được).
 
 Build: Actions → **SecureChat Release APK** → Run workflow (hoặc đẩy tag `v*`).
 
-Workflow tự **xác minh chữ ký** sau khi build và **thất bại** nếu APK bị ký bằng khoá debug —
-vì Gradle có thể âm thầm lùi về khoá debug và bản phát ra nhìn bề ngoài không phân biệt được.
+Workflow tự **xác minh chữ ký** sau khi build và **thất bại** nếu APK bị ký bằng khoá debug hoặc
+không khớp chính xác vân tay `SECURECHAT_RELEASE_CERT_SHA256` đã ghim.
 
 ⚠️ **Mất keystore = không bao giờ cập nhật được app.** Người dùng phải gỡ cài và cài lại, mất
 toàn bộ tin nhắn đã mã hoá trên máy. Sao lưu keystore và mật khẩu ở **hai nơi tách biệt**.

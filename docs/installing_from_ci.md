@@ -1,49 +1,20 @@
-## Installing from CI
+# Installing a debug build from CI
 
-<!--- TOC -->
+The `SecureChat APK Build` workflow uploads two F-Droid debug artifacts:
 
-* [Installing from GitHub](#installing-from-github)
-  * [Create a GitHub token](#create-a-github-token)
-* [Provide artifact URL](#provide-artifact-url)
-* [Next steps](#next-steps)
-* [Future improvement](#future-improvement)
+- `app-debug.apk` for arm64 phones and Apple Silicon emulators.
+- `app-debug-x86_64.apk` for x86_64 emulators.
 
-<!--- END -->
+Open the relevant workflow run in GitHub Actions, download the matching artifact, extract it, and run:
 
-Installing APK build by the CI is possible
+```bash
+adb install -r app-debug.apk
+```
 
-### Installing from GitHub
+These APKs use the public Android debug key and are for testing only. They cannot update a production
+SecureChat installation signed with the release key. Use the signed release workflow described in
+`docs/install_from_github_release.md` for distributable builds.
 
-TODO Import the script from Element Android and make it work, then update this documentation.
-
-To install an APK built by a GitHub action, run the script `./tools/install/installFromGitHub.sh`. You will need to pass a GitHub token to do so.
-
-#### Create a GitHub token
-
-You can create a GitHub token going to your Github account, at this page: [https://github.com/settings/tokens](https://github.com/settings/tokens).
-
-You need to create a token (classic) with the scope `repo/public_repo`. So just check the corresponding checkbox.
-Validity can be long since the scope of this token is limited. You will still be able to delete the token and generate a new one.
-Click on Generate token and save the token locally.
-
-### Provide artifact URL
-
-The script will ask for an artifact URL. You can get this artifact URL by following these steps:
-
-- open the pull request
-- in the check at the bottom, click on `APK Build / Build debug APKs`
-- click on `Summary`
-- scroll to the bottom of the page
-- copy the link `vector-Fdroid-debug` if you want the F-Droid variant or `vector-Gplay-debug` if you want the Gplay variant.
-
-The copied link can be provided to the script.
-
-### Next steps
-
-The script will download the artifact, unzip it and install the correct version (regarding arch) on your device.
-
-Files will be added to the folder `./tmp/DebugApks`. Feel free to cleanup this folder from time to time, the script will not delete files.
-
-### Future improvement
-
-The script could ask the user for a Pull Request number and Gplay/Fdroid choice like it was done with Buildkite script. Using GitHub API may be possible to do that.
+The scripts in `tools/github/` can download artifacts when automation needs the GitHub API. Use a
+short-lived, least-privilege token; public browser downloads do not require storing a token in this
+repository.

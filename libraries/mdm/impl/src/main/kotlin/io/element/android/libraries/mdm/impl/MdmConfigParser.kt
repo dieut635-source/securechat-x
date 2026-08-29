@@ -8,6 +8,7 @@
 package io.element.android.libraries.mdm.impl
 
 import io.element.android.libraries.mdm.api.MdmConfig
+import java.net.URI
 
 /**
  * Turns the raw key/value map an MDM pushes into an [MdmConfig].
@@ -39,14 +40,41 @@ object MdmConfigParser {
         val text = (value as? String)?.trim().orEmpty()
         if (text.isEmpty()) return null
         val withScheme = when {
-            text.startsWith("https://", ignoreCase = true) -> text
+            text.startsWith("https://", ignoreCase = true) -> "https://${text.substring(8)}"
             text.startsWith("http://", ignoreCase = true) -> return null
             text.contains("://") -> return null
             else -> "https://$text"
         }
-        val host = withScheme.removePrefix("https://").substringBefore('/')
-        if (host.isEmpty() || !host.contains('.') || host.contains(' ')) return null
+        val uri = runCatching { URI(withScheme).parseServerAuthority() }.getOrNull() ?: return null
+        if (!uri.scheme.equals("https", ignoreCase = true) || uri.isOpaque || uri.rawAuthority == null) return null
+        if (uri.rawUserInfo != null || uri.rawQuery != null || uri.rawFragment != null) return null
+        // URI reports -1 for both an absent port and some empty/malformed authorities. The strict
+        // server-authority parse rejects non-numeric ports; explicitly reject an empty trailing one.
+        if (uri.rawAuthority.endsWith(':')) return null
+        if (uri.port != -1 && uri.port !in 1..65_535) return null
+        val host = uri.host ?: return null
+        if (!host.isValidHomeserverHost()) return null
         return withScheme.trimEnd('/')
+    }
+
+    private fun String.isValidHomeserverHost(): Boolean {
+        val unwrapped = removePrefix("[").removeSuffix("]")
+        // parseServerAuthority() has already validated a bracketed IPv6 literal.
+        if (':' in unwrapped) return true
+        if (length > 253 || !contains('.')) return false
+
+        val labels = split('.')
+        if (labels.all { label -> label.all(Char::isDigit) }) {
+            return labels.size == 4 && labels.all { label ->
+                label.isNotEmpty() && label.toIntOrNull()?.let { it in 0..255 } == true
+            }
+        }
+        return labels.all { label ->
+            label.length in 1..63 &&
+                label.first().isLetterOrDigit() &&
+                label.last().isLetterOrDigit() &&
+                label.all { character -> character.isLetterOrDigit() || character == '-' }
+        }
     }
 
     internal fun parseBoolean(value: Any?): Boolean? = when (value) {
@@ -63,7 +91,7 @@ object MdmConfigParser {
     /** Negative values are treated as "not set"; they would otherwise mean "log out immediately, always". */
     internal fun parseMinutes(value: Any?): Int? = when (value) {
         is Int -> value.takeIf { it >= 0 }
-        is Long -> value.toInt().takeIf { it >= 0 }
+        is Long -> value.takeIf { it in 0..Int.MAX_VALUE.toLong() }?.toInt()
         is String -> value.trim().toIntOrNull()?.takeIf { it >= 0 }
         else -> null
     }

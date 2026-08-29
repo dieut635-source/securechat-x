@@ -46,4 +46,6 @@ data class SessionData(
     val userDisplayName: String?,
     /** The optional avatar URL of the user. */
     val userAvatarUrl: String?,
+    /** The account provider originally approved by managed policy, before any delegation. */
+    val accountProvider: String? = null,
 )

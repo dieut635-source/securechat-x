@@ -28,6 +28,9 @@ import io.element.android.libraries.matrix.test.AN_EVENT_ID
 import io.element.android.libraries.matrix.test.media.FakeMediaUploadHandler
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.libraries.matrix.test.timeline.FakeTimeline
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.api.MdmService
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.mediaplayer.test.FakeAudioFocus
 import io.element.android.libraries.mediaplayer.test.FakeMediaPlayer
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfig
@@ -133,6 +136,41 @@ class DefaultVoiceMessageComposerPresenterTest {
             startRecordResult.assertions().isCalledOnce()
 
             testPauseAndDestroy(finalState)
+        }
+    }
+
+    @Test
+    fun `present - allow_file_send off refuses a direct record event`() = runTest {
+        val presenter = createDefaultVoiceMessageComposerPresenter(
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowFileSend = false)),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(VoiceMessageComposerEvent.RecorderEvent(VoiceMessageRecorderEvent.Start))
+            advanceUntilIdle()
+
+            startRecordResult.assertions().isNeverCalled()
+            assertThat(initialState.voiceMessageState).isEqualTo(VoiceMessageState.Idle)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - allow_file_send update cancels a recording and refuses its send event`() = runTest {
+        val mdmService = FakeMdmService()
+        val presenter = createDefaultVoiceMessageComposerPresenter(mdmService = mdmService)
+        presenter.test {
+            awaitItem().eventSink(VoiceMessageComposerEvent.RecorderEvent(VoiceMessageRecorderEvent.Start))
+            val recordingState = awaitItem()
+            assertThat(recordingState.voiceMessageState).isEqualTo(FIRST_RECORDING_STATE)
+
+            mdmService.emit(MdmConfig.default.copy(allowFileSend = false))
+            recordingState.eventSink(VoiceMessageComposerEvent.SendVoiceMessage)
+            advanceUntilIdle()
+
+            sendVoiceMessageResult.assertions().isNeverCalled()
+            stopRecordResult.assertions().isCalledOnce().with(value(true))
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -795,6 +833,7 @@ class DefaultVoiceMessageComposerPresenterTest {
         permissionsPresenter: PermissionsPresenter = createFakePermissionsPresenter(),
         voiceRecorder: VoiceRecorder = this@DefaultVoiceMessageComposerPresenterTest.voiceRecorder,
         audioFocus: AudioFocus = this@DefaultVoiceMessageComposerPresenterTest.audioFocus,
+        mdmService: MdmService = FakeMdmService(),
     ): DefaultVoiceMessageComposerPresenter {
         return DefaultVoiceMessageComposerPresenter(
             sessionCoroutineScope = backgroundScope,
@@ -805,6 +844,7 @@ class DefaultVoiceMessageComposerPresenterTest {
             mediaSenderFactory = { mediaSender },
             player = VoiceMessageComposerPlayer(FakeMediaPlayer(), this),
             messageComposerContext = messageComposerContext,
+            mdmService = mdmService,
             permissionsPresenterFactory = FakePermissionsPresenterFactory(permissionsPresenter),
         )
     }

@@ -3,5 +3,5 @@
   <string name="call_foreground_service_channel_title_android">"Abian den deia"</string>
   <string name="call_foreground_service_message_android">"Sakatu deira itzultzeko."</string>
   <string name="call_foreground_service_title_android">"☎️ Deia abian"</string>
-  <string name="screen_incoming_call_subtitle_android">"Element deia jasotzen"</string>
+  <string name="screen_incoming_call_subtitle_android">"SecureChat deia jasotzen"</string>
 </resources>

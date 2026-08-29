@@ -34,8 +34,8 @@ class DefaultMatrixToConverter : MatrixToConverter {
      */
     override fun convert(uri: Uri): Uri? {
         val uriString = uri.toString()
-            // Handle links coming from the matrix.to website.
-            .replacePrefix(MATRIX_TO_CUSTOM_SCHEME_BASE_URL, "https://app.element.io/#/")
+            // Normalize the legacy client scheme into the same neutral path shape used below.
+            .replacePrefix(MATRIX_TO_CUSTOM_SCHEME_BASE_URL, "/#/")
         val baseUrl = MatrixConfiguration.MATRIX_TO_PERMALINK_BASE_URL
 
         return when {

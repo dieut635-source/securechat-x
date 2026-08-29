@@ -410,7 +410,7 @@ internal fun PendingMemberRowWithLongNamePreview() {
         MemberRow(
             avatarData = AvatarData("userId", "A very long name that should be truncated", "https://example.com/avatar.png", AvatarSize.UserListItem),
             name = "A very long name that should be truncated",
-            userId = "@alice:matrix.org",
+            userId = "@alice:chat.securechat.com.au",
             isPending = true,
             trailingContent = {
                 Checkbox(

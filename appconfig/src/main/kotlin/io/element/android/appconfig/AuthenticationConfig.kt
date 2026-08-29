@@ -15,12 +15,6 @@ object AuthenticationConfig {
     const val DEFAULT_HOMESERVER_URL = "https://chat.securechat.com.au"
 
     /**
-     * Kept as the literal matrix.org URL: it is only used to decide whether to show the matrix.org
-     * logo and the "public server" badge next to an account provider, never as a default.
-     */
-    const val MATRIX_ORG_URL = "https://matrix.org"
-
-    /**
      * URL with some docs that explain what's sliding sync and how to add it to your home server.
      */
     const val SLIDING_SYNC_READ_MORE_URL = "https://github.com/matrix-org/sliding-sync/blob/main/docs/Landing.md"

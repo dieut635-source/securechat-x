@@ -289,9 +289,9 @@ Motiv:%1$s."</string>
     <item quantity="other">"%1$d atașamente…"</item>
   </plurals>
   <plurals name="common_gallery_reply_media_items">
-    <item quantity="one">"%1$d element media…"</item>
-    <item quantity="few">"%1$d elemente media…"</item>
-    <item quantity="other">"%1$d elemente media…"</item>
+    <item quantity="one">"%1$d fișier media…"</item>
+    <item quantity="few">"%1$d fișiere media…"</item>
+    <item quantity="other">"%1$d fișiere media…"</item>
   </plurals>
   <string name="common_gif">"GIF"</string>
   <string name="common_group_call_in_progress">"Apel de grup în curs"</string>

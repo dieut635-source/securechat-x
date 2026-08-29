@@ -9,7 +9,7 @@
   <string name="screen_account_provider_signin_title">"Вы збіраецеся ўвайсці ў %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Тут будуць захоўвацца вашыя размовы - сапраўды гэтак жа, як вы выкарыстоўваеце паштовага правайдара для захоўвання сваіх лістоў."</string>
   <string name="screen_account_provider_signup_title">"Вы збіраецеся стварыць уліковы запіс на %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org - гэта вялікі бясплатны сервер у агульнадаступнай сетцы Matrix для бяспечнай дэцэнтралізаванай сувязі, якім кіруе фонд Matrix.org."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
   <string name="screen_change_account_provider_other">"Іншае"</string>
   <string name="screen_change_account_provider_subtitle">"Выкарыстоўвайце іншага правайдара ўліковых запісаў, напрыклад, уласны прыватны сервер або працоўны ўліковы запіс."</string>
   <string name="screen_change_account_provider_title">"Змяніць правайдара ўліковага запісу"</string>
@@ -36,7 +36,7 @@
   <string name="screen_onboarding_sign_up">"Стварыць уліковы запіс"</string>
   <string name="screen_onboarding_welcome_message">"Сардэчна запрашаем у самы хуткі %1$s. Перавага ў хуткасці і прастаце."</string>
   <string name="screen_onboarding_welcome_subtitle">"Сардэчна запрашаем у %1$s. Зараджаны, для хуткасці і прастаты."</string>
-  <string name="screen_onboarding_welcome_title">"Будзьце ў сваім element"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Ўсталяванне бяспечнага злучэння"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"Не атрымалася ўсталяваць бяспечнае злучэнне з новай прыладай. Існуючыя прылады па-ранейшаму ў бяспецы, і вам не трэба турбавацца пра іх."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"Што зараз?"</string>
@@ -81,7 +81,7 @@
   <string name="screen_qr_code_login_verify_code_subtitle">"Ваш правайдэр уліковага запісу можа запытаць наступны код для праверкі ўваходу."</string>
   <string name="screen_qr_code_login_verify_code_title">"Ваш код спраўджання"</string>
   <string name="screen_server_confirmation_change_server">"Змяніць правайдара ўліковага запісу"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Прыватны сервер для супрацоўнікаў Element."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix - гэта адкрытая сетка для бяспечнай, дэцэнтралізаванай сувязі."</string>
   <string name="screen_server_confirmation_message_register">"Тут будуць захоўвацца вашыя размовы - сапраўды гэтак жа, як вы выкарыстоўваеце паштовага правайдара для захоўвання сваіх лістоў."</string>
   <string name="screen_server_confirmation_title_login">"Вы збіраецеся ўвайсці ў %1$s"</string>

@@ -19,7 +19,7 @@ open class AboutStatePreviewParam : PreviewParameterProvider<AboutState> {
 }
 
 fun anAboutState(
-    elementLegals: List<ElementLegal> = getAllLegals(),
+    secureChatLegals: List<SecureChatLegal> = getAllLegals(),
 ) = AboutState(
-    elementLegals = elementLegals.toImmutableList(),
+    secureChatLegals = secureChatLegals.toImmutableList(),
 )

@@ -19,9 +19,9 @@ open class AnalyticsPreferencesStatePreviewParam : PreviewParameterProvider<Anal
 }
 
 fun aAnalyticsPreferencesState(
-    applicationName: String = "Element X",
+    applicationName: String = "SecureChat",
     isEnabled: Boolean = false,
-    policyUrl: String = "https://element.io",
+    policyUrl: String = "https://chat.securechat.com.au",
 ) = AnalyticsPreferencesState(
     applicationName = applicationName,
     isEnabled = isEnabled,

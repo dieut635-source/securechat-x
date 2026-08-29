@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"輸入地址⋯⋯"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"找到相符的聊天室"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"找不到聊天室"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"例如 #room-name:matrix.org"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"例如 #room-name:chat.securechat.com.au"</string>
 </resources>

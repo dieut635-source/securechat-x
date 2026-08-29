@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"Velg hvordan du vil motta varsler"</string>
   <string name="screen_advanced_settings_developer_mode">"Utviklermodus"</string>
   <string name="screen_advanced_settings_developer_mode_description">"Aktiver for å få tilgang til funksjoner og funksjonalitet for utviklere."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"Egendefinert Element Call base URL"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"Angi en egendefinert base URL for Element Call."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"Egendefinert SecureChat Calls base URL"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"Angi en egendefinert base URL for SecureChat Calls."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"Ugyldig URL. Pass på at du inkluderer protokollen (http/https) og riktig adresse."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Skjul avatarer i invitasjonsforespørsler til rom"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"Skjul forhåndsvisninger av medier på tidslinjen"</string>
@@ -88,7 +88,7 @@ Hvis du fortsetter, kan noen av innstillingene dine endres."</string>
   <string name="screen_notification_settings_sound_custom_fallback">"Egendefinert"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"Tilpasset lyd…"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"Feil ved sletting av fil"</string>
-  <string name="screen_notification_settings_sound_element_default">"Element-standard"</string>
+  <string name="screen_notification_settings_sound_element_default">"SecureChat-standard"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"Feil ved import av fil"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"Problem med å forhåndsavspille varsellyd"</string>
   <string name="screen_notification_settings_sound_section_title">"Lyd"</string>

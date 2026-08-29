@@ -14,17 +14,29 @@ permissions:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -Dkotlin.daemon.jvm.options=-Xmx4g
-  CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-configuration-cache -PallWarningsAsErrors=false
+  CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-configuration-cache -PallWarningsAsErrors=true
 
 jobs:
+  audit:
+    name: SecureChat configuration audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify branding, endpoints and managed defaults
+        run: bash tools/check/check_securechat_configuration.sh
+
   build:
     name: Build debug APK (fdroid)
+    needs: audit
     runs-on: ubuntu-latest
     concurrency:
       group: securechat-build-${{ github.ref }}
       cancel-in-progress: true
     steps:
-      # Element X là project lớn; runner mặc định dễ hết dung lượng đĩa.
+      # Project lớn; runner mặc định dễ hết dung lượng đĩa.
       - name: Free disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
         with:
@@ -83,7 +95,8 @@ jobs:
           if-no-files-found: error
 
   test:
-    name: Unit tests (modules SecureChat sửa)
+    name: Unit tests and Android lint
+    needs: audit
     runs-on: ubuntu-latest
     concurrency:
       group: securechat-test-${{ github.ref }}
@@ -120,12 +133,23 @@ jobs:
       - name: Run unit tests
         run: >-
           ./gradlew
+          :app:testFdroidDebugUnitTest
+          :libraries:deeplink:impl:testDebugUnitTest
           :features:login:impl:testDebugUnitTest
           :features:enterprise:impl-foss:testDebugUnitTest
+          :features:forward:impl:testDebugUnitTest
+          :features:logout:impl:testDebugUnitTest
           :libraries:mdm:impl:testDebugUnitTest
+          :libraries:matrix:impl:testDebugUnitTest
+          :libraries:session-storage:impl:verifySqlDelightMigration
+          :libraries:session-storage:impl:testDebugUnitTest
           :features:messages:impl:testDebugUnitTest
           :features:share:impl:testDebugUnitTest
+          :features:call:impl:verifySecureChatCallAssets
           $CI_GRADLE_ARG_PROPERTIES
+
+      - name: Run Android lint
+        run: ./gradlew :app:lintFdroidDebug $CI_GRADLE_ARG_PROPERTIES
 
       - name: Upload test reports on failure
         if: failure()
@@ -133,8 +157,15 @@ jobs:
         with:
           name: unit-test-reports
           path: |
+            app/build/reports/tests/testFdroidDebugUnitTest/**
             features/login/impl/build/reports/tests/**
             features/enterprise/impl-foss/build/reports/tests/**
+            features/forward/impl/build/reports/tests/**
+            features/logout/impl/build/reports/tests/**
+            libraries/deeplink/impl/build/reports/tests/**
             libraries/mdm/impl/build/reports/tests/**
+            libraries/matrix/impl/build/reports/tests/**
+            libraries/session-storage/impl/build/reports/tests/**
             features/messages/impl/build/reports/tests/**
             features/share/impl/build/reports/tests/**
+            app/build/reports/lint-results-fdroidDebug.*

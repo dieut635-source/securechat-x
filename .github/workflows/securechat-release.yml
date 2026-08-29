@@ -17,7 +17,7 @@ permissions:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -Dkotlin.daemon.jvm.options=-Xmx4g
-  CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-configuration-cache -PallWarningsAsErrors=false
+  CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-configuration-cache -PallWarningsAsErrors=true
 
 jobs:
   release:
@@ -39,6 +39,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Kiểm tra cấu hình SecureChat
+        run: bash tools/check/check_securechat_configuration.sh
+
       - name: Use JDK 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
@@ -58,41 +61,52 @@ jobs:
           KSP: ${{ secrets.SECURECHAT_KEYSTORE_PASSWORD }}
           KA: ${{ secrets.SECURECHAT_KEY_ALIAS }}
           KAP: ${{ secrets.SECURECHAT_KEY_PASSWORD }}
+          CERT_SHA256: ${{ secrets.SECURECHAT_RELEASE_CERT_SHA256 }}
         run: |
           missing=""
           [ -z "$KS"  ] && missing="$missing SECURECHAT_KEYSTORE_BASE64"
           [ -z "$KSP" ] && missing="$missing SECURECHAT_KEYSTORE_PASSWORD"
           [ -z "$KA"  ] && missing="$missing SECURECHAT_KEY_ALIAS"
           [ -z "$KAP" ] && missing="$missing SECURECHAT_KEY_PASSWORD"
+          [ -z "$CERT_SHA256" ] && missing="$missing SECURECHAT_RELEASE_CERT_SHA256"
           if [ -n "$missing" ]; then
             echo "::error::Thiếu secret:$missing"
             echo "Tạo ở: Settings -> Secrets and variables -> Actions -> New repository secret"
-            echo "Sinh keystore bằng: server/scripts/make-release-keystore.sh"
+            echo "Tạo keystore theo mục 'Ký bản phát hành' trong SECURECHAT.md"
             exit 1
           fi
-          echo "Đủ 4 secret."
+          echo "Đủ 5 secret."
 
       - name: Giải mã keystore
         env:
           KS: ${{ secrets.SECURECHAT_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.SECURECHAT_KEYSTORE_PASSWORD }}
         run: |
           echo "$KS" | base64 -d > "$RUNNER_TEMP/securechat.keystore"
           # File keystore hỏng sẽ báo lỗi rất khó hiểu ở giữa quá trình build -> kiểm tra ngay.
           keytool -list -keystore "$RUNNER_TEMP/securechat.keystore" \
-                  -storepass "${{ secrets.SECURECHAT_KEYSTORE_PASSWORD }}" >/dev/null
+                  -storepass "$KSP" >/dev/null
           echo "Keystore đọc được."
 
       - name: Lint
         run: ./gradlew :app:lintFdroidRelease $CI_GRADLE_ARG_PROPERTIES
-        continue-on-error: true
 
       - name: Unit test
         run: >-
           ./gradlew
+          :app:testFdroidDebugUnitTest
+          :libraries:deeplink:impl:testDebugUnitTest
           :features:login:impl:testDebugUnitTest
           :features:enterprise:impl-foss:testDebugUnitTest
+          :features:forward:impl:testDebugUnitTest
+          :features:logout:impl:testDebugUnitTest
+          :libraries:mdm:impl:testDebugUnitTest
+          :libraries:matrix:impl:testDebugUnitTest
+          :libraries:session-storage:impl:verifySqlDelightMigration
+          :libraries:session-storage:impl:testDebugUnitTest
           :features:messages:impl:testDebugUnitTest
           :features:share:impl:testDebugUnitTest
+          :features:call:impl:verifySecureChatCallAssets
           $CI_GRADLE_ARG_PROPERTIES
 
       - name: Build APK release
@@ -103,10 +117,27 @@ jobs:
           SECURECHAT_KEY_PASSWORD: ${{ secrets.SECURECHAT_KEY_PASSWORD }}
         run: ./gradlew :app:assembleFdroidRelease $CI_GRADLE_ARG_PROPERTIES
 
+      - name: Xác minh nhận diện trong APK
+        run: |
+          D=app/build/outputs/apk/fdroid/release
+          BT=$(ls "$ANDROID_HOME"/build-tools/ | sort -V | tail -1)
+          found=0
+          for APK in "$D"/*.apk; do
+            [ -f "$APK" ] || continue
+            found=1
+            DUMP="$RUNNER_TEMP/$(basename "$APK").aapt.txt"
+            "$ANDROID_HOME/build-tools/$BT/aapt" dump badging "$APK" > "$DUMP"
+            "$ANDROID_HOME/build-tools/$BT/aapt" dump xmltree "$APK" AndroidManifest.xml >> "$DUMP"
+            bash tools/manifest/check_securechat_aapt_dump.sh "$DUMP"
+          done
+          [ "$found" -eq 1 ] || { echo "::error::Không tìm thấy APK trong $D"; exit 1; }
+
       # Xác minh APK ĐÃ ĐƯỢC KÝ ĐÚNG KHOÁ. Đây là bước quan trọng nhất của workflow:
       # nếu Gradle âm thầm lùi về khoá debug thì mọi thứ vẫn "thành công" mà bản phát ra
       # lại ký bằng khoá công khai trong repo.
       - name: Xác minh chữ ký
+        env:
+          EXPECTED_CERT_SHA256: ${{ secrets.SECURECHAT_RELEASE_CERT_SHA256 }}
         run: |
           D=app/build/outputs/apk/fdroid/release
           APK=$(ls "$D"/*-arm64-v8a-release.apk "$D"/*-universal-release.apk 2>/dev/null | head -1)
@@ -119,14 +150,23 @@ jobs:
             echo "::error::APK đang ký bằng khoá DEBUG — KHÔNG được phát hành."
             exit 1
           fi
-          echo "Chữ ký không phải khoá debug."
+          ACTUAL_CERT_SHA256=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' /tmp/certs.txt | head -1 | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')
+          EXPECTED_CERT_SHA256_NORMALIZED=$(printf '%s' "$EXPECTED_CERT_SHA256" | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')
+          if ! printf '%s' "$EXPECTED_CERT_SHA256_NORMALIZED" | grep -Eq '^[0-9a-f]{64}$'; then
+            echo "::error::SECURECHAT_RELEASE_CERT_SHA256 phải là vân tay SHA-256 gồm 64 ký tự hex."
+            exit 1
+          fi
+          if [ "$ACTUAL_CERT_SHA256" != "$EXPECTED_CERT_SHA256_NORMALIZED" ]; then
+            echo "::error::APK được ký bằng chứng chỉ không đúng với SECURECHAT_RELEASE_CERT_SHA256."
+            exit 1
+          fi
+          echo "Chữ ký khớp đúng chứng chỉ phát hành SecureChat."
           {
             echo "### APK release đã ký"
             echo '```'
             grep -E "Signer #1 certificate (DN|SHA-256 digest)" /tmp/certs.txt || true
             echo '```'
-            echo "Vân tay SHA-256 ở trên phải GIỐNG NHAU giữa các lần phát hành."
-            echo "Khác đi nghĩa là đổi khoá, và người dùng sẽ KHÔNG cập nhật được — phải gỡ cài lại."
+            echo "Vân tay SHA-256 khớp SECURECHAT_RELEASE_CERT_SHA256."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload APK release

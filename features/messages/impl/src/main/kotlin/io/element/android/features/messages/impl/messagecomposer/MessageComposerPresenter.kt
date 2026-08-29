@@ -69,10 +69,10 @@ import io.element.android.libraries.matrix.ui.messages.reply.InReplyToDetails
 import io.element.android.libraries.matrix.ui.messages.reply.content
 import io.element.android.libraries.matrix.ui.messages.reply.eventId
 import io.element.android.libraries.matrix.ui.messages.reply.map
+import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.mediapickers.api.PickerProvider
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfigProvider
 import io.element.android.libraries.mediaupload.api.MediaSenderFactory
-import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.mediaviewer.api.local.LocalMediaFactory
 import io.element.android.libraries.permissions.api.PermissionsEvent
 import io.element.android.libraries.permissions.api.PermissionsPresenter
@@ -223,8 +223,10 @@ class MessageComposerPresenter(
             sessionPreferencesStore.isSendTypingNotificationsEnabled()
         }.collectAsState(initial = true)
 
-        LaunchedEffect(cameraPermissionState.permissionGranted) {
-            if (cameraPermissionState.permissionGranted) {
+        LaunchedEffect(cameraPermissionState.permissionGranted, canSendAttachments) {
+            if (!canSendAttachments) {
+                pendingEvent = null
+            } else if (cameraPermissionState.permissionGranted) {
                 when (pendingEvent) {
                     is MessageComposerEvent.PickAttachmentSource.PhotoFromCamera -> cameraPhotoPicker.launch()
                     is MessageComposerEvent.PickAttachmentSource.VideoFromCamera -> cameraVideoPicker.launch()
@@ -289,20 +291,22 @@ class MessageComposerPresenter(
                     )
                 }
                 is MessageComposerEvent.SendUri -> {
-                    val inReplyToEventId = (messageComposerContext.composerMode as? MessageComposerMode.Reply)?.eventId
-                    sessionCoroutineScope.sendAttachment(
-                        attachment = Attachment.Media(
-                            localMedia = localMediaFactory.createFromUri(
-                                uri = event.uri,
-                                mimeType = null,
-                                name = null,
-                                formattedFileSize = null
+                    if (isFileSendingAllowed()) {
+                        val inReplyToEventId = (messageComposerContext.composerMode as? MessageComposerMode.Reply)?.eventId
+                        sessionCoroutineScope.sendAttachment(
+                            attachment = Attachment.Media(
+                                localMedia = localMediaFactory.createFromUri(
+                                    uri = event.uri,
+                                    mimeType = null,
+                                    name = null,
+                                    formattedFileSize = null
+                                ),
                             ),
-                        ),
-                        inReplyToEventId = inReplyToEventId,
-                    )
+                            inReplyToEventId = inReplyToEventId,
+                        )
 
-                    resetComposerModeAfterAttaching()
+                        resetComposerModeAfterAttaching()
+                    }
                 }
                 is MessageComposerEvent.SetMode -> {
                     localCoroutineScope.setMode(event.composerMode, markdownTextEditorState, richTextEditorState)
@@ -310,13 +314,14 @@ class MessageComposerPresenter(
                 MessageComposerEvent.AddAttachment -> localCoroutineScope.launch {
                     // The button is already hidden when attachments are disallowed; this is the
                     // second lock, so no other caller can open the picker either.
-                    if (canSendAttachments) {
+                    if (isFileSendingAllowed()) {
                         showAttachmentSourcePicker = true
                     }
                 }
                 MessageComposerEvent.DismissAttachmentMenu -> showAttachmentSourcePicker = false
                 MessageComposerEvent.PickAttachmentSource.FromGallery -> localCoroutineScope.launch {
                     showAttachmentSourcePicker = false
+                    if (!isFileSendingAllowed()) return@launch
                     if (isSendGalleryMessagesEnabled) {
                         galleryMultiMediaPicker.launch()
                     } else {
@@ -325,6 +330,7 @@ class MessageComposerPresenter(
                 }
                 MessageComposerEvent.PickAttachmentSource.FromFiles -> localCoroutineScope.launch {
                     showAttachmentSourcePicker = false
+                    if (!isFileSendingAllowed()) return@launch
                     if (isSendGalleryMessagesEnabled) {
                         filesPicker.launch()
                     } else {
@@ -333,6 +339,7 @@ class MessageComposerPresenter(
                 }
                 MessageComposerEvent.PickAttachmentSource.PhotoFromCamera -> localCoroutineScope.launch {
                     showAttachmentSourcePicker = false
+                    if (!isFileSendingAllowed()) return@launch
                     if (cameraPermissionState.permissionGranted) {
                         cameraPhotoPicker.launch()
                     } else {
@@ -342,6 +349,7 @@ class MessageComposerPresenter(
                 }
                 MessageComposerEvent.PickAttachmentSource.VideoFromCamera -> localCoroutineScope.launch {
                     showAttachmentSourcePicker = false
+                    if (!isFileSendingAllowed()) return@launch
                     if (cameraPermissionState.permissionGranted) {
                         cameraVideoPicker.launch()
                     } else {
@@ -640,6 +648,7 @@ class MessageComposerPresenter(
     ) = when (attachment) {
         is Attachment.Media -> {
             launch {
+                if (!isFileSendingAllowed()) return@launch
                 sendMedia(
                     uri = attachment.localMedia.uri,
                     mimeType = attachment.localMedia.info.mimeType,
@@ -654,6 +663,7 @@ class MessageComposerPresenter(
         mimeType: String? = null,
         sendAsFile: Boolean = false,
     ) {
+        if (!isFileSendingAllowed()) return
         uri ?: return
         val localMedia = localMediaFactory.createFromUri(
             uri = uri,
@@ -672,6 +682,7 @@ class MessageComposerPresenter(
         uris: List<Uri>,
         sendAsFile: Boolean = false,
     ) {
+        if (!isFileSendingAllowed()) return
         if (uris.isEmpty()) return
         if (uris.size == 1) {
             handlePickedMedia(uris.first(), sendAsFile = sendAsFile)
@@ -704,23 +715,28 @@ class MessageComposerPresenter(
         uri: Uri,
         mimeType: String,
         inReplyToEventId: EventId?,
-    ) = runCatchingExceptions {
-        mediaSender.sendMedia(
-            uri = uri,
-            mimeType = mimeType,
-            mediaOptimizationConfig = mediaOptimizationConfigProvider.get(),
-            inReplyToEventId = inReplyToEventId,
-        ).getOrThrow()
-    }
-        .onFailure { cause ->
-            Timber.e(cause, "Failed to send attachment")
-            if (cause is CancellationException) {
-                throw cause
-            } else {
-                val snackbarMessage = SnackbarMessage(sendAttachmentError(cause))
-                snackbarDispatcher.post(snackbarMessage)
-            }
+    ) {
+        if (!isFileSendingAllowed()) return
+        runCatchingExceptions {
+            mediaSender.sendMedia(
+                uri = uri,
+                mimeType = mimeType,
+                mediaOptimizationConfig = mediaOptimizationConfigProvider.get(),
+                inReplyToEventId = inReplyToEventId,
+            ).getOrThrow()
         }
+            .onFailure { cause ->
+                Timber.e(cause, "Failed to send attachment")
+                if (cause is CancellationException) {
+                    throw cause
+                } else {
+                    val snackbarMessage = SnackbarMessage(sendAttachmentError(cause))
+                    snackbarDispatcher.post(snackbarMessage)
+                }
+            }
+    }
+
+    private fun isFileSendingAllowed(): Boolean = mdmService.config.value.allowFileSend
 
     private fun CoroutineScope.updateDraft(
         draft: ComposerDraft?,

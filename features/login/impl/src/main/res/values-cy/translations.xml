@@ -9,13 +9,13 @@
   <string name="screen_account_provider_signin_title">"Rydych ar fin mewngofnodi i %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Dyma lle bydd eich sgyrsiau\'n byw - yn union fel y byddech chi\'n defnyddio darparwr e-bost i gadw\'ch e-byst."</string>
   <string name="screen_account_provider_signup_title">"Rydych chi ar fin creu cyfrif ar %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Mae Matrix.org yn weinydd mawr, rhad ac am ddim ar y rhwydwaith Matrix cyhoeddus ar gyfer cyfathrebu diogel, datganoledig, sy\'n cael ei redeg gan y Matrix.org Foundation."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
   <string name="screen_change_account_provider_other">"Arall"</string>
   <string name="screen_change_account_provider_subtitle">"Defnyddiwch ddarparwr cyfrif gwahanol, fel eich gweinydd preifat eich hun neu gyfrif gwaith."</string>
   <string name="screen_change_account_provider_title">"Newid darparwr cyfrif"</string>
   <string name="screen_change_server_error_element_pro_required_action_android">"Google Play"</string>
-  <string name="screen_change_server_error_element_pro_required_message">"Mae angen yr ap Element Pro ar %1$s. Llwythwch ef o\'r siop."</string>
-  <string name="screen_change_server_error_element_pro_required_title">"Mae angen Element Pro"</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
   <string name="screen_change_server_error_invalid_homeserver">"Doedd dim modd i ni gyrraedd y gweinydd cartref hwn. Gwiriwch eich bod wedi rhoi URL y gweinydd cartref yn gywir. Os yw\'r URL yn gywir, cysylltwch â gweinyddwr eich gweinydd cartref am ragor o help."</string>
   <string name="screen_change_server_error_invalid_well_known">"Dyw cydweddu llithrig ddim ar gael oherwydd problem yn y ffeil .well-known:
 %1$s"</string>
@@ -44,7 +44,7 @@
   <string name="screen_onboarding_sign_up">"Creu cyfrif"</string>
   <string name="screen_onboarding_welcome_message">"Croeso i\'r %1$s cyflymaf erioed. Yn nodedig am gyflymder a symlrwydd."</string>
   <string name="screen_onboarding_welcome_subtitle">"Croeso i %1$s. Yn nodedig ar gyfer cyflymder a symlrwydd."</string>
-  <string name="screen_onboarding_welcome_title">"Byddwch yn eich elfen"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Yn creu cysylltiad diogel"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"Nid oedd modd gwneud cysylltiad diogel â\'r ddyfais newydd. Mae eich dyfeisiau presennol yn dal yn ddiogel a does dim angen i chi boeni amdanyn nhw."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"Beth nawr?"</string>
@@ -89,7 +89,7 @@ Ceisiwch fewngofnodi â llaw, neu sganiwch y cod QR gyda dyfais arall."</string>
   <string name="screen_qr_code_login_verify_code_subtitle">"Mae\'n bosibl y bydd darparwr eich cyfrif yn gofyn am y cod canlynol i ddilysu\'r mewngofnodi."</string>
   <string name="screen_qr_code_login_verify_code_title">"Eich cod dilysu"</string>
   <string name="screen_server_confirmation_change_server">"Newid darparwr cyfrif"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Gweinydd preifat ar gyfer gweithwyr Element."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Mae Matrix yn rhwydwaith agored ar gyfer cyfathrebu diogel, datganoledig."</string>
   <string name="screen_server_confirmation_message_register">"Dyma lle bydd eich sgyrsiau\'n byw - yn union fel y byddech chi\'n defnyddio darparwr e-bost i gadw\'ch e-byst."</string>
   <string name="screen_server_confirmation_title_login">"Rydych ar fin mewngofnodi i %1$s"</string>

@@ -132,10 +132,10 @@ internal fun LocationShareRowPreview() = ElementPreview {
     Column {
         LocationShareRow(
             item = LocationShareItem(
-                userId = UserId("@alice:matrix.org"),
+                userId = UserId("@alice:chat.securechat.com.au"),
                 displayName = USER_NAME_ALICE,
                 avatarData = AvatarData(
-                    id = "@alice:matrix.org",
+                    id = "@alice:chat.securechat.com.au",
                     name = USER_NAME_ALICE,
                     url = null,
                     size = AvatarSize.UserListItem,
@@ -151,10 +151,10 @@ internal fun LocationShareRowPreview() = ElementPreview {
         )
         LocationShareRow(
             item = LocationShareItem(
-                userId = UserId("@bob:matrix.org"),
+                userId = UserId("@bob:chat.securechat.com.au"),
                 displayName = USER_NAME_BOB,
                 avatarData = AvatarData(
-                    id = "@bob:matrix.org",
+                    id = "@bob:chat.securechat.com.au",
                     name = USER_NAME_BOB,
                     url = null,
                     size = AvatarSize.UserListItem,

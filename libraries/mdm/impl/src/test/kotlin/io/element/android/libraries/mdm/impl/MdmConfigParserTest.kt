@@ -70,6 +70,13 @@ class MdmConfigParserTest {
     }
 
     @Test
+    fun `minutes outside the integer range fall back instead of wrapping`() {
+        assertThat(MdmConfigParser.parseMinutes(Int.MAX_VALUE.toLong() + 1)).isNull()
+        assertThat(MdmConfigParser.parseMinutes(Int.MIN_VALUE.toLong() - 1)).isNull()
+        assertThat(MdmConfigParser.parseMinutes(Long.MAX_VALUE)).isNull()
+    }
+
+    @Test
     fun `a negative timeout is ignored rather than logging the user out at once`() {
         assertThat(MdmConfigParser.parseMinutes(-1)).isNull()
         assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_AUTO_LOGOUT_MINUTES to -5)).autoLogoutMinutes).isEqualTo(0)
@@ -98,6 +105,61 @@ class MdmConfigParserTest {
     @Test
     fun `a trailing slash is removed so the url matches what the app stores`() {
         assertThat(MdmConfigParser.parseHomeserverUrl("https://matrix.example.com/")).isEqualTo("https://matrix.example.com")
+    }
+
+    @Test
+    fun `the https scheme is accepted case insensitively and normalised`() {
+        assertThat(MdmConfigParser.parseHomeserverUrl("HTTPS://matrix.example.com/"))
+            .isEqualTo("https://matrix.example.com")
+    }
+
+    @Test
+    fun `a valid https port and path are preserved`() {
+        assertThat(MdmConfigParser.parseHomeserverUrl("https://matrix.example.com:8448/client/"))
+            .isEqualTo("https://matrix.example.com:8448/client")
+        assertThat(MdmConfigParser.parseHomeserverUrl("192.0.2.10:443"))
+            .isEqualTo("https://192.0.2.10:443")
+    }
+
+    @Test
+    fun `userinfo query and fragment are rejected`() {
+        for (value in listOf(
+            "https://admin@matrix.example.com",
+            "https://admin:secret@matrix.example.com",
+            "https://matrix.example.com?tenant=other",
+            "https://matrix.example.com/#fragment",
+        )) {
+            assertThat(MdmConfigParser.parseHomeserverUrl(value)).isNull()
+        }
+    }
+
+    @Test
+    fun `an invalid or out of range port is rejected`() {
+        for (value in listOf(
+            "https://matrix.example.com:",
+            "https://matrix.example.com:abc",
+            "https://matrix.example.com:-1",
+            "https://matrix.example.com:0",
+            "https://matrix.example.com:65536",
+        )) {
+            assertThat(MdmConfigParser.parseHomeserverUrl(value)).isNull()
+        }
+    }
+
+    @Test
+    fun `a malformed host is rejected`() {
+        for (value in listOf(
+            "https://",
+            "https:///path-only",
+            "https://.example.com",
+            "https://example..com",
+            "https://-example.com",
+            "https://example-.com",
+            "https://exa_mple.com",
+            "https://999.999.999.999",
+        )) {
+            assertThat(MdmConfigParser.parseHomeserverUrl(value)).isNull()
+        }
     }
 
     @Test

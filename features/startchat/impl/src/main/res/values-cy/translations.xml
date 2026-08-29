@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"Ewch i mewn…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Cafwyd hyd i ystafell gyfatebol"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"Heb ganfod yr ystafell"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"e.e. #enw-ystafell:matrix.org"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"e.e. #enw-ystafell:chat.securechat.com.au"</string>
 </resources>

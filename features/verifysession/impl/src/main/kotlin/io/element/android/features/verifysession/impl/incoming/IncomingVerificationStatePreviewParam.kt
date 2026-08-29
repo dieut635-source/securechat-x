@@ -50,7 +50,7 @@ open class IncomingVerificationStatePreviewParam : PreviewParameterProvider<Inco
 internal fun aStepInitial(
     isWaiting: Boolean = false,
 ) = Step.Initial(
-    deviceDisplayName = "Element X Android",
+    deviceDisplayName = "SecureChat Android",
     deviceId = DeviceId("ILAKNDNASDLK"),
     formattedSignInTime = "12:34",
     isWaiting = isWaiting,

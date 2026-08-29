@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"Επέλεξε τον τρόπο λήψης ειδοποιήσεων"</string>
   <string name="screen_advanced_settings_developer_mode">"Λειτουργία προγραμματιστή"</string>
   <string name="screen_advanced_settings_developer_mode_description">"Ενεργοποίησε την πρόσβαση σε δυνατότητες και λειτουργικότητα για προγραμματιστές."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"Προσαρμοσμένο URL βάσης κλήσεων Element"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"Όρισε μια προσαρμοσμένη διεύθυνση βάσης URL για κλήση Element."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"Προσαρμοσμένο URL βάσης κλήσεων SecureChat"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"Όρισε μια προσαρμοσμένη διεύθυνση βάσης URL για κλήση SecureChat."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"Μη έγκυρη διεύθυνση URL, βεβαιώσου ότι έχεις συμπεριλάβει το πρωτόκολλο (http/https) και τη σωστή διεύθυνση."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Απόκρυψη εικόνων προφίλ σε αιτήματα πρόσκλησης αίθουσας"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"Απόκρυψη προεπισκοπήσεων πολυμέσων στο timeline"</string>

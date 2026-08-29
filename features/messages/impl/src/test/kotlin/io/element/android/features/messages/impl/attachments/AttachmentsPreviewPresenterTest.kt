@@ -44,6 +44,9 @@ import io.element.android.libraries.matrix.test.media.FakeMediaUploadHandler
 import io.element.android.libraries.matrix.test.permalink.FakePermalinkBuilder
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.libraries.matrix.test.timeline.FakeTimeline
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.api.MdmService
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfig
 import io.element.android.libraries.mediaupload.api.MediaPreProcessor
 import io.element.android.libraries.mediaupload.api.MediaSenderFactory
@@ -97,6 +100,31 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             skipItems(1)
             val initialState = awaitItem()
             assertThat(initialState.sendActionState).isEqualTo(SendActionState.Idle)
+        }
+    }
+
+    @Test
+    fun `present - allow_file_send off prevents preprocessing and upload`() = runTest {
+        val sendFileResult =
+            lambdaRecorder<File, FileInfo, String?, String?, EventId?, Result<FakeMediaUploadHandler>> { _, _, _, _, _ ->
+                Result.success(FakeMediaUploadHandler())
+            }
+        val presenter = createAttachmentsPreviewPresenter(
+            room = FakeJoinedRoom(
+                liveTimeline = FakeTimeline().apply { sendFileLambda = sendFileResult },
+            ),
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowFileSend = false)),
+        )
+
+        presenter.test {
+            val blockedState = consumeItemsUntilPredicate {
+                it.sendActionState is SendActionState.Failure
+            }.last()
+            blockedState.eventSink(AttachmentsPreviewEvent.SendAttachment)
+            advanceUntilIdle()
+
+            sendFileResult.assertions().isNeverCalled()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -977,6 +1005,7 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             }
         },
         videoCompressionPresetSelector: VideoCompressionPresetSelector = VideoCompressionPresetSelector(),
+        mdmService: MdmService = FakeMdmService(),
     ): AttachmentsPreviewPresenter {
         return AttachmentsPreviewPresenter(
             attachments = attachments.toImmutableList(),
@@ -1001,6 +1030,7 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             timelineMode = timelineMode,
             inReplyToEventId = null,
             mediaOptimizationConfigProvider = mediaOptimizationConfigProvider,
+            mdmService = mdmService,
         )
     }
 

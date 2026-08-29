@@ -20,11 +20,11 @@ open class RoomDirectoryStatePreviewParam : PreviewParameterProvider<RoomDirecto
         get() = sequenceOf(
             aRoomDirectoryState(),
             aRoomDirectoryState(
-                query = "Element",
+                query = "SecureChat",
                 roomDescriptions = aRoomDescriptionList(),
             ),
             aRoomDirectoryState(
-                query = "Element",
+                query = "SecureChat",
                 roomDescriptions = aRoomDescriptionList(),
                 displayLoadMoreIndicator = true,
             ),
@@ -46,19 +46,19 @@ fun aRoomDirectoryState(
 fun aRoomDescriptionList(): ImmutableList<RoomDescription> {
     return persistentListOf(
         RoomDescription(
-            roomId = RoomId("!exa:matrix.org"),
-            name = "Element X Android",
-            topic = "Element X is a secure, private and decentralized messenger.",
-            alias = RoomAlias("#element-x-android:matrix.org"),
+            roomId = RoomId("!exa:chat.securechat.com.au"),
+            name = "SecureChat Android",
+            topic = "SecureChat is a secure, private and decentralized messenger.",
+            alias = RoomAlias("#securechat-android:chat.securechat.com.au"),
             avatarUrl = null,
             joinRule = RoomDescription.JoinRule.PUBLIC,
             numberOfMembers = 2765,
         ),
         RoomDescription(
-            roomId = RoomId("!exi:matrix.org"),
-            name = "Element X iOS",
-            topic = "Element X is a secure, private and decentralized messenger.",
-            alias = RoomAlias("#element-x-ios:matrix.org"),
+            roomId = RoomId("!exi:chat.securechat.com.au"),
+            name = "SecureChat Community",
+            topic = "SecureChat is a secure, private and decentralized messenger.",
+            alias = RoomAlias("#securechat-community:chat.securechat.com.au"),
             avatarUrl = null,
             joinRule = RoomDescription.JoinRule.UNKNOWN,
             numberOfMembers = 356,

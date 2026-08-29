@@ -40,7 +40,7 @@ fun aTimelineItemVoiceContent(
     filename: String = "filename doesn't really matter for a voice message",
     caption: String? = "body doesn't really matter for a voice message",
     duration: Duration = 61_000.milliseconds,
-    contentUri: String = "mxc://matrix.org/1234567890abcdefg",
+    contentUri: String = "mxc://chat.securechat.com.au/1234567890abcdefg",
     mimeType: String = MimeTypes.Ogg,
     mediaSource: MediaSource = MediaSource(contentUri),
     waveform: List<Float> = listOf(0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 8f, 7f, 6f, 5f, 4f, 3f, 2f, 1f, 0f),

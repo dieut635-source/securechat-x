@@ -1,5 +1,5 @@
 appId: ${MAESTRO_APP_ID}
 ---
 - extendedWaitUntil:
-    visible: "Be in your element"
+    visible: "Welcome to SecureChat"
     timeout: 30000

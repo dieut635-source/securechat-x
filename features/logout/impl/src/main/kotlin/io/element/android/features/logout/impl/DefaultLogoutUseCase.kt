@@ -13,29 +13,49 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.features.logout.api.LogoutUseCase
 import io.element.android.libraries.matrix.api.MatrixClientProvider
 import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.sessionstorage.api.SessionSecurityCoordinator
 import io.element.android.libraries.sessionstorage.api.SessionStore
+import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 
 @ContributesBinding(AppScope::class)
 class DefaultLogoutUseCase(
     private val sessionStore: SessionStore,
     private val matrixClientProvider: MatrixClientProvider,
+    private val sessionSecurityCoordinator: SessionSecurityCoordinator,
 ) : LogoutUseCase {
     override suspend fun logoutAll(ignoreSdkError: Boolean) {
-        sessionStore.getAllSessions()
-            .map { sessionData ->
-                SessionId(sessionData.userId)
-            }
-            .forEach { sessionId ->
-                Timber.d("Logging out sessionId: $sessionId")
-                matrixClientProvider.getOrRestore(sessionId).fold(
-                    onSuccess = { client ->
-                        client.logout(userInitiated = true, ignoreSdkError = ignoreSdkError)
-                    },
-                    onFailure = { error ->
-                        Timber.e(error, "Failed to get or restore MatrixClient for sessionId: $sessionId")
+        sessionSecurityCoordinator.invalidateAuthenticationsAndRun {
+            var firstFailure: Throwable? = null
+            sessionStore.getAllSessions()
+                .map { sessionData ->
+                    SessionId(sessionData.userId)
+                }
+                .forEach { sessionId ->
+                    Timber.d("Logging out sessionId: $sessionId")
+                    try {
+                        matrixClientProvider.getOrRestore(sessionId).getOrThrow()
+                            .logout(userInitiated = true, ignoreSdkError = ignoreSdkError)
+                    } catch (error: Throwable) {
+                        if (error is CancellationException) throw error
+                        Timber.e(error, "Failed to log out MatrixClient for sessionId: $sessionId")
+                        if (ignoreSdkError) {
+                            // Auto-logout and PIN-forgotten flows are security boundaries. Even when
+                            // restoration or the SDK's local cleanup fails, remove the persisted session
+                            // and continue attempting every other account.
+                            try {
+                                sessionStore.removeSession(sessionId.value)
+                            } catch (removalError: Throwable) {
+                                if (removalError is CancellationException) throw removalError
+                                Timber.e(removalError, "Failed to remove local sessionId: $sessionId")
+                                if (firstFailure == null) firstFailure = removalError
+                            }
+                        } else if (firstFailure == null) {
+                            firstFailure = error
+                        }
                     }
-                )
-            }
+                }
+            firstFailure?.let { throw it }
+        }
     }
 }

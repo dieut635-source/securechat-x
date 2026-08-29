@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"Kirish…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Mos xona topildi"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"Xona topilmadi"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"masalan #xona-nomi:matrix.org"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"masalan #xona-nomi:chat.securechat.com.au"</string>
 </resources>

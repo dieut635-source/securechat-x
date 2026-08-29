@@ -20,11 +20,11 @@ import androidx.core.net.toUri
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import io.element.android.features.share.api.ShareIntentData
+import io.element.android.features.share.api.UriToShare
+import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.mdm.api.MdmConfig
 import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.mdm.test.FakeMdmService
-import io.element.android.features.share.api.UriToShare
-import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
 import org.robolectric.Robolectric
@@ -293,7 +293,6 @@ class DefaultShareIntentHandlerTest : RobolectricTest() {
         }
         assertThat(handler.handleIncomingShareIntent(intent)).isEqualTo(ShareIntentData.PlainText("a text"))
     }
-
 
     private fun createDefaultShareIntentHandler(
         mdmService: MdmService = FakeMdmService(),

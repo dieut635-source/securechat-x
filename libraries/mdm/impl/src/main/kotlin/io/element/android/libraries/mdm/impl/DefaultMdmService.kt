@@ -55,6 +55,9 @@ class DefaultMdmService(
             IntentFilter(Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED),
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
+        // Close the startup race between the StateFlow's initial read and receiver registration.
+        // Any change before registration is captured here; later changes are delivered to receiver.
+        _config.value = readConfig()
         // In ra CẢ BỐN giá trị, không chỉ "có bị quản lý hay không".
         // Khi test trên máy thật, đây là cách duy nhất phân biệt "app đọc được MDM" với
         // "app đang dùng giá trị mặc định trùng với giá trị quản trị viên đặt" — hai thứ

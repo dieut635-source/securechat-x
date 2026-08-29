@@ -17,6 +17,7 @@ import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.libraries.matrix.api.ClientUrlContentFetcher
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.mdm.api.MdmService
+import io.element.android.libraries.mdm.api.areHomeserverUrlsEquivalent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -36,10 +37,8 @@ class DefaultEnterpriseService(
     override fun homeserverAllowList(): List<String> = listOf(mdmService.config.value.homeserverUrl)
 
     override suspend fun isAllowedToConnectToHomeserver(homeserverUrl: String): Boolean {
-        return homeserverUrl.normalisedForComparison() == mdmService.config.value.homeserverUrl.normalisedForComparison()
+        return areHomeserverUrlsEquivalent(homeserverUrl, mdmService.config.value.homeserverUrl)
     }
-
-    private fun String.normalisedForComparison(): String = trim().trimEnd('/').lowercase()
 
     override suspend fun isElementProEnforced(serverName: String): Boolean = false
 
@@ -57,8 +56,8 @@ class DefaultEnterpriseService(
     override fun unifiedPushDefaultPushGateway(): String? = null
 
     override fun bugReportUrlFlow(sessionId: SessionId?): Flow<BugReportUrl> {
-        // UseDefault would post logs to Element's rageshake server (rageshakes.element.io).
-        // SecureChat has no bug-report endpoint of its own yet, so the feature stays off.
+        // The inherited default points at an upstream service. SecureChat has no bug-report
+        // endpoint of its own yet, so the feature stays off.
         return flowOf(BugReportUrl.Disabled)
     }
 

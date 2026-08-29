@@ -33,13 +33,13 @@ open class UserListStatePreviewParam : PreviewParameterProvider<UserListState> {
             aUserListState(isSearchActive = true, searchQuery = "someone", selectionMode = SelectionMode.Multiple),
             aUserListState(
                 isSearchActive = true,
-                searchQuery = "@someone:matrix.org",
+                searchQuery = "@someone:chat.securechat.com.au",
                 selectedUsers = aMatrixUserList().toImmutableList(),
                 searchResults = SearchBarResultState.Results(aListOfUserSearchResults()),
             ),
             aUserListState(
                 isSearchActive = true,
-                searchQuery = "@someone:matrix.org",
+                searchQuery = "@someone:chat.securechat.com.au",
                 selectionMode = SelectionMode.Multiple,
                 selectedUsers = aMatrixUserList().toImmutableList(),
                 searchResults = SearchBarResultState.Results(aListOfUserSearchResults()),
