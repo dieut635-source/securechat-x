@@ -13,7 +13,10 @@ The release application ID is `com.securechat.app`; the launcher and all user-fa
 - File sending: enabled by default and enforceable through managed configuration
 - Automatic logout: disabled by default and configurable in minutes
 - Analytics, crash reporting, and remote bug-report upload: disabled until SecureChat-owned endpoints are explicitly configured
-- Remote push: Firebase and UnifiedPush are both excluded; notifications require the app to be running and synchronizing
+- Remote push: Firebase stays excluded, so no notification metadata reaches Google. UnifiedPush is
+  enabled and pointed at SecureChat's own ntfy service; the fallback gateway is a non-routable
+  `.invalid` host so push fails closed rather than reaching a public gateway. Synapse pushes with
+  `PushFormat.EVENT_ID_ONLY`, so the push carries an event id and room id — never sender or content
 - Legal, policy, OAuth metadata, and help links: hosted on `chat.securechat.com.au`
 
 See [SECURECHAT.md](SECURECHAT.md) for managed-configuration keys, signing requirements, and fork-maintenance notes.

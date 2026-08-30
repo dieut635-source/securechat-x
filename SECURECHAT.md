@@ -14,7 +14,8 @@ Fork của `element-hq/element-x-android`, rebrand thành **SecureChat** cho hom
 (Actions → SecureChat APK Build → Run workflow).
 
 - JDK 21, Gradle wrapper của repo.
-- Build `:app:assembleFdroidDebug`; cả Firebase lẫn UnifiedPush đều bị loại khỏi dependency graph.
+- Build `:app:assembleFdroidDebug`; Firebase bị loại khỏi dependency graph. UnifiedPush được bật
+  và trỏ vào dịch vụ ntfy của chính SecureChat.
   Đây là build kiểm thử, có application ID và nhãn `dbg` riêng, không thay thế được bản production.
 - Artifact: **`app-debug.apk`** (bản **arm64-v8a**, ~99 MB — mọi điện thoại Android đời mới đều là arm64).
   Cần bản universal thì cập nhật các lệnh sao chép ở bước "Collect APKs" trong workflow.
@@ -67,9 +68,17 @@ tốn công và làm mọi lần merge upstream xung đột, trong khi người 
 
 - PostHog và Sentry chỉ được biên dịch khi có endpoint/khoá do SecureChat cấu hình. Mặc định cả hai tắt.
 - Không có endpoint upload bug report mặc định.
-- Firebase và UnifiedPush đều bị loại khỏi build. Ứng dụng không đăng ký pusher từ xa; thông báo chỉ
-  xuất hiện sau khi tiến trình đang chạy nhận được sự kiện qua đồng bộ Matrix. Mọi thiết kế push riêng
-  trong tương lai phải qua một đợt security review độc lập trước khi bật lại.
+- Firebase vẫn bị loại khỏi build: nó sẽ đưa metadata thông báo qua hạ tầng Google.
+- UnifiedPush được bật, trỏ vào ntfy tự host tại `push.securechat.com.au`. Gateway dự phòng trong
+  `UnifiedPushConfig` cố ý giữ một host `.invalid` không định tuyến được: nếu ntfy ngừng quảng bá
+  Matrix gateway, push phải hỏng thẳng chứ không được âm thầm rơi sang gateway công cộng
+  `matrix.gateway.unifiedpush.org` như Element X gốc. Đừng đổi giá trị đó thành URL thật.
+- `RustPushersService` đăng ký pusher với `PushFormat.EVENT_ID_ONLY`, nên Synapse chỉ gửi `event_id`,
+  `room_id` và số tin chưa đọc — không tên người gửi, không nội dung. Kể cả khi máy chủ ntfy bị chiếm,
+  kẻ tấn công chỉ biết có tin đến vào lúc nào.
+- Cần app distributor riêng (ntfy) trên máy: `UnifiedPushDistributorProvider` loại trừ chính ứng dụng.
+- Còn hở: ntfy đang cho anonymous đọc/ghi, bảo vệ duy nhất là tên topic ngẫu nhiên. Phải siết bằng
+  xác thực ntfy và token cấp qua Knox trước khi lên production.
 - Các app-link web cũ đã được bỏ khỏi manifest. Scheme chuẩn `matrix:` vẫn được hỗ trợ để tương tác
   với hệ sinh thái Matrix.
 
