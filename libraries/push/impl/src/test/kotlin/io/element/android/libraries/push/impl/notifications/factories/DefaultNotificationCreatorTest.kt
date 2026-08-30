@@ -82,7 +82,13 @@ class DefaultNotificationCreatorTest : RobolectricTest() {
 
     @Test
     fun `test createFallbackNotification`() {
-        val sut = createNotificationCreator()
+        // Thông báo dự phòng của SecureChat dùng kênh noisy, nên fake phải trả lời
+        // getNoisyNotificationChannelId thay vì ném lỗi "lambda không bao giờ được gọi".
+        val sut = createNotificationCreator(
+            enterpriseService = FakeEnterpriseService(
+                getNoisyNotificationChannelIdResult = { null },
+            ),
+        )
         val result = sut.createFallbackNotification(
             existingNotification = null,
             notificationAccountParams = aNotificationAccountParams(),
@@ -93,6 +99,45 @@ class DefaultNotificationCreatorTest : RobolectricTest() {
         result.commonAssertions(
             expectedCategory = null,
         )
+    }
+
+    /**
+     * SecureChat divergence from upstream, pinned on purpose.
+     *
+     * When a PIN is configured — which SecureChat mandates — DefaultNotificationDrawerManager
+     * routes EVERY message through the fallback notification. Upstream keeps that notification
+     * silent, so on SecureChat the user is never told a message arrived and notifications are
+     * effectively dead. It must alert.
+     *
+     * It must alert WITHOUT revealing anything: no sender, no message body. If a future upstream
+     * merge silences this again, or someone "improves" it by adding content, this test fails.
+     */
+    @Test
+    fun `SecureChat - fallback notification alerts but reveals nothing`() {
+        val sut = createNotificationCreator(
+            enterpriseService = FakeEnterpriseService(
+                getNoisyNotificationChannelIdResult = { null },
+            ),
+        )
+        val result = sut.createFallbackNotification(
+            existingNotification = null,
+            notificationAccountParams = aNotificationAccountParams(),
+            fallbackNotifiableEvents = listOf(
+                aFallbackNotifiableEvent(),
+            )
+        )
+
+        // Alerts: noisy channel, and not demoted to silent on pre-O devices.
+        assertThat(result.channelId).contains("NOISY")
+        assertThat(result.priority).isEqualTo(NotificationCompat.PRIORITY_DEFAULT)
+
+        // Alerts on EVERY message, not just the first one. With FLAG_ONLY_ALERT_ONCE the counter
+        // would climb in silence and every message after the first would be missed.
+        assertThat(result.flags and Notification.FLAG_ONLY_ALERT_ONCE).isEqualTo(0)
+
+        // Reveals nothing: the title is the app name, never a sender.
+        assertThat(result.extras.getString(Notification.EXTRA_TITLE))
+            .isEqualTo(aBuildMeta().applicationName)
     }
 
     @Test
