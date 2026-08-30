@@ -1,4 +1,0 @@
-modules:
-  - module: securechat_single_device.module.SecureChatSingleDeviceModule
-    config:
-      mode: audit
