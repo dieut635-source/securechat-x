@@ -6,6 +6,8 @@
   ~ Please see LICENSE files in the repository root for full details.
   -->
 <paths>
-    <cache-path name="cache" path="." />
+    <cache-path name="camera_capture" path="temp/camera/" />
+    <cache-path name="media" path="temp/media/" />
+    <cache-path name="outgoing" path="temp/outgoing/" />
     <files-path name="notification_sounds" path="notification_sounds/" />
 </paths>

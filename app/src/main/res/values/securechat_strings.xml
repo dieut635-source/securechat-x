@@ -28,9 +28,14 @@
     <!-- features/messages/impl -->
     <string name="screen_room_timeline_legacy_call">"Unsupported call. Ask if the caller can use the new SecureChat app."</string>
 
+    <!-- libraries/push/impl: neutral fallbacks retained for builds without Google services. -->
+    <string name="push_distributor_firebase_android">"System push service"</string>
+    <string name="push_no_valid_google_play_services_apk_android">"Background notification services are unavailable. Notifications may be delayed."</string>
+
     <!-- features/login/impl -->
     <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
     <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+    <string name="screen_change_server_error_element_pro_required_action_android">"OK"</string>
     <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
     <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
     <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>

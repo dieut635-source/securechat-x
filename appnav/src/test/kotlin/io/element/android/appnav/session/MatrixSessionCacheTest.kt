@@ -99,13 +99,32 @@ class MatrixSessionCacheTest {
         matrixSessionCache.saveIntoSavedState(savedStateMap)
         assertThat(savedStateMap.size).isEqualTo(1)
         // Test Restore with non-empty map
-        matrixSessionCache.restoreWithSavedState(savedStateMap)
+        assertThat(matrixSessionCache.restoreWithSavedState(savedStateMap)).isTrue()
         // Empty the map
         matrixSessionCache.removeAll()
         assertThat(matrixSessionCache.getOrNull(A_SESSION_ID)).isNull()
         // Restore again
-        matrixSessionCache.restoreWithSavedState(savedStateMap)
+        assertThat(matrixSessionCache.restoreWithSavedState(savedStateMap)).isTrue()
         assertThat(matrixSessionCache.getOrNull(A_SESSION_ID)).isEqualTo(fakeMatrixClient)
+    }
+
+    @Test
+    fun `given a saved session when authentication rejects restoration then restore reports failure`() = runTest {
+        val fakeAuthenticationService = FakeMatrixAuthenticationService()
+        val matrixSessionCache = createMatrixSessionCache(fakeAuthenticationService)
+        fakeAuthenticationService.givenMatrixClient(
+            FakeMatrixClient(sessionCoroutineScope = backgroundScope, userIdServerNameLambda = { A_SESSION_ID.value })
+        )
+        assertThat(matrixSessionCache.getOrRestore(A_SESSION_ID).isSuccess).isTrue()
+        val savedStateMap = MutableSavedStateMapImpl { true }
+        matrixSessionCache.saveIntoSavedState(savedStateMap)
+        matrixSessionCache.removeAll()
+        fakeAuthenticationService.matrixClientResult = {
+            Result.failure(IllegalStateException("Session rejected by managed policy"))
+        }
+
+        assertThat(matrixSessionCache.restoreWithSavedState(savedStateMap)).isFalse()
+        assertThat(matrixSessionCache.getOrNull(A_SESSION_ID)).isNull()
     }
 
     @Test

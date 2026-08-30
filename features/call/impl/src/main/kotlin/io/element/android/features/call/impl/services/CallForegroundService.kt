@@ -9,6 +9,7 @@
 package io.element.android.features.call.impl.services
 
 import android.Manifest
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -65,13 +66,20 @@ class CallForegroundService : Service() {
         ).build()
         notificationManagerCompat.createNotificationChannel(foregroundServiceChannel)
 
-        val callActivityIntent = Intent(this, ElementCallActivity::class.java)
-        val pendingIntent = PendingIntentCompat.getActivity(this, 0, callActivityIntent, 0, false)
+        val callActivityIntent = ElementCallActivity.resumeCallFromNotificationIntent(this)
+        val pendingIntent = PendingIntentCompat.getActivity(
+            this,
+            0,
+            callActivityIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT,
+            false,
+        )
         val notification = NotificationCompat.Builder(this, foregroundServiceChannel.id)
             .setSmallIcon(CommonDrawables.ic_notification)
             .setContentTitle(getString(R.string.call_foreground_service_title_android))
             .setContentText(getString(R.string.call_foreground_service_message_android))
             .setContentIntent(pendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .build()
         val notificationId = NotificationIdProvider.getForegroundServiceNotificationId(ForegroundServiceType.ONGOING_CALL)
         val serviceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

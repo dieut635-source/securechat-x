@@ -1,28 +1,37 @@
-name: SecureChat Release APK
+name: SecureChat Production Source Gate
 
-# Chạy tay hoặc khi đẩy tag v* (ví dụ v0.1.0).
-# KHÔNG chạy tự động mỗi lần push: bản release phải là một hành động có chủ đích.
+# This workflow never receives the production signing key and never creates a distributable APK.
+# It validates the exact source revision before the isolated/offline release ceremony.
 on:
   workflow_dispatch:
     inputs:
+      expected_version:
+        description: 'Version in plugins/src/main/kotlin/Versions.kt (for example 26.08.3)'
+        required: true
+        type: string
       reason:
-        description: 'Lý do build (ghi vào tóm tắt)'
-        required: false
-        default: 'build tay'
+        description: 'Reason for running the production source gate'
+        required: true
+        type: string
   push:
     tags: [ 'v*' ]
 
 permissions:
   contents: read
 
+concurrency:
+  group: securechat-production-source-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -Dkotlin.daemon.jvm.options=-Xmx4g
   CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-configuration-cache -PallWarningsAsErrors=true
 
 jobs:
-  release:
-    name: Build APK release đã ký
+  source-gate:
+    name: Audit production source (no signing, no APK)
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Free disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
@@ -37,10 +46,97 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
+          lfs: true
           persist-credentials: false
 
-      - name: Kiểm tra cấu hình SecureChat
+      - name: Verify hydrated Git LFS objects
+        run: |
+          git lfs fsck
+          bash tools/git/validate_lfs.sh
+
+      # Full screenshot/unit-test suites need more memory than the default hosted runner provides.
+      - name: Increase swap space
+        run: |
+          sudo swapoff -a
+          sudo fallocate -l 8G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+
+      - name: Validate source version and ref
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+        run: |
+          set -euo pipefail
+          VERSION_NAME=$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          source = Path("plugins/src/main/kotlin/Versions.kt").read_text(encoding="utf-8")
+
+          def value(name: str) -> int:
+              match = re.search(rf"^private const val {name} = ([0-9]+)$", source, re.MULTILINE)
+              if match is None:
+                  raise SystemExit(f"Unable to read {name} from Versions.kt")
+              return int(match.group(1))
+
+          print(f"{value('versionYear')}.{value('versionMonth'):02d}.{value('versionReleaseNumber')}")
+          PY
+          )
+          SOURCE_COMMIT=$(git rev-parse "${GITHUB_SHA}^{commit}")
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+
+          case "$GITHUB_EVENT_NAME" in
+            push)
+              test "$GITHUB_REF_TYPE" = tag
+              if [ "$GITHUB_REF_NAME" != "v$VERSION_NAME" ]; then
+                echo "::error::Tag $GITHUB_REF_NAME does not match source version v$VERSION_NAME."
+                exit 1
+              fi
+              ;;
+            workflow_dispatch)
+              if [ "$GITHUB_REF_TYPE" != branch ] || [ "$GITHUB_REF_NAME" != "$DEFAULT_BRANCH" ]; then
+                echo "::error::Manual production gates must run from the default branch ($DEFAULT_BRANCH)."
+                exit 1
+              fi
+              if [ "$EXPECTED_VERSION" != "$VERSION_NAME" ]; then
+                echo "::error::Expected version $EXPECTED_VERSION does not match source version $VERSION_NAME."
+                exit 1
+              fi
+              ;;
+            *)
+              echo "::error::Unsupported event: $GITHUB_EVENT_NAME"
+              exit 1
+              ;;
+          esac
+
+          git merge-base --is-ancestor "$SOURCE_COMMIT" "origin/$DEFAULT_BRANCH" || {
+            echo "::error::The selected commit is not contained in origin/$DEFAULT_BRANCH."
+            exit 1
+          }
+
+          SHORT_COMMIT=$(printf '%s' "$SOURCE_COMMIT" | cut -c1-12)
+          {
+            echo "SECURECHAT_VERSION_NAME=$VERSION_NAME"
+            echo "SECURECHAT_SOURCE_COMMIT=$SOURCE_COMMIT"
+            echo "SECURECHAT_SHORT_COMMIT=$SHORT_COMMIT"
+          } >> "$GITHUB_ENV"
+
+      - name: Check SecureChat configuration
         run: bash tools/check/check_securechat_configuration.sh
+
+      - name: Require reviewed dependency checksums
+        run: |
+          test -f gradle/verification-metadata.xml || {
+            echo "::error::Missing reviewed gradle/verification-metadata.xml; production remains blocked."
+            exit 1
+          }
+          grep -Fq '<sha256 value=' gradle/verification-metadata.xml || {
+            echo "::error::Dependency verification metadata contains no SHA-256 checksums."
+            exit 1
+          }
 
       - name: Use JDK 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
@@ -48,130 +144,68 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Configure gradle
+      - name: Configure Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           cache-read-only: true
 
-      # Dừng NGAY nếu thiếu secret, thay vì build 10 phút rồi ra một APK ký bằng khoá debug
-      # mà nhìn bề ngoài không phân biệt được.
-      - name: Kiểm tra secret ký
-        env:
-          KS: ${{ secrets.SECURECHAT_KEYSTORE_BASE64 }}
-          KSP: ${{ secrets.SECURECHAT_KEYSTORE_PASSWORD }}
-          KA: ${{ secrets.SECURECHAT_KEY_ALIAS }}
-          KAP: ${{ secrets.SECURECHAT_KEY_PASSWORD }}
-          CERT_SHA256: ${{ secrets.SECURECHAT_RELEASE_CERT_SHA256 }}
-        run: |
-          missing=""
-          [ -z "$KS"  ] && missing="$missing SECURECHAT_KEYSTORE_BASE64"
-          [ -z "$KSP" ] && missing="$missing SECURECHAT_KEYSTORE_PASSWORD"
-          [ -z "$KA"  ] && missing="$missing SECURECHAT_KEY_ALIAS"
-          [ -z "$KAP" ] && missing="$missing SECURECHAT_KEY_PASSWORD"
-          [ -z "$CERT_SHA256" ] && missing="$missing SECURECHAT_RELEASE_CERT_SHA256"
-          if [ -n "$missing" ]; then
-            echo "::error::Thiếu secret:$missing"
-            echo "Tạo ở: Settings -> Secrets and variables -> Actions -> New repository secret"
-            echo "Tạo keystore theo mục 'Ký bản phát hành' trong SECURECHAT.md"
-            exit 1
-          fi
-          echo "Đủ 5 secret."
+      - name: Full unit-test suite
+        run: ./gradlew test $CI_GRADLE_ARG_PROPERTIES
 
-      - name: Giải mã keystore
-        env:
-          KS: ${{ secrets.SECURECHAT_KEYSTORE_BASE64 }}
-          KSP: ${{ secrets.SECURECHAT_KEYSTORE_PASSWORD }}
-        run: |
-          echo "$KS" | base64 -d > "$RUNNER_TEMP/securechat.keystore"
-          # File keystore hỏng sẽ báo lỗi rất khó hiểu ở giữa quá trình build -> kiểm tra ngay.
-          keytool -list -keystore "$RUNNER_TEMP/securechat.keystore" \
-                  -storepass "$KSP" >/dev/null
-          echo "Keystore đọc được."
+      - name: Screenshot verification
+        run: ./gradlew verifyPaparazziDebug $CI_GRADLE_ARG_PROPERTIES
 
-      - name: Lint
-        run: ./gradlew :app:lintFdroidRelease $CI_GRADLE_ARG_PROPERTIES
+      - name: Static quality gates
+        run: ./gradlew detekt ktlintCheck $CI_GRADLE_ARG_PROPERTIES
 
-      - name: Unit test
+      - name: Dependency vulnerability scan
         run: >-
           ./gradlew
-          :app:testFdroidDebugUnitTest
-          :libraries:deeplink:impl:testDebugUnitTest
-          :features:login:impl:testDebugUnitTest
-          :features:enterprise:impl-foss:testDebugUnitTest
-          :features:forward:impl:testDebugUnitTest
-          :features:logout:impl:testDebugUnitTest
-          :libraries:mdm:impl:testDebugUnitTest
-          :libraries:matrix:impl:testDebugUnitTest
-          :libraries:session-storage:impl:verifySqlDelightMigration
-          :libraries:session-storage:impl:testDebugUnitTest
-          :features:messages:impl:testDebugUnitTest
-          :features:share:impl:testDebugUnitTest
+          :dependencyCheckAggregate
+          --no-parallel
+          --no-configure-on-demand
+          $CI_GRADLE_ARG_PROPERTIES
+
+      - name: Upload dependency vulnerability reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: securechat-production-dependency-check
+          path: '**/build/reports/dependency-check-report.*'
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Lint release sources and verify embedded call assets
+        run: >-
+          ./gradlew
+          :app:lintFdroidRelease
           :features:call:impl:verifySecureChatCallAssets
           $CI_GRADLE_ARG_PROPERTIES
 
-      - name: Build APK release
-        env:
-          SECURECHAT_KEYSTORE_FILE: ${{ runner.temp }}/securechat.keystore
-          SECURECHAT_KEYSTORE_PASSWORD: ${{ secrets.SECURECHAT_KEYSTORE_PASSWORD }}
-          SECURECHAT_KEY_ALIAS: ${{ secrets.SECURECHAT_KEY_ALIAS }}
-          SECURECHAT_KEY_PASSWORD: ${{ secrets.SECURECHAT_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleFdroidRelease $CI_GRADLE_ARG_PROPERTIES
+      - name: Compile F-Droid release sources without signing
+        run: ./gradlew :app:compileFdroidReleaseSources $CI_GRADLE_ARG_PROPERTIES
 
-      - name: Xác minh nhận diện trong APK
+      - name: Assert that CI produced no release artifact
         run: |
-          D=app/build/outputs/apk/fdroid/release
-          BT=$(ls "$ANDROID_HOME"/build-tools/ | sort -V | tail -1)
-          found=0
-          for APK in "$D"/*.apk; do
-            [ -f "$APK" ] || continue
-            found=1
-            DUMP="$RUNNER_TEMP/$(basename "$APK").aapt.txt"
-            "$ANDROID_HOME/build-tools/$BT/aapt" dump badging "$APK" > "$DUMP"
-            "$ANDROID_HOME/build-tools/$BT/aapt" dump xmltree "$APK" AndroidManifest.xml >> "$DUMP"
-            bash tools/manifest/check_securechat_aapt_dump.sh "$DUMP"
-          done
-          [ "$found" -eq 1 ] || { echo "::error::Không tìm thấy APK trong $D"; exit 1; }
+          set -euo pipefail
+          RELEASE_ARTIFACT=$(find app/build -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' \) -print -quit 2>/dev/null || true)
+          if [ -n "$RELEASE_ARTIFACT" ]; then
+            echo "::error::Cloud CI unexpectedly produced a distributable release artifact: $RELEASE_ARTIFACT"
+            exit 1
+          fi
 
-      # Xác minh APK ĐÃ ĐƯỢC KÝ ĐÚNG KHOÁ. Đây là bước quan trọng nhất của workflow:
-      # nếu Gradle âm thầm lùi về khoá debug thì mọi thứ vẫn "thành công" mà bản phát ra
-      # lại ký bằng khoá công khai trong repo.
-      - name: Xác minh chữ ký
+      - name: Record source-gate result
         env:
-          EXPECTED_CERT_SHA256: ${{ secrets.SECURECHAT_RELEASE_CERT_SHA256 }}
+          RELEASE_REASON: ${{ inputs.reason }}
         run: |
-          D=app/build/outputs/apk/fdroid/release
-          APK=$(ls "$D"/*-arm64-v8a-release.apk "$D"/*-universal-release.apk 2>/dev/null | head -1)
-          [ -n "$APK" ] || { echo "::error::Không tìm thấy APK trong $D"; ls -R "$D" || true; exit 1; }
-          echo "APK: $APK"
-          BT=$(ls "$ANDROID_HOME"/build-tools/ | sort -V | tail -1)
-          "$ANDROID_HOME/build-tools/$BT/apksigner" verify --print-certs "$APK" | tee /tmp/certs.txt
-          # Khoá debug của Android luôn có CN=Android Debug. Thấy chuỗi này là ký sai khoá.
-          if grep -qi "CN=Android Debug" /tmp/certs.txt; then
-            echo "::error::APK đang ký bằng khoá DEBUG — KHÔNG được phát hành."
-            exit 1
-          fi
-          ACTUAL_CERT_SHA256=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' /tmp/certs.txt | head -1 | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')
-          EXPECTED_CERT_SHA256_NORMALIZED=$(printf '%s' "$EXPECTED_CERT_SHA256" | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')
-          if ! printf '%s' "$EXPECTED_CERT_SHA256_NORMALIZED" | grep -Eq '^[0-9a-f]{64}$'; then
-            echo "::error::SECURECHAT_RELEASE_CERT_SHA256 phải là vân tay SHA-256 gồm 64 ký tự hex."
-            exit 1
-          fi
-          if [ "$ACTUAL_CERT_SHA256" != "$EXPECTED_CERT_SHA256_NORMALIZED" ]; then
-            echo "::error::APK được ký bằng chứng chỉ không đúng với SECURECHAT_RELEASE_CERT_SHA256."
-            exit 1
-          fi
-          echo "Chữ ký khớp đúng chứng chỉ phát hành SecureChat."
           {
-            echo "### APK release đã ký"
-            echo '```'
-            grep -E "Signer #1 certificate (DN|SHA-256 digest)" /tmp/certs.txt || true
-            echo '```'
-            echo "Vân tay SHA-256 khớp SECURECHAT_RELEASE_CERT_SHA256."
+            echo "### SecureChat production source gate passed"
+            echo
+            echo "- Version: \`$SECURECHAT_VERSION_NAME\`"
+            echo "- Commit: \`$SECURECHAT_SOURCE_COMMIT\`"
+            echo "- Reason: ${RELEASE_REASON:-tag-triggered gate}"
+            echo "- Signing key exposed to GitHub: **no**"
+            echo "- Distributable APK/AAB produced: **no**"
+            echo
+            echo "Build and sign only with \`tools/release/build_securechat_offline.sh\` on the isolated release workstation."
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload APK release
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: securechat-release-apk
-          path: app/build/outputs/apk/fdroid/release/*.apk
-          if-no-files-found: error

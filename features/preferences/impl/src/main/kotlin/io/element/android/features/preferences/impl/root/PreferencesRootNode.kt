@@ -95,10 +95,12 @@ class PreferencesRootNode(
             onOpenUserProfile = callback::navigateToUserProfile,
             onOpenBlockedUsers = callback::navigateToBlockedUsers,
             onSignOutClick = {
-                if (state.directLogoutState.canDoDirectSignOut) {
-                    state.directLogoutState.eventSink(DirectLogoutEvent.Logout(ignoreSdkError = false))
-                } else {
-                    callback.startSignOutFlow()
+                if (state.showSignOut) {
+                    if (state.directLogoutState.canDoDirectSignOut) {
+                        state.directLogoutState.eventSink(DirectLogoutEvent.Logout(ignoreSdkError = false))
+                    } else {
+                        callback.startSignOutFlow()
+                    }
                 }
             },
             onDeactivateClick = callback::startAccountDeactivationFlow

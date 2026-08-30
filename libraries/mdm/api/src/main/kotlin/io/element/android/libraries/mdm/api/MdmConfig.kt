@@ -16,14 +16,16 @@ package io.element.android.libraries.mdm.api
  * managed device.
  */
 data class MdmConfig(
-    /** Homeserver the app signs in to. Key: `homeserver_url`. */
+    /** Homeserver the app signs in to. The compatibility key cannot override the locked URL. */
     val homeserverUrl: String,
-    /** Whether "Create account" is offered. Key: `allow_registration`. */
+    /** Registration is always false in the closed build; the compatibility key cannot enable it. */
     val allowRegistration: Boolean,
     /** Whether the user may send files, images, voice messages or shared content. Key: `allow_file_send`. */
     val allowFileSend: Boolean,
     /** Sign the user out after this many minutes in the background. 0 disables it. Key: `auto_logout_minutes`. */
     val autoLogoutMinutes: Int,
+    /** Managed restrictions are pending, unreadable, or malformed and therefore cannot be trusted. */
+    val restrictionsPending: Boolean = false,
 ) {
     /**
      * Một dòng gọn để ghi log. Cả bốn khoá đều là chính sách của quản trị viên, không phải
@@ -33,22 +35,36 @@ data class MdmConfig(
      */
     fun describe(): String =
         "homeserver_url=$homeserverUrl allow_registration=$allowRegistration " +
-            "allow_file_send=$allowFileSend auto_logout_minutes=$autoLogoutMinutes"
+            "allow_file_send=$allowFileSend auto_logout_minutes=$autoLogoutMinutes " +
+            "restrictions_pending=$restrictionsPending"
 
     companion object {
         const val KEY_HOMESERVER_URL = "homeserver_url"
         const val KEY_ALLOW_REGISTRATION = "allow_registration"
         const val KEY_ALLOW_FILE_SEND = "allow_file_send"
         const val KEY_AUTO_LOGOUT_MINUTES = "auto_logout_minutes"
+        // System-owned sentinel from UserManager.KEY_RESTRICTIONS_PENDING. It is intentionally not
+        // declared in app_restrictions.xml because administrators must not configure it manually.
+        const val KEY_RESTRICTIONS_PENDING = "restrictions_pending"
 
         const val DEFAULT_HOMESERVER_URL = "https://chat.securechat.com.au"
 
-        /** What an unmanaged device gets, and the fallback for any key an administrator leaves unset. */
+        /**
+         * The non-relaxable security baseline. Managed configuration may further restrict file
+         * sending or set auto logout, but cannot redirect authentication or enable registration.
+         */
         val default = MdmConfig(
             homeserverUrl = DEFAULT_HOMESERVER_URL,
             allowRegistration = false,
             allowFileSend = true,
             autoLogoutMinutes = 0,
+            restrictionsPending = false,
+        )
+
+        /** Fail-closed state until Android supplies a complete, valid restrictions snapshot. */
+        val restrictionsPending = default.copy(
+            allowFileSend = false,
+            restrictionsPending = true,
         )
     }
 }

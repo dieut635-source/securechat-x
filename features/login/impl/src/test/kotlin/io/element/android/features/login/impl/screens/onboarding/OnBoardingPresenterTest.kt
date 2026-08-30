@@ -82,7 +82,7 @@ class OnBoardingPresenterTest {
     }
 
     @Test
-    fun `present - initial state`() = runTest {
+    fun `present - QR login stays hidden when arbitrary homeservers are allowed`() = runTest {
         val buildMeta = aBuildMeta(
             applicationName = "A",
             productionApplicationName = "B",
@@ -104,8 +104,8 @@ class OnBoardingPresenterTest {
             assertThat(initialState.canCreateAccount).isFalse()
             assertThat(initialState.canReportBug).isFalse()
             assertThat(initialState.isAddingAccount).isFalse()
-            val finalState = awaitItem()
-            assertThat(finalState.canLoginWithQrCode).isTrue()
+            assertThat(awaitItem().canLoginWithQrCode).isFalse()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -159,7 +159,6 @@ class OnBoardingPresenterTest {
             rageshakeFeatureAvailability = { flowOf(false) },
         )
         presenter.test {
-            skipItems(1)
             awaitItem().also { state ->
                 assertThat(state.canReportBug).isFalse()
                 repeat(7) {
@@ -200,7 +199,7 @@ class OnBoardingPresenterTest {
             ),
         )
         presenter.test {
-            skipItems(3)
+            skipItems(2)
             awaitItem().also {
                 assertThat(it.defaultAccountProvider).isEqualTo(ACCOUNT_PROVIDER_FROM_LINK)
                 assertThat(it.canLoginWithQrCode).isFalse()
@@ -278,7 +277,7 @@ class OnBoardingPresenterTest {
             accountProviderDataSource = accountProviderDataSource,
         )
         presenter.test {
-            skipItems(3)
+            skipItems(2)
             awaitItem().also {
                 assertThat(it.defaultAccountProvider).isEqualTo(A_HOMESERVER_URL)
                 assertThat(accountProviderDataSource.flow.first().url).isEqualTo(AuthenticationConfig.DEFAULT_HOMESERVER_URL)
@@ -308,7 +307,7 @@ class OnBoardingPresenterTest {
     }
 
     @Test
-    fun `present - create account is offered once an administrator pushes allow_registration`() = runTest {
+    fun `present - managed configuration cannot enable account creation in the closed build`() = runTest {
         val mdmService = FakeMdmService()
         val presenter = createPresenter(
             mdmService = mdmService,
@@ -316,7 +315,7 @@ class OnBoardingPresenterTest {
         presenter.test {
             assertThat(awaitState { !it.canCreateAccount }.canCreateAccount).isFalse()
             mdmService.emit(MdmConfig.default.copy(allowRegistration = true))
-            assertThat(awaitState { it.canCreateAccount }.canCreateAccount).isTrue()
+            assertThat(awaitItem().canCreateAccount).isFalse()
             cancelAndIgnoreRemainingEvents()
         }
     }

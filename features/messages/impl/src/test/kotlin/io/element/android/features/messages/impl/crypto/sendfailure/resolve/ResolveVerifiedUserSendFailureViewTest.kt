@@ -13,6 +13,7 @@ package io.element.android.features.messages.impl.crypto.sendfailure.resolve
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EventsRecorder
@@ -23,7 +24,7 @@ import org.junit.Test
 
 class ResolveVerifiedUserSendFailureViewTest : RobolectricTest() {
     @Test
-    fun `clicking on resolve and resend emit the expected event`() = runAndroidComposeUiTest {
+    fun `e2ee bypass action is not displayed`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<ResolveVerifiedUserSendFailureEvent>()
         setResolveVerifiedUserSendFailureView(
             state = aResolveVerifiedUserSendFailureState(
@@ -32,8 +33,10 @@ class ResolveVerifiedUserSendFailureViewTest : RobolectricTest() {
             ),
         )
 
-        clickOn(res = CommonStrings.screen_resolve_send_failure_changed_identity_primary_button_title)
-        eventsRecorder.assertSingle(ResolveVerifiedUserSendFailureEvent.ResolveAndResend)
+        onNodeWithText(
+            activity!!.getString(CommonStrings.screen_resolve_send_failure_changed_identity_primary_button_title)
+        ).assertDoesNotExist()
+        eventsRecorder.assertEmpty()
     }
 
     @Test

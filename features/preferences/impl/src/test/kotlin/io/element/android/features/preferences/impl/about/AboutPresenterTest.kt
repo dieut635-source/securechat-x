@@ -29,6 +29,7 @@ class AboutPresenterTest {
         }.test {
             val initialState = awaitItem()
             assertThat(initialState.secureChatLegals).isEqualTo(getAllLegals())
+            assertThat(initialState.secureChatLegals).isEmpty()
         }
     }
 }

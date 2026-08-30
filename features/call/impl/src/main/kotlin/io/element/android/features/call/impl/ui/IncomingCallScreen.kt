@@ -54,6 +54,7 @@ import io.element.android.libraries.ui.strings.CommonStrings
 @Composable
 internal fun IncomingCallScreen(
     notificationData: CallNotificationData,
+    revealCallerDetails: Boolean,
     onAnswer: (CallNotificationData) -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -70,21 +71,29 @@ internal fun IncomingCallScreen(
                 .weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Avatar(
-                avatarData = AvatarData(
-                    id = notificationData.senderId.value,
-                    name = notificationData.senderName,
-                    url = notificationData.avatarUrl,
-                    size = AvatarSize.IncomingCall,
-                ),
-                avatarType = AvatarType.User,
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = notificationData.senderName ?: notificationData.senderId.value,
-                style = ElementTheme.typography.fontHeadingMdBold,
-                textAlign = TextAlign.Center,
-            )
+            if (revealCallerDetails) {
+                Avatar(
+                    avatarData = AvatarData(
+                        id = notificationData.senderId.value,
+                        name = notificationData.senderName,
+                        url = notificationData.avatarUrl,
+                        size = AvatarSize.IncomingCall,
+                    ),
+                    avatarType = AvatarType.User,
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = notificationData.senderName ?: notificationData.senderId.value,
+                    style = ElementTheme.typography.fontHeadingMdBold,
+                    textAlign = TextAlign.Center,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.element_call),
+                    style = ElementTheme.typography.fontHeadingMdBold,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.screen_incoming_call_subtitle_android),
@@ -165,6 +174,7 @@ internal fun IncomingCallScreenPreview(
 ) = ElementPreview {
     IncomingCallScreen(
         notificationData = state,
+        revealCallerDetails = false,
         onAnswer = {},
         onCancel = {},
     )

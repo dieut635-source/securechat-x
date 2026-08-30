@@ -31,9 +31,11 @@
         <activity
             android:name=".ui.ElementCallActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden|keyboard|navigation|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="false"
             android:label="@string/element_call"
             android:launchMode="singleTask"
-            android:supportsPictureInPicture="true"
+            android:supportsPictureInPicture="false"
             android:taskAffinity="${applicationId}.call" />
 
         <activity

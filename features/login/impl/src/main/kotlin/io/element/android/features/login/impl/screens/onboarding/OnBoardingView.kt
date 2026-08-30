@@ -10,6 +10,7 @@ package io.element.android.features.login.impl.screens.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -199,48 +199,29 @@ private fun AddOtherAccountScaffold(
 
 @Composable
 private fun OnBoardingContent(state: OnBoardingState) {
-    Box(
+    Column(
         modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = BiasAlignment(
-                horizontalBias = 0f,
-                verticalBias = -0.4f
-            )
-        ) {
-            SecureChatLogoAtom(
-                size = SecureChatLogoAtomSize.Large,
-                modifier = Modifier.padding(top = SecureChatLogoAtomSize.Large.shadowRadius / 2)
-            )
-        }
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = BiasAlignment(
-                horizontalBias = 0f,
-                verticalBias = 0.6f
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalAlignment = CenterHorizontally,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_title),
-                    color = ElementTheme.colors.textPrimary,
-                    style = ElementTheme.typography.fontHeadingLgBold,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_message, state.productionApplicationName),
-                    color = ElementTheme.colors.textPrimary,
-                    style = ElementTheme.typography.fontBodyLgRegular,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
+        SecureChatLogoAtom(
+            size = SecureChatLogoAtomSize.Large,
+            modifier = Modifier.padding(top = SecureChatLogoAtomSize.Large.shadowRadius / 2)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(id = R.string.screen_onboarding_welcome_title),
+            color = ElementTheme.colors.textPrimary,
+            style = ElementTheme.typography.fontHeadingLgBold,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(id = R.string.screen_onboarding_welcome_message, state.productionApplicationName),
+            color = ElementTheme.colors.textPrimary,
+            style = ElementTheme.typography.fontBodyLgRegular,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

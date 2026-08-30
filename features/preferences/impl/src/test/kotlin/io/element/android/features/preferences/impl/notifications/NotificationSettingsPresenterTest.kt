@@ -133,13 +133,14 @@ class NotificationSettingsPresenterTest {
     fun `present - set notifications enabled`() = runTest {
         val unregisterWithResult = lambdaRecorder<MatrixClient, Result<Unit>> { Result.success(Unit) }
         val ensurePusherIsRegisteredResult = lambdaRecorder<Result<Unit>> { Result.success(Unit) }
+        val pushProvider = FakePushProvider(
+            unregisterWithResult = unregisterWithResult,
+            distributors = listOf(Distributor("aDistributorValue", "aDistributorName")),
+        )
         val presenter = createNotificationSettingsPresenter(
             pushService = FakePushService(
-                currentPushProvider = {
-                    FakePushProvider(
-                        unregisterWithResult = unregisterWithResult,
-                    )
-                },
+                availablePushProviders = listOf(pushProvider),
+                currentPushProvider = { pushProvider },
                 ensurePusherIsRegisteredResult = ensurePusherIsRegisteredResult,
             )
         )
@@ -161,6 +162,35 @@ class NotificationSettingsPresenterTest {
             }.last()
             assertThat(updatedState2.appSettings.appNotificationsEnabled).isTrue()
             ensurePusherIsRegisteredResult.assertions().isCalledOnce()
+        }
+    }
+
+    @Test
+    fun `present - no remote provider is a supported local sync mode`() = runTest {
+        val ensurePusherIsRegisteredResult = lambdaRecorder<Result<Unit>> { Result.success(Unit) }
+        val presenter = createNotificationSettingsPresenter(
+            pushService = FakePushService(
+                availablePushProviders = emptyList(),
+                currentPushProvider = { null },
+                ensurePusherIsRegisteredResult = ensurePusherIsRegisteredResult,
+            )
+        )
+
+        presenter.test {
+            val initialState = consumeItemsUntilPredicate {
+                it.matrixSettings is NotificationSettingsState.MatrixSettings.Valid
+            }.last()
+            assertThat(initialState.availablePushDistributors).isEmpty()
+            assertThat(initialState.currentPushDistributor).isEqualTo(AsyncData.Uninitialized)
+            assertThat(initialState.showAdvancedSettings).isFalse()
+
+            initialState.eventSink(NotificationSettingsEvent.SetNotificationsEnabled(false))
+            val disabledState = consumeItemsUntilPredicate { !it.appSettings.appNotificationsEnabled }.last()
+            disabledState.eventSink(NotificationSettingsEvent.SetNotificationsEnabled(true))
+            consumeItemsUntilPredicate { it.appSettings.appNotificationsEnabled }
+
+            ensurePusherIsRegisteredResult.assertions().isNeverCalled()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

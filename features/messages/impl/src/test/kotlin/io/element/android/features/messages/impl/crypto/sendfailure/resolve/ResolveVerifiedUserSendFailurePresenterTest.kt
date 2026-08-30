@@ -143,6 +143,7 @@ class ResolveVerifiedUserSendFailurePresenterTest {
 
     @Test
     fun `present - verified user unsigned device failure resolve and resend scenario`() = runTest {
+        var bypassCallCount = 0
         val room = FakeJoinedRoom(
             baseRoom = FakeBaseRoom(
             userDisplayNameResult = { userId ->
@@ -150,6 +151,7 @@ class ResolveVerifiedUserSendFailurePresenterTest {
             },
         ),
             ignoreDeviceTrustAndResendResult = { _, _ ->
+                bypassCallCount++
                 Result.success(Unit)
             },
         )
@@ -166,20 +168,10 @@ class ResolveVerifiedUserSendFailurePresenterTest {
                 state.eventSink(ResolveVerifiedUserSendFailureEvent.ResolveAndResend)
             }
             awaitItem().also { state ->
-                assertThat(state.resolveAction).isEqualTo(AsyncAction.Loading)
+                assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.UnsignedDevice.FromYou)
+                assertThat(state.resolveAction).isInstanceOf(AsyncAction.Failure::class.java)
             }
-            // This should move to the next user
-            skipItems(2)
-            awaitItem().also { state ->
-                assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.UnsignedDevice.FromOther(A_USER_ID_2.value))
-                assertThat(state.resolveAction).isEqualTo(AsyncAction.Success(Unit))
-                state.eventSink(ResolveVerifiedUserSendFailureEvent.ResolveAndResend)
-            }
-
-            skipItems(3)
-            awaitItem().also { state ->
-                assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.None)
-            }
+            assertThat(bypassCallCount).isEqualTo(0)
             ensureAllEventsConsumed()
         }
     }
@@ -207,9 +199,6 @@ class ResolveVerifiedUserSendFailurePresenterTest {
             awaitItem().also { state ->
                 assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.UnsignedDevice.FromYou)
                 state.eventSink(ResolveVerifiedUserSendFailureEvent.ResolveAndResend)
-            }
-            awaitItem().also { state ->
-                assertThat(state.resolveAction).isEqualTo(AsyncAction.Loading)
             }
             awaitItem().also { state ->
                 assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.UnsignedDevice.FromYou)
@@ -254,6 +243,7 @@ class ResolveVerifiedUserSendFailurePresenterTest {
 
     @Test
     fun `present - verified user changed identity failure resolve and resend scenario`() = runTest {
+        var bypassCallCount = 0
         val room = FakeJoinedRoom(
             baseRoom = FakeBaseRoom(
             userDisplayNameResult = { userId ->
@@ -261,6 +251,7 @@ class ResolveVerifiedUserSendFailurePresenterTest {
             },
         ),
             withdrawVerificationAndResendResult = { _, _ ->
+                bypassCallCount++
                 Result.success(Unit)
             },
         )
@@ -277,20 +268,10 @@ class ResolveVerifiedUserSendFailurePresenterTest {
                 state.eventSink(ResolveVerifiedUserSendFailureEvent.ResolveAndResend)
             }
             awaitItem().also { state ->
-                assertThat(state.resolveAction).isEqualTo(AsyncAction.Loading)
+                assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.ChangedIdentity(A_USER_ID.value))
+                assertThat(state.resolveAction).isInstanceOf(AsyncAction.Failure::class.java)
             }
-            // This should move to the next user
-            skipItems(2)
-            awaitItem().also { state ->
-                assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.ChangedIdentity(A_USER_ID_2.value))
-                assertThat(state.resolveAction).isEqualTo(AsyncAction.Success(Unit))
-                state.eventSink(ResolveVerifiedUserSendFailureEvent.ResolveAndResend)
-            }
-
-            skipItems(3)
-            awaitItem().also { state ->
-                assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.None)
-            }
+            assertThat(bypassCallCount).isEqualTo(0)
             ensureAllEventsConsumed()
         }
     }
@@ -318,9 +299,6 @@ class ResolveVerifiedUserSendFailurePresenterTest {
             awaitItem().also { state ->
                 assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.ChangedIdentity(A_USER_ID.value))
                 state.eventSink(ResolveVerifiedUserSendFailureEvent.ResolveAndResend)
-            }
-            awaitItem().also { state ->
-                assertThat(state.resolveAction).isEqualTo(AsyncAction.Loading)
             }
             awaitItem().also { state ->
                 assertThat(state.verifiedUserSendFailure).isEqualTo(VerifiedUserSendFailure.ChangedIdentity(A_USER_ID.value))

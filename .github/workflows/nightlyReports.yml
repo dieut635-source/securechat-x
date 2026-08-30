@@ -81,7 +81,12 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
       - name: Dependency analysis
-        run: ./gradlew dependencyCheckAnalyze $CI_GRADLE_ARG_PROPERTIES
+        run: >-
+          ./gradlew
+          :dependencyCheckAggregate
+          --no-parallel
+          --no-configure-on-demand
+          $CI_GRADLE_ARG_PROPERTIES
       - name: Upload dependency analysis
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

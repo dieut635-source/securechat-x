@@ -25,6 +25,7 @@ fun aSessionData(
     userDisplayName: String? = null,
     userAvatarUrl: String? = null,
     accountProvider: String? = null,
+    loginType: LoginType = LoginType.UNKNOWN,
 ): SessionData {
     return SessionData(
         userId = sessionId,
@@ -35,7 +36,7 @@ fun aSessionData(
         oAuthData = null,
         loginTimestamp = null,
         isTokenValid = isTokenValid,
-        loginType = LoginType.UNKNOWN,
+        loginType = loginType,
         passphrase = null,
         sessionPath = sessionPath,
         cachePath = cachePath,

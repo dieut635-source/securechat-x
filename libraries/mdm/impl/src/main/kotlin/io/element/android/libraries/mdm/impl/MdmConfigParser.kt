@@ -8,91 +8,115 @@
 package io.element.android.libraries.mdm.impl
 
 import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.api.areHomeserverUrlsEquivalent
 import java.net.URI
 
 /**
  * Turns the raw key/value map an MDM pushes into an [MdmConfig].
  *
- * Kept free of Android types so it can be unit tested directly. It is deliberately lenient: MDM
- * consoles are hand-edited and routinely deliver the wrong type - a checkbox arrives as the string
- * "true", a number as "30 " with a stray space. Anything that cannot be understood falls back to the
- * default for that key rather than failing the whole configuration, because a device that refuses to
- * parse its policy is a device an administrator cannot fix remotely.
+ * Kept free of Android types so it can be unit tested directly. A missing key inherits the
+ * documented manual-install default. A present key must have exactly the Android type and value
+ * declared in `app_restrictions.xml`; otherwise the entire snapshot stays fail-closed until the
+ * administrator fixes it. This prevents a malformed partial policy from silently becoming more
+ * permissive than intended.
  */
 object MdmConfigParser {
     fun parse(raw: Map<String, Any?>): MdmConfig {
         val default = MdmConfig.default
+
+        val pending = parseOptional(
+            raw = raw,
+            key = MdmConfig.KEY_RESTRICTIONS_PENDING,
+            default = false,
+            parser = ::parseBoolean,
+        ) ?: return MdmConfig.restrictionsPending
+        if (pending) {
+            // Do not briefly expose permissive defaults while a DPC has explicitly announced that
+            // the final application restrictions are still in flight.
+            return MdmConfig.restrictionsPending
+        }
+
+        val homeserverUrl = parseOptional(
+            raw = raw,
+            key = MdmConfig.KEY_HOMESERVER_URL,
+            default = default.homeserverUrl,
+            parser = ::parseHomeserverUrl,
+        ) ?: return MdmConfig.restrictionsPending
+        val allowRegistration = parseOptional(
+            raw = raw,
+            key = MdmConfig.KEY_ALLOW_REGISTRATION,
+            default = default.allowRegistration,
+            parser = ::parseBoolean,
+        ) ?: return MdmConfig.restrictionsPending
+        // Registration is deliberately non-relaxable in this closed-distribution build. Treat an
+        // attempted override as an invalid policy instead of pretending it was applied.
+        if (allowRegistration) return MdmConfig.restrictionsPending
+        val allowFileSend = parseOptional(
+            raw = raw,
+            key = MdmConfig.KEY_ALLOW_FILE_SEND,
+            default = default.allowFileSend,
+            parser = ::parseBoolean,
+        ) ?: return MdmConfig.restrictionsPending
+        val autoLogoutMinutes = parseOptional(
+            raw = raw,
+            key = MdmConfig.KEY_AUTO_LOGOUT_MINUTES,
+            default = default.autoLogoutMinutes,
+            parser = ::parseMinutes,
+        ) ?: return MdmConfig.restrictionsPending
+        // A server-bound single session cannot safely be recreated by the user. Automatic logout
+        // is therefore non-relaxable: local PIN lock is the only background access control.
+        if (autoLogoutMinutes != 0) return MdmConfig.restrictionsPending
+
         return MdmConfig(
-            homeserverUrl = parseHomeserverUrl(raw[MdmConfig.KEY_HOMESERVER_URL]) ?: default.homeserverUrl,
-            allowRegistration = parseBoolean(raw[MdmConfig.KEY_ALLOW_REGISTRATION]) ?: default.allowRegistration,
-            allowFileSend = parseBoolean(raw[MdmConfig.KEY_ALLOW_FILE_SEND]) ?: default.allowFileSend,
-            autoLogoutMinutes = parseMinutes(raw[MdmConfig.KEY_AUTO_LOGOUT_MINUTES]) ?: default.autoLogoutMinutes,
+            homeserverUrl = homeserverUrl,
+            allowRegistration = allowRegistration,
+            allowFileSend = allowFileSend,
+            autoLogoutMinutes = autoLogoutMinutes,
+            restrictionsPending = false,
         )
     }
 
+    private inline fun <T> parseOptional(
+        raw: Map<String, Any?>,
+        key: String,
+        default: T,
+        parser: (Any?) -> T?,
+    ): T? = if (raw.containsKey(key)) parser(raw[key]) else default
+
     /**
-     * Returns null - meaning "use the default" - for anything that is not a usable https URL.
-     * A plain host is accepted and https:// is added, since that is what an administrator is most
-     * likely to type. http:// is rejected outright: sending corporate messages in the clear because
-     * of a typo in a console field is not a failure mode worth supporting.
+     * Accepts only URL spellings that identify the locked SecureChat homeserver. Returning the
+     * canonical value prevents case, default-port and trailing-slash differences from leaking into
+     * session policy. Any other valid HTTPS server still fails closed.
      */
     internal fun parseHomeserverUrl(value: Any?): String? {
         val text = (value as? String)?.trim().orEmpty()
-        if (text.isEmpty()) return null
-        val withScheme = when {
-            text.startsWith("https://", ignoreCase = true) -> "https://${text.substring(8)}"
-            text.startsWith("http://", ignoreCase = true) -> return null
-            text.contains("://") -> return null
-            else -> "https://$text"
+        // Unlike interactive login input, an MDM policy must be explicit: accepting a bare host and
+        // adding a scheme would hide a provisioning error from the administrator.
+        if (!text.startsWith("https://", ignoreCase = true)) return null
+        val uri = try {
+            URI(text).parseServerAuthority()
+        } catch (_: Exception) {
+            return null
         }
-        val uri = runCatching { URI(withScheme).parseServerAuthority() }.getOrNull() ?: return null
-        if (!uri.scheme.equals("https", ignoreCase = true) || uri.isOpaque || uri.rawAuthority == null) return null
-        if (uri.rawUserInfo != null || uri.rawQuery != null || uri.rawFragment != null) return null
-        // URI reports -1 for both an absent port and some empty/malformed authorities. The strict
-        // server-authority parse rejects non-numeric ports; explicitly reject an empty trailing one.
-        if (uri.rawAuthority.endsWith(':')) return null
-        if (uri.port != -1 && uri.port !in 1..65_535) return null
-        val host = uri.host ?: return null
-        if (!host.isValidHomeserverHost()) return null
-        return withScheme.trimEnd('/')
-    }
-
-    private fun String.isValidHomeserverHost(): Boolean {
-        val unwrapped = removePrefix("[").removeSuffix("]")
-        // parseServerAuthority() has already validated a bracketed IPv6 literal.
-        if (':' in unwrapped) return true
-        if (length > 253 || !contains('.')) return false
-
-        val labels = split('.')
-        if (labels.all { label -> label.all(Char::isDigit) }) {
-            return labels.size == 4 && labels.all { label ->
-                label.isNotEmpty() && label.toIntOrNull()?.let { it in 0..255 } == true
-            }
-        }
-        return labels.all { label ->
-            label.length in 1..63 &&
-                label.first().isLetterOrDigit() &&
-                label.last().isLetterOrDigit() &&
-                label.all { character -> character.isLetterOrDigit() || character == '-' }
+        // java.net.URI normalizes an empty trailing port ("host:") to no port. Reject the
+        // ambiguous spelling before canonical comparison instead of silently accepting it.
+        if (uri.rawAuthority?.endsWith(':') != false) return null
+        // Only the origin is a valid homeserver policy. One conventional trailing slash is
+        // normalized, but paths and repeated slashes are rejected rather than reinterpreted.
+        val path = uri.rawPath.orEmpty()
+        if (path.isNotEmpty() && path != "/") return null
+        return MdmConfig.DEFAULT_HOMESERVER_URL.takeIf {
+            areHomeserverUrlsEquivalent(text, MdmConfig.DEFAULT_HOMESERVER_URL)
         }
     }
 
-    internal fun parseBoolean(value: Any?): Boolean? = when (value) {
-        is Boolean -> value
-        is String -> when (value.trim().lowercase()) {
-            "true", "1", "yes", "on" -> true
-            "false", "0", "no", "off" -> false
-            else -> null
-        }
-        is Int -> value != 0
-        else -> null
-    }
+    /** Android `restrictionType="bool"` values must arrive as a real Bundle Boolean. */
+    internal fun parseBoolean(value: Any?): Boolean? = value as? Boolean
 
-    /** Negative values are treated as "not set"; they would otherwise mean "log out immediately, always". */
-    internal fun parseMinutes(value: Any?): Int? = when (value) {
-        is Int -> value.takeIf { it >= 0 }
-        is Long -> value.takeIf { it in 0..Int.MAX_VALUE.toLong() }?.toInt()
-        is String -> value.trim().toIntOrNull()?.takeIf { it >= 0 }
-        else -> null
-    }
+    /** Android `restrictionType="integer"` values must be a bounded Bundle Int. */
+    internal fun parseMinutes(value: Any?): Int? =
+        (value as? Int)?.takeIf { it in 0..MAX_AUTO_LOGOUT_MINUTES }
+
+    /** Avoid accepting an accidentally enormous timeout that is operationally equivalent to off. */
+    internal const val MAX_AUTO_LOGOUT_MINUTES = 43_200 // 30 days
 }

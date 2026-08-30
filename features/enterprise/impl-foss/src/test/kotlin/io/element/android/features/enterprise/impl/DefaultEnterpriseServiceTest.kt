@@ -14,57 +14,54 @@ import io.element.android.features.enterprise.api.BugReportUrl
 import io.element.android.libraries.matrix.test.A_HOMESERVER_URL
 import io.element.android.libraries.matrix.test.A_SESSION_ID
 import io.element.android.libraries.mdm.api.MdmConfig
-import io.element.android.libraries.mdm.test.FakeMdmService
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
 class DefaultEnterpriseServiceTest {
     @Test
-    fun `homeserverAllowList is the homeserver from the managed configuration`() {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+    fun `homeserverAllowList contains only the locked SecureChat homeserver`() {
+        val defaultEnterpriseService = DefaultEnterpriseService()
         assertThat(defaultEnterpriseService.homeserverAllowList())
             .containsExactly(MdmConfig.DEFAULT_HOMESERVER_URL)
     }
 
     @Test
-    fun `an administrator can point the app at another homeserver`() {
-        val service = DefaultEnterpriseService(FakeMdmService(MdmConfig.default.copy(homeserverUrl = "https://matrix.example.com")))
-        assertThat(service.homeserverAllowList()).containsExactly("https://matrix.example.com")
+    fun `the allow list never exposes a wildcard or alternate homeserver`() {
+        val service = DefaultEnterpriseService()
+        assertThat(service.homeserverAllowList()).containsExactly(MdmConfig.DEFAULT_HOMESERVER_URL)
     }
 
     @Test
     fun `isAllowedToConnectToHomeserver only accepts the configured homeserver`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         assertThat(defaultEnterpriseService.isAllowedToConnectToHomeserver(A_HOMESERVER_URL)).isFalse()
         assertThat(defaultEnterpriseService.isAllowedToConnectToHomeserver(MdmConfig.DEFAULT_HOMESERVER_URL)).isTrue()
     }
 
     @Test
     fun `comparing homeservers ignores case and a trailing slash`() = runTest {
-        val service = DefaultEnterpriseService(FakeMdmService())
+        val service = DefaultEnterpriseService()
         assertThat(service.isAllowedToConnectToHomeserver("https://chat.securechat.com.au/")).isTrue()
         assertThat(service.isAllowedToConnectToHomeserver("HTTPS://CHAT.SECURECHAT.COM.AU")).isTrue()
     }
 
     @Test
     fun `comparing homeservers accepts a bare host and the default HTTPS port`() = runTest {
-        val service = DefaultEnterpriseService(FakeMdmService())
+        val service = DefaultEnterpriseService()
         assertThat(service.isAllowedToConnectToHomeserver("chat.securechat.com.au")).isTrue()
         assertThat(service.isAllowedToConnectToHomeserver("https://chat.securechat.com.au:443")).isTrue()
     }
 
     @Test
-    fun `comparing homeservers preserves case-sensitive paths`() = runTest {
-        val service = DefaultEnterpriseService(
-            FakeMdmService(MdmConfig.default.copy(homeserverUrl = "https://chat.securechat.com.au/Matrix"))
-        )
-        assertThat(service.isAllowedToConnectToHomeserver("https://CHAT.SECURECHAT.COM.AU/Matrix/")).isTrue()
+    fun `a path cannot broaden the locked homeserver identity`() = runTest {
+        val service = DefaultEnterpriseService()
+        assertThat(service.isAllowedToConnectToHomeserver("https://CHAT.SECURECHAT.COM.AU/Matrix/")).isFalse()
         assertThat(service.isAllowedToConnectToHomeserver("https://chat.securechat.com.au/matrix")).isFalse()
     }
 
     @Test
     fun `comparing homeservers rejects credentials query fragments and non-HTTPS URLs`() = runTest {
-        val service = DefaultEnterpriseService(FakeMdmService())
+        val service = DefaultEnterpriseService()
         assertThat(service.isAllowedToConnectToHomeserver("http://chat.securechat.com.au")).isFalse()
         assertThat(service.isAllowedToConnectToHomeserver("https://user@chat.securechat.com.au")).isFalse()
         assertThat(service.isAllowedToConnectToHomeserver("https://chat.securechat.com.au?next=elsewhere")).isFalse()
@@ -73,22 +70,20 @@ class DefaultEnterpriseServiceTest {
 
     @Test
     fun `two malformed homeservers are never treated as equivalent`() = runTest {
-        val service = DefaultEnterpriseService(
-            FakeMdmService(MdmConfig.default.copy(homeserverUrl = "not a valid host"))
-        )
+        val service = DefaultEnterpriseService()
 
         assertThat(service.isAllowedToConnectToHomeserver("not a valid host")).isFalse()
     }
 
     @Test
     fun `isEnterpriseUser always return false`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         assertThat(defaultEnterpriseService.isEnterpriseUser(A_SESSION_ID)).isFalse()
     }
 
     @Test
     fun `semanticColorsFlow always emits the SecureChat palette`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.semanticColorsFlow(null).test {
             val initialState = awaitItem()
             assertThat(initialState).isEqualTo(SecureChatColors.semanticColors)
@@ -98,7 +93,7 @@ class DefaultEnterpriseServiceTest {
 
     @Test
     fun `brandColorsFlow always emits the SecureChat brand colour`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.brandColorsFlow(null).test {
             val initialState = awaitItem()
             assertThat(initialState).isEqualTo(SecureChatColors.brand)
@@ -108,7 +103,7 @@ class DefaultEnterpriseServiceTest {
 
     @Test
     fun `semanticColorsFlow always emits the SecureChat palette for a session`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.semanticColorsFlow(A_SESSION_ID).test {
             val initialState = awaitItem()
             assertThat(initialState).isEqualTo(SecureChatColors.semanticColors)
@@ -118,25 +113,25 @@ class DefaultEnterpriseServiceTest {
 
     @Test
     fun `overrideBrandColor has no effect`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.overrideBrandColor(A_SESSION_ID, "aColor")
     }
 
     @Test
     fun `firebasePushGateway returns null`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         assertThat(defaultEnterpriseService.firebasePushGateway()).isNull()
     }
 
     @Test
     fun `unifiedPushDefaultPushGateway returns null`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         assertThat(defaultEnterpriseService.unifiedPushDefaultPushGateway()).isNull()
     }
 
     @Test
     fun `bugReportUrlFlow only emits Disabled`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.bugReportUrlFlow(A_SESSION_ID).test {
             assertThat(awaitItem()).isEqualTo(BugReportUrl.Disabled)
             awaitComplete()
@@ -145,7 +140,7 @@ class DefaultEnterpriseServiceTest {
 
     @Test
     fun `getNoisyNotificationChannelId returns null`() = runTest {
-        val defaultEnterpriseService = DefaultEnterpriseService(FakeMdmService())
+        val defaultEnterpriseService = DefaultEnterpriseService()
         assertThat(defaultEnterpriseService.getNoisyNotificationChannelId(A_SESSION_ID)).isNull()
     }
 }

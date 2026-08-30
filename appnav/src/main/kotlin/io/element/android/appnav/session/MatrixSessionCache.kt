@@ -19,6 +19,7 @@ import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.MatrixClientProvider
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.sessionstorage.api.SessionSecurityCoordinator
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analyticsproviders.api.AnalyticsUserData
 import kotlinx.coroutines.sync.Mutex
@@ -39,6 +40,7 @@ class MatrixSessionCache(
     private val authenticationService: MatrixAuthenticationService,
     private val syncOrchestratorFactory: SyncOrchestrator.Factory,
     private val analyticsService: AnalyticsService,
+    private val sessionSecurityCoordinator: SessionSecurityCoordinator,
 ) : MatrixClientProvider {
     private val sessionIdsToMatrixSession = ConcurrentHashMap<SessionId, InMemoryMatrixSession>()
     private val restoreMutex = Mutex()
@@ -63,9 +65,11 @@ class MatrixSessionCache(
 
     override suspend fun getOrRestore(sessionId: SessionId): Result<MatrixClient> {
         return restoreMutex.withLock {
-            when (val cached = getOrNull(sessionId)) {
-                null -> restore(sessionId)
-                else -> Result.success(cached)
+            sessionSecurityCoordinator.serializeSessionPublication {
+                when (val cached = getOrNull(sessionId)) {
+                    null -> restore(sessionId)
+                    else -> Result.success(cached)
+                }
             }
         }
     }
@@ -75,19 +79,27 @@ class MatrixSessionCache(
         return sessionIdsToMatrixSession[sessionId]?.syncOrchestrator
     }
 
+    /**
+     * Restores every Matrix session referenced by [state].
+     *
+     * @return `true` only when every referenced session is available in memory after restoration.
+     * A caller must not restore an authenticated navigation graph when this returns `false`.
+     */
     @Suppress("UNCHECKED_CAST")
-    suspend fun restoreWithSavedState(state: SavedStateMap?) {
+    suspend fun restoreWithSavedState(state: SavedStateMap?): Boolean {
         Timber.d("Restore state")
-        if (state == null || sessionIdsToMatrixSession.isNotEmpty()) {
+        if (state == null) {
             Timber.w("No need to restore saved state")
-            return
+            return true
         }
         val sessionIds = state[SAVE_INSTANCE_KEY] as? Array<SessionId>
         Timber.d("Restore matrix session keys = ${sessionIds?.map { it.value }}")
-        if (sessionIds.isNullOrEmpty()) return
-        // Not ideal but should only happens in case of process recreation. This ensure we restore all the active sessions before restoring the node graphs.
-        sessionIds.forEach { sessionId ->
-            getOrRestore(sessionId)
+        if (sessionIds.isNullOrEmpty()) return true
+        // Not ideal but should only happen after process recreation. This ensures all active sessions
+        // are restored before the node graphs.
+        return sessionIds.fold(true) { allRestored, sessionId ->
+            val restored = getOrRestore(sessionId).isSuccess && getOrNull(sessionId) != null
+            allRestored && restored
         }
     }
 
@@ -114,17 +126,27 @@ class MatrixSessionCache(
     }
 
     private fun onNewMatrixClient(matrixClient: MatrixClient) {
-        val syncOrchestrator = syncOrchestratorFactory.create(
-            matrixClient = matrixClient,
-            sessionCoroutineScope = matrixClient.sessionCoroutineScope,
-        )
-        // Only publish the client in memory once sync startup succeeds. Authentication rolls back
-        // the persisted session if this observer throws, so the cache must remain transactional too.
-        syncOrchestrator.start()
-        sessionIdsToMatrixSession[matrixClient.sessionId] = InMemoryMatrixSession(
-            matrixClient = matrixClient,
-            syncOrchestrator = syncOrchestrator,
-        )
+        sessionIdsToMatrixSession.compute(matrixClient.sessionId) { _, existingSession ->
+            if (existingSession != null) {
+                check(existingSession.matrixClient === matrixClient) {
+                    "A different Matrix client is already published for ${matrixClient.sessionId}"
+                }
+                existingSession
+            } else {
+                val syncOrchestrator = syncOrchestratorFactory.create(
+                    matrixClient = matrixClient,
+                    sessionCoroutineScope = matrixClient.sessionCoroutineScope,
+                )
+                // Only publish the client in memory once sync startup succeeds. Authentication
+                // rolls back the persisted session if this observer throws, so the cache remains
+                // transactional too.
+                syncOrchestrator.start()
+                InMemoryMatrixSession(
+                    matrixClient = matrixClient,
+                    syncOrchestrator = syncOrchestrator,
+                )
+            }
+        }
     }
 }
 

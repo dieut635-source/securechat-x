@@ -90,12 +90,6 @@ class OnBoardingPresenter(
             // Else use the account provider passed in the params if any and if allowed
             forcedAccountProvider ?: linkAccountProvider
         }
-        val canLoginWithQrCode by produceState(initialValue = false, linkAccountProvider, canConnectToAnyHomeserver) {
-            // QR login transfers whichever account the other device advertises. When an administrator
-            // pins a homeserver we cannot validate that account before entering the QR flow, so do not
-            // offer a route that could bypass the homeserver policy.
-            value = canConnectToAnyHomeserver && linkAccountProvider == null
-        }
         val canReportBug by remember { rageshakeFeatureAvailability.isAvailable() }.collectAsState(false)
         var showReportBug by rememberSaveable { mutableStateOf(false) }
         val onBoardingLogoResId = remember {
@@ -150,7 +144,9 @@ class OnBoardingPresenter(
             productionApplicationName = buildMeta.productionApplicationName,
             defaultAccountProvider = defaultAccountProvider,
             mustChooseAccountProvider = mustChooseAccountProvider,
-            canLoginWithQrCode = canLoginWithQrCode,
+            // SecureChat is password-only. Keep QR login hidden independently of homeserver and
+            // feature-flag configuration; the Matrix authentication boundary rejects it as well.
+            canLoginWithQrCode = false,
             // SecureChat pins the app to one homeserver, so `canConnectToAnyHomeserver` is false and the
             // upstream condition would always hide "Create account". Whether it is offered is an
             // administrator's decision instead, pushed as the `allow_registration` managed configuration.

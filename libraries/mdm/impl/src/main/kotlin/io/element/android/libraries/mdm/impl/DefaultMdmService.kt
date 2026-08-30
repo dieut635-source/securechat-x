@@ -30,18 +30,15 @@ import timber.log.Timber
 class DefaultMdmService(
     @ApplicationContext private val context: Context,
 ) : MdmService {
-    private val restrictionsManager: RestrictionsManager? =
-        context.getSystemService(Context.RESTRICTIONS_SERVICE) as? RestrictionsManager
-
-    private val _config = MutableStateFlow(readConfig())
+    private val _config = MutableStateFlow(readConfig().config)
     override val config: StateFlow<MdmConfig> = _config.asStateFlow()
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val new = readConfig()
-            if (new != _config.value) {
-                Timber.i("MDM configuration changed -> ${new.describe()}")
-                _config.value = new
+            val read = readConfig()
+            if (read.config != _config.value) {
+                Timber.i("MDM configuration changed -> ${read.config.describe()}")
+                _config.value = read.config
             }
         }
     }
@@ -57,25 +54,60 @@ class DefaultMdmService(
         )
         // Close the startup race between the StateFlow's initial read and receiver registration.
         // Any change before registration is captured here; later changes are delivered to receiver.
-        _config.value = readConfig()
+        val startupRead = readConfig()
+        _config.value = startupRead.config
         // In ra CẢ BỐN giá trị, không chỉ "có bị quản lý hay không".
         // Khi test trên máy thật, đây là cách duy nhất phân biệt "app đọc được MDM" với
         // "app đang dùng giá trị mặc định trùng với giá trị quản trị viên đặt" — hai thứ
         // nhìn từ giao diện thì giống hệt nhau. Không có giá trị nào ở đây là bí mật.
-        val managed = restrictionsManager?.applicationRestrictions?.isEmpty == false
-        Timber.i("MDM configuration loaded: managed=$managed ${_config.value.describe()}")
+        Timber.i("MDM configuration loaded: managed=${startupRead.isManaged} ${startupRead.config.describe()}")
     }
 
-    private fun readConfig(): MdmConfig {
-        val restrictions: Bundle = try {
-            restrictionsManager?.applicationRestrictions ?: Bundle.EMPTY
+    private fun readConfig(): RestrictionsRead {
+        return try {
+            val restrictionsManager = context.getSystemService(Context.RESTRICTIONS_SERVICE) as? RestrictionsManager
+                ?: return unavailableRestrictions()
+            val restrictions: Bundle = restrictionsManager.applicationRestrictions
+                // A null snapshot is how Android represents "this app has no managed
+                // restrictions" on some unmanaged/manual-install devices. It is different from a
+                // missing service or a failed binder read, neither of which can be trusted.
+                ?: return unmanagedRestrictions()
+            @Suppress("DEPRECATION")
+            val raw = restrictions.keySet().orEmpty().associateWith { key -> restrictions.get(key) }
+            RestrictionsRead(
+                config = MdmConfigParser.parse(raw),
+                isManaged = raw.isNotEmpty(),
+            )
         } catch (throwable: Throwable) {
-            // Reading restrictions goes through the system; a misbehaving MDM must not stop the app booting.
-            Timber.w(throwable, "Could not read application restrictions, falling back to defaults")
-            Bundle.EMPTY
+            // Every step above crosses the Android/MDM boundary, including unparcelling Bundle values.
+            // A broken or temporarily unavailable DPC must not crash startup or expose permissive defaults.
+            Timber.w(throwable, "Could not read application restrictions; keeping restrictions pending")
+            RestrictionsRead(
+                config = MdmConfig.restrictionsPending,
+                isManaged = null,
+            )
         }
-        @Suppress("DEPRECATION")
-        val raw = restrictions.keySet().orEmpty().associateWith { key -> restrictions.get(key) }
-        return MdmConfigParser.parse(raw)
     }
+
+    private fun unavailableRestrictions(): RestrictionsRead {
+        Timber.w("Application restrictions are unavailable; keeping restrictions pending")
+        return RestrictionsRead(
+            config = MdmConfig.restrictionsPending,
+            isManaged = null,
+        )
+    }
+
+    private fun unmanagedRestrictions(): RestrictionsRead {
+        Timber.i("No application restrictions were supplied; using the manual-install defaults")
+        return RestrictionsRead(
+            config = MdmConfig.default,
+            isManaged = false,
+        )
+    }
+
+    private data class RestrictionsRead(
+        val config: MdmConfig,
+        /** `null` means Android could not provide a trustworthy restrictions snapshot. */
+        val isManaged: Boolean?,
+    )
 }

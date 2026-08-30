@@ -8,39 +8,52 @@
 
 package io.element.android.libraries.oauth.impl
 
+import android.net.Uri
+import androidx.core.net.toUri
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.matrix.api.auth.OAuthRedirectUrlProvider
 import io.element.android.libraries.oauth.api.OAuthAction
-import timber.log.Timber
 
 fun interface OAuthUrlParser {
     fun parse(url: String): OAuthAction?
 }
 
 /**
- * Simple parser for OAuth url interception.
- * TODO Find documentation about the format.
+ * Strict parser for OAuth callbacks.
+ *
+ * A custom URI scheme cannot prove which Android application owns it. Restricting the endpoint and
+ * callback shape does not replace HTTPS App Links, but it prevents unrelated URIs sharing the same
+ * scheme from being accepted and leaves state/PKCE verification to the Matrix SDK.
  */
 @ContributesBinding(AppScope::class)
 class DefaultOAuthUrlParser(
     private val oAuthRedirectUrlProvider: OAuthRedirectUrlProvider,
 ) : OAuthUrlParser {
     /**
-     * Return a [OAuthAction], or null if the url is not an OAuth url.
-     * Note:
-     * When user press button "Cancel", we get the url:
-     * `io.element.android:/?error=access_denied&state=IFF1UETGye2ZA8pO`
-     * On success, we get:
-     * `io.element.android:/?state=IFF1UETGye2ZA8pO&code=y6X1GZeqA3xxOWcTeShgv8nkgFJXyzWB`
+     * Return a [OAuthAction], or null if [url] is not the exact configured callback endpoint.
      */
     override fun parse(url: String): OAuthAction? {
-        if (url.startsWith(oAuthRedirectUrlProvider.provide()).not()) return null
-        if (url.contains("error=access_denied")) return OAuthAction.GoBack()
-        if (url.contains("code=")) return OAuthAction.Success(url)
+        val callback = url.toUri()
+        val expectedCallback = oAuthRedirectUrlProvider.provide().toUri()
+        if (!callback.hasSameEndpointAs(expectedCallback)) return null
+        if (callback.fragment != null) return null
 
-        // Other cases are not supported, log an error and return null
-        Timber.w("Unsupported OAuth url")
-        return null
+        val states = callback.getQueryParameters("state")
+        if (states.size != 1 || states.single().isBlank()) return null
+
+        val codes = callback.getQueryParameters("code")
+        val errors = callback.getQueryParameters("error")
+        return when {
+            codes.size == 1 && codes.single().isNotBlank() && errors.isEmpty() -> OAuthAction.Success(url)
+            errors.singleOrNull() == "access_denied" && codes.isEmpty() -> OAuthAction.GoBack()
+            else -> null
+        }
     }
+}
+
+private fun Uri.hasSameEndpointAs(other: Uri): Boolean {
+    return scheme.equals(other.scheme, ignoreCase = true) &&
+        encodedAuthority.equals(other.encodedAuthority, ignoreCase = true) &&
+        encodedPath == other.encodedPath
 }

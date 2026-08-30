@@ -10,6 +10,8 @@ package io.element.android.libraries.network.interceptors
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.matrix.api.tracing.LogLevel
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import kotlinx.coroutines.flow.first
@@ -25,10 +27,17 @@ import okhttp3.logging.HttpLoggingInterceptor.Level
 @Inject
 @SingleIn(AppScope::class)
 class DynamicHttpLoggingInterceptor(
+    private val buildMeta: BuildMeta,
     private val appPreferencesStore: AppPreferencesStore,
     private val loggingInterceptor: HttpLoggingInterceptor,
 ) : Interceptor by loggingInterceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
+        // Production traffic can contain access tokens, message payloads, and attachment
+        // metadata. A stale developer preference must never turn BODY logging back on.
+        if (buildMeta.buildType == BuildType.RELEASE) {
+            loggingInterceptor.level = Level.NONE
+            return loggingInterceptor.intercept(chain)
+        }
         // This is called in a separate thread, so calling `runBlocking` here should be fine, it should be also instant after the value is cached
         val logLevel = runBlocking { appPreferencesStore.getTracingLogLevelFlow().first() }
         loggingInterceptor.level = if (logLevel >= LogLevel.DEBUG) Level.BODY else Level.NONE

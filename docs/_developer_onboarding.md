@@ -335,8 +335,9 @@ suffix `Presenter`,states MUST have a suffix `State`, etc. Also we want to have 
 
 ### Push
 
-Firebase is excluded until SecureChat owns a Firebase project and push gateway. F-Droid builds retain
-UnifiedPush support.
+Firebase and UnifiedPush are both excluded from the closed distribution. Notifications are local to
+events received while the Matrix client is running and synchronizing. Reintroducing remote push
+requires a separate security review and SecureChat-controlled infrastructure.
 
 Please see the dedicated [documentation](notifications.md) for more details.
 

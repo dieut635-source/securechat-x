@@ -113,6 +113,15 @@ class DefaultLockScreenService(
         }
     }
 
+    override suspend fun lockIfPinSetup(): Boolean {
+        if (!isPinSetup().first()) return false
+
+        // Do not let a pending grace-period job race this explicit security boundary.
+        lockJob?.cancel()
+        _lockState.value = LockScreenLockState.Locked
+        return true
+    }
+
     private fun CoroutineScope.lockIfNeeded(gracePeriod: Duration = Duration.ZERO) = launch {
         if (isPinSetup().first()) {
             delay(gracePeriod)

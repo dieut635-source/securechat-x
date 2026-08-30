@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 SecureChat
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <!-- Preview and component-catalog activities are development tooling, not production UI. -->
+        <activity
+            android:name="androidx.compose.ui.tooling.PreviewActivity"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
+        <activity
+            android:name="com.airbnb.android.showkase.ui.ShowkaseBrowserActivity"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
+
+        <!-- ADB/shell callers hold android.permission.DUMP. Remove diagnostic broadcast surfaces
+             from production so a workstation used for sideloading cannot request work metadata or
+             trigger profile-management operations after installation. -->
+        <receiver
+            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+            tools:node="remove" />
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:node="remove" />
+    </application>
+
+</manifest>

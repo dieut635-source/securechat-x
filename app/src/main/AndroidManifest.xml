@@ -23,16 +23,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SecureChat"
+        android:usesCleartextTraffic="false"
         tools:targetApi="33">
 
         <!-- Managed configurations for Android Enterprise / Samsung Knox Manage. -->
         <meta-data
             android:name="android.content.APP_RESTRICTIONS"
             android:resource="@xml/app_restrictions" />
-
-        <meta-data
-            android:name="com.google.android.gms.car.application"
-            android:resource="@xml/automotive_app_desc" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"
@@ -73,30 +70,6 @@
                 <data
                     android:host="open"
                     android:scheme="securechat" />
-            </intent-filter>
-            <!-- SecureChat login/configuration links. Set autoVerify to true after the matching
-                 assetlinks.json is published on chat.securechat.com.au. -->
-            <intent-filter android:autoVerify="false">
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:host="chat.securechat.com.au"
-                    android:path="/securechat/"
-                    android:scheme="https" />
-            </intent-filter>
-            <!--
-              OAuth redirection
-            -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="@string/login_redirect_scheme" />
             </intent-filter>
             <!--
               matrix: links

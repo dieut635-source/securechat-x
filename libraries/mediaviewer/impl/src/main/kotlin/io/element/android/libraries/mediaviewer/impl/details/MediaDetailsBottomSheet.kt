@@ -100,24 +100,20 @@ fun MediaDetailsBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
             if (state.eventId != null) {
                 HorizontalDivider()
-                val mimeType = state.mediaInfo.mimeType
-                val icon = when (mimeType) {
-                    MimeTypes.Apk ->
-                        ListItemContent.Icon(IconSource.Resource(R.drawable.ic_apk_install))
-                    else ->
-                        ListItemContent.Icon(IconSource.Vector(CompoundIcons.PopOut()))
+                val isApk = state.mediaInfo.run {
+                    mimeType.equals(MimeTypes.Apk, ignoreCase = true) ||
+                        fileExtension.equals("apk", ignoreCase = true) ||
+                        filename.endsWith(".apk", ignoreCase = true)
                 }
-                val wording = when (mimeType) {
-                    MimeTypes.Apk -> stringResource(id = CommonStrings.common_install_apk_android)
-                    else -> stringResource(id = CommonStrings.action_open_with)
+                if (!isApk) {
+                    ListItem(
+                        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.PopOut())),
+                        content = { Text(stringResource(id = CommonStrings.action_open_with)) },
+                        onClick = {
+                            onOpenWith(state.eventId)
+                        }
+                    )
                 }
-                ListItem(
-                    leadingContent = icon,
-                    content = { Text(wording) },
-                    onClick = {
-                        onOpenWith(state.eventId)
-                    }
-                )
                 ListItem(
                     leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.VisibilityOn())),
                     content = { Text(stringResource(CommonStrings.action_view_in_timeline)) },

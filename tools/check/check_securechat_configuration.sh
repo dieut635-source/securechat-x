@@ -13,6 +13,240 @@ require_literal() {
     fi
 }
 
+# Closed-distribution invariants. There is intentionally no remote wake-up transport: compiling a
+# provider would silently reintroduce Google or a public UnifiedPush gateway into production APKs.
+require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
+    'const val PUSH_CONFIG_INCLUDE_FIREBASE: Boolean = false'
+require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
+    'const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = false'
+require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
+    'val URL_COPYRIGHT: String? = null'
+require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
+    'val URL_ACCEPTABLE_USE: String? = null'
+require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
+    'val URL_PRIVACY: String? = null'
+require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
+    'val URL_POLICY: String? = null'
+require_literal features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/about/SecureChatLegal.kt \
+    'filter { legal -> legal.url.isNotBlank() }'
+require_literal features/preferences/impl/build.gradle.kts \
+    'value = BuildTimeConfig.URL_COPYRIGHT ?: "",'
+require_literal features/preferences/impl/build.gradle.kts \
+    'value = BuildTimeConfig.URL_ACCEPTABLE_USE ?: "",'
+require_literal features/preferences/impl/build.gradle.kts \
+    'value = BuildTimeConfig.URL_PRIVACY ?: "",'
+require_literal libraries/matrix/api/build.gradle.kts \
+    'value = BuildTimeConfig.URL_ACCEPTABLE_USE ?: ""'
+require_literal libraries/matrix/api/build.gradle.kts \
+    'value = BuildTimeConfig.URL_POLICY ?: ""'
+require_literal appconfig/src/main/kotlin/io/element/android/appconfig/OnBoardingConfig.kt \
+    'const val CAN_CREATE_ACCOUNT = false'
+require_literal libraries/mdm/api/src/main/kotlin/io/element/android/libraries/mdm/api/MdmConfig.kt \
+    'const val KEY_RESTRICTIONS_PENDING = "restrictions_pending"'
+require_literal libraries/mdm/impl/src/main/kotlin/io/element/android/libraries/mdm/impl/MdmConfigParser.kt \
+    'return MdmConfig.restrictionsPending'
+require_literal appnav/src/main/kotlin/io/element/android/appnav/RootFlowNode.kt \
+    'mdmService.config.value.restrictionsPending'
+
+# Production security invariants. These checks intentionally pin the source-level guards as well
+# as unit tests, so a later upstream merge cannot silently restore diagnostic or data-exfiltration
+# paths in a release APK.
+require_literal appconfig/src/main/kotlin/io/element/android/appconfig/LockScreenConfig.kt \
+    'const val IS_PIN_MANDATORY: Boolean = true'
+require_literal appconfig/src/main/kotlin/io/element/android/appconfig/LockScreenConfig.kt \
+    'const val PIN_SIZE: Int = 6'
+require_literal appconfig/src/main/kotlin/io/element/android/appconfig/LockScreenConfig.kt \
+    'val GRACE_PERIOD: Duration = Duration.ZERO'
+require_literal appconfig/src/main/kotlin/io/element/android/appconfig/LockScreenConfig.kt \
+    'const val IS_WEAK_BIOMETRICS_ENABLED: Boolean = false'
+require_literal features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/utils/ShowDeveloperSettingsProvider.kt \
+    'if (!isDeveloperBuild) return'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/utils/DefaultCallWidgetProvider.kt \
+    'baseUrl = EMBEDDED_CALL_WIDGET_BASE_URL'
+require_literal libraries/network/src/main/kotlin/io/element/android/libraries/network/interceptors/DynamicHttpLoggingInterceptor.kt \
+    'if (buildMeta.buildType == BuildType.RELEASE)'
+require_literal app/src/main/kotlin/io/element/android/x/initializer/PlatformInitializer.kt \
+    'WriteToFilesConfiguration.Disabled'
+require_literal app/src/main/kotlin/io/element/android/x/SecureChatApplication.kt \
+    'registerActivityLifecycleCallbacks(SecureWindowActivityLifecycleCallbacks)'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/ui/CallScreenView.kt \
+    'allowFileAccess = false'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/ui/CallScreenView.kt \
+    'mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/utils/WebViewWidgetMessageInterceptor.kt \
+    'setOf(SECURECHAT_CALL_ORIGIN)'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/utils/WebViewWidgetMessageInterceptor.kt \
+    'isAllowedSecureChatCallSubresourceUri(request.url.toString())'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/utils/WebViewWidgetMessageInterceptor.kt \
+    'private const val SECURECHAT_SERVER_HOST = "chat.securechat.com.au"'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/utils/WebViewWidgetMessageInterceptor.kt \
+    'window.postMessage(JSON.parse($encodedMessage),'
+require_literal features/call/impl/build.gradle.kts \
+    "default-src 'none'"
+require_literal features/call/impl/build.gradle.kts \
+    "connect-src 'self' data: https://chat.securechat.com.au wss://chat.securechat.com.au"
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/notifications/RingingCallNotificationCreator.kt \
+    '.setVisibility(NotificationCompat.VISIBILITY_SECRET)'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/ui/IncomingCallActivity.kt \
+    'lockScreenService.lockIfPinSetup()'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/ui/ElementCallActivity.kt \
+    'callUiAccessGuard.prepareAccess(trustedForegroundEntry)'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/DefaultElementCallEntryPoint.kt \
+    'callUiAccessTokenStore.issue()'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/ui/ElementCallActivity.kt \
+    'callUiAccessTokenStore.consume(token)'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/ui/ElementCallActivity.kt \
+    'findViewById<View>(android.R.id.content)?.visibility'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/ui/ElementCallActivity.kt \
+    'requestPermissionCallback?.invoke(emptyArray())'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/ui/CallScreenView.kt \
+    'webView.visibility = if (isVisible) View.VISIBLE else View.INVISIBLE'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/services/CallForegroundService.kt \
+    'ElementCallActivity.resumeCallFromNotificationIntent(this)'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/services/CallForegroundService.kt \
+    '.setVisibility(NotificationCompat.VISIBILITY_SECRET)'
+require_literal features/call/impl/src/main/kotlin/io/element/android/features/call/impl/pip/PipSupportProvider.kt \
+    'override fun isPipSupported(): Boolean = false'
+require_literal features/call/impl/src/main/AndroidManifest.xml \
+    'android:supportsPictureInPicture="false"'
+require_literal features/call/impl/src/main/AndroidManifest.xml \
+    'android:excludeFromRecents="true"'
+require_literal libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/auth/RustMatrixAuthenticationService.kt \
+    'if (!enterpriseService.canConnectToAnyHomeserver()) {'
+require_literal settings.gradle.kts 'repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)'
+require_literal settings.gradle.kts 'exclusiveContent {'
+require_literal gradle/wrapper/gradle-wrapper.properties 'distributionSha256Sum='
+require_literal tools/release/build_securechat_offline.sh \
+    'dependency_verification_metadata=gradle/verification-metadata.xml'
+require_literal tools/release/build_securechat_offline.sh \
+    '--tag-signer-fingerprint-file'
+require_literal tools/release/build_securechat_offline.sh \
+    'git verify-tag --raw "$release_tag"'
+require_literal tools/release/build_securechat_offline.sh \
+    '"[GNUPG:] VALIDSIG "*'
+require_literal tools/release/build_securechat_offline.sh \
+    '[[ "${#validsig_records[@]}" -eq 1 ]]'
+require_literal tools/release/build_securechat_offline.sh \
+    '"pinnedFingerprint": os.environ["SC_TAG_PINNED_FINGERPRINT"]'
+require_literal tools/release/build_securechat_offline.sh \
+    '"signerFingerprint": os.environ["SC_TAG_SIGNATURE_FINGERPRINT"]'
+require_literal tools/release/build_securechat_offline.sh \
+    '"primaryFingerprint": os.environ["SC_TAG_PRIMARY_FINGERPRINT"]'
+require_literal tools/release/build_securechat_offline.sh \
+    'mktemp -d "$output_root/.securechat-release-staging.XXXXXX"'
+require_literal tools/release/build_securechat_offline.sh \
+    'cleanup_apk_build_outputs=true'
+require_literal tools/release/build_securechat_offline.sh \
+    'mv -- "$staging_dir" "$output_dir"'
+require_literal .github/workflows/securechat-release.yml \
+    'test -f gradle/verification-metadata.xml'
+
+# A release must remain invisible at its final path until tag identity, staged bytes, the final Git
+# tree, and raw-output cleanup have all been checked. Keep these source-level gates in that order and
+# forbid incremental writes to the final output directory.
+python3 - <<'PY' || failure=1
+import sys
+from pathlib import Path
+
+release_path = Path("tools/release/build_securechat_offline.sh")
+release_script = release_path.read_text(encoding="utf-8")
+ordered_markers = [
+    'tag_verification_raw=$(git verify-tag --raw "$release_tag" 2>&1)',
+    'staging_dir=$(mktemp -d "$output_root/.securechat-release-staging.XXXXXX")',
+    'SC_STAGE_DIR="$staging_dir"',
+    'final_tree_status=$(git status --porcelain=v1 --untracked-files=all)',
+    'remaining_raw_apk=$(find "$apk_build_dir"',
+    'mv -- "$staging_dir" "$output_dir"',
+]
+positions = [release_script.find(marker) for marker in ordered_markers]
+if any(position < 0 for position in positions) or positions != sorted(positions):
+    print(
+        f"{release_path}: release verification/publication gates are missing or out of order",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+if "$output_dir/" in release_script:
+    print(
+        f"{release_path}: release files must not be written incrementally to the final output directory",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+PY
+
+if grep -En -- 'repo1\.maven\.org|flatDir[[:space:]]*\{' settings.gradle.kts; then
+    printf 'A duplicate or unverified flat-file dependency repository is enabled.\n' >&2
+    failure=1
+fi
+
+# Every external dependency must use a reproducible, immutable version selector. Check both the
+# version catalog and direct Gradle declarations so an upstream merge cannot reintroduce '+',
+# latest.*, or SNAPSHOT selectors that resolve to different bytes on the signing workstation.
+python3 - <<'PY' || failure=1
+import re
+import sys
+from pathlib import Path
+
+catalog_path = Path("gradle/libs.versions.toml")
+unstable = re.compile(r"(?:^|[.\-])(?:latest(?:[.\-]|$)|snapshot(?:[.\-]|$))|\+", re.IGNORECASE)
+errors = []
+in_versions = False
+version_entry = re.compile(r'^\s*([A-Za-z0-9_.-]+)\s*=\s*"([^"]+)"\s*$')
+for number, raw_line in enumerate(catalog_path.read_text(encoding="utf-8").splitlines(), 1):
+    line = raw_line.split("#", 1)[0].strip()
+    if line.startswith("["):
+        in_versions = line == "[versions]"
+        continue
+    if not in_versions or not line:
+        continue
+    match = version_entry.match(line)
+    if match and unstable.search(match.group(2)):
+        errors.append(f"{catalog_path}:{number}: dynamic version {match.group(1)}={match.group(2)!r}")
+
+coordinate = re.compile(r"['\"][^'\"\s:]+:[^'\"\s:]+:([^'\"\s]+)['\"]")
+for path in Path(".").glob("**/*.gradle.kts"):
+    if "build" in path.parts:
+        continue
+    for number, raw_line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
+        line = raw_line.split("//", 1)[0]
+        for match in coordinate.finditer(line):
+            if unstable.search(match.group(1)):
+                errors.append(f"{path}:{number}: dynamic dependency version {match.group(1)!r}")
+
+if errors:
+    print("Dynamic dependency selectors are forbidden:", file=sys.stderr)
+    print(*errors, sep="\n", file=sys.stderr)
+    raise SystemExit(1)
+PY
+
+if grep -Fq 'getCustomElementCallBaseUrlFlow()' \
+    features/call/impl/src/main/kotlin/io/element/android/features/call/impl/utils/DefaultCallWidgetProvider.kt; then
+    printf 'A custom remote call application can be loaded by the production call provider.\n' >&2
+    failure=1
+fi
+if grep -REn -- 'FLAG_(SHOW_WHEN_LOCKED|TURN_SCREEN_ON)|setShowWhenLocked\(true\)|setTurnScreenOn\(true\)' \
+    features/call/impl/src/main/kotlin; then
+    printf 'Call UI can be rendered above the Android lock screen.\n' >&2
+    failure=1
+fi
+if [[ -e features/call/impl/src/main/kotlin/io/element/android/features/call/impl/utils/IntentProvider.kt ]]; then
+    printf 'The legacy call PendingIntent helper can bypass the SecureChat PIN gate.\n' >&2
+    failure=1
+fi
+if grep -Fq 'grantUriPermission(' \
+    features/share/impl/src/main/kotlin/io/element/android/features/share/impl/DefaultShareIntentHandler.kt; then
+    printf 'Incoming share handling redistributes URI permissions to another application.\n' >&2
+    failure=1
+fi
+
+if grep -RFn \
+    -e 'matrix.gateway.unifiedpush.org' \
+    -e 'unifiedpush.org/users/distributors' \
+    -- \
+    libraries/pushproviders/unifiedpush/src/main; then
+    printf 'A public UnifiedPush endpoint is present in production source.\n' >&2
+    failure=1
+fi
+
 runtime_config_files=(
     app/src/main/AndroidManifest.xml
     appconfig/build.gradle.kts
@@ -51,7 +285,6 @@ operational_branding_files=(
     tools/danger/*.js
     tools/github/*.py
     tools/localazy/README.md
-    tools/manifest/gplay/release/aaptDump.txt
 )
 shopt -u nullglob
 if [[ -d .maestro ]]; then
@@ -81,6 +314,11 @@ fi
 if (( ${#workflow_config_files[@]} > 0 )) && \
     grep -En -- '(ELEMENT_[A-Z0-9_]+|DANGER_GITHUB_API_TOKEN)' "${workflow_config_files[@]}"; then
     printf 'Inherited environment variable found in build workflows.\n' >&2
+    failure=1
+fi
+if (( ${#workflow_config_files[@]} > 0 )) && \
+    grep -Eni -- 'action-upload-diawi|DIAWI_TOKEN|diawi\.com' "${workflow_config_files[@]}"; then
+    printf 'A third-party direct APK distribution path is present in build workflows.\n' >&2
     failure=1
 fi
 
@@ -120,9 +358,8 @@ fi
 
 # Scan every production source tree rather than relying only on the hand-maintained runtime list
 # above. String-literal scanning avoids package names and preserved copyright notices, while still
-# catching hard-coded endpoints and Compose/UI text introduced in a new module. The matrix test
-# fixture module is not packaged into the application; UtdTracker's matrix.org comparison is a
-# protocol analytics dimension rather than a configured endpoint.
+# catching hard-coded endpoints and Compose/UI text introduced in a new module. The Matrix test
+# fixture module is not packaged into the application.
 python3 - <<'PY' || failure=1
 import re
 import sys
@@ -137,9 +374,6 @@ old_endpoint = re.compile(
     r'(?<![A-Za-z0-9_.])(?:vector\.im|riot\.im|matrix\.org)(?![A-Za-z0-9_.])',
     re.IGNORECASE,
 )
-allowed_endpoint_literals = {
-    (Path("libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/analytics/UtdTracker.kt"), '"matrix.org"'),
-}
 errors = []
 for root in roots:
     for path in root.glob("**/src/main/**/*"):
@@ -151,13 +385,51 @@ for root in roots:
         for literal_match in string_literal.finditer(text):
             literal = literal_match.group(0)
             line = text.count("\n", 0, literal_match.start()) + 1
-            if old_endpoint.search(literal) and (path, literal) not in allowed_endpoint_literals:
+            if old_endpoint.search(literal):
                 errors.append(f"{path}:{line}: inherited endpoint in production string literal: {literal}")
             if path.suffix in {".kt", ".java"} and brand_word.search(literal):
                 errors.append(f"{path}:{line}: inherited product name in production string literal: {literal}")
 
 if errors:
     print("Production string-literal branding audit failed:", file=sys.stderr)
+    print(*errors, sep="\n", file=sys.stderr)
+    raise SystemExit(1)
+PY
+
+# XML resource text is not a Kotlin/Java string literal, so parse it separately. Resource names and
+# legal comments may retain upstream technical identifiers/attribution; only rendered value text is
+# prohibited from exposing inherited product names or public homeserver endpoints.
+python3 - <<'PY' || failure=1
+import re
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+roots = [Path(name) for name in ("app", "appconfig", "appicon", "appnav", "features", "libraries", "services")]
+brand_word = re.compile(r"(?<![A-Za-z0-9_])(?:Element|Vector|Riot)(?![A-Za-z0-9_])", re.IGNORECASE)
+old_endpoint = re.compile(
+    r"https?://[^\s<]*(?:element\.(?:io|dev)|vector\.im|riot\.im)|"
+    r"(?<![A-Za-z0-9_.])(?:vector\.im|riot\.im|matrix\.org)(?![A-Za-z0-9_.])",
+    re.IGNORECASE,
+)
+errors = []
+for root in roots:
+    for path in root.glob("**/src/main/res/values*/*.xml"):
+        try:
+            resource_root = ET.parse(path).getroot()
+        except ET.ParseError as error:
+            errors.append(f"{path}: invalid resource XML: {error}")
+            continue
+        for resource in resource_root:
+            if resource.tag not in {"string", "plurals", "string-array", "item"}:
+                continue
+            rendered_text = "".join(resource.itertext())
+            if brand_word.search(rendered_text) or old_endpoint.search(rendered_text):
+                resource_name = resource.attrib.get("name", "<unnamed>")
+                errors.append(f"{path}: {resource_name}: {rendered_text[:200]}")
+
+if errors:
+    print("User-visible XML branding/endpoint audit failed:", file=sys.stderr)
     print(*errors, sep="\n", file=sys.stderr)
     raise SystemExit(1)
 PY
@@ -174,10 +446,6 @@ if (( ${#maestro_config_files[@]} > 0 )) && \
     failure=1
 fi
 
-if ! bash tools/manifest/check_securechat_aapt_dump.sh tools/manifest/gplay/release/aaptDump.txt; then
-    failure=1
-fi
-
 obsolete_operational_files=(
     .github/workflows/build_enterprise.yml
     .github/workflows/danger.yml
@@ -190,8 +458,12 @@ obsolete_operational_files=(
     .github/workflows/triage-incoming.yml
     .github/workflows/triage-labelled.yml
     CODEOWNERS
+    docs/images-lfs
+    docs/images/module_graph.png
+    screenshots/de
     screenshots/html/data.js
     screenshots/html/script.js
+    tools/manifest/gplay/release/aaptDump.txt
 )
 for obsolete_file in "${obsolete_operational_files[@]}"; do
     if [[ -e "$obsolete_file" ]]; then
@@ -571,10 +843,15 @@ require_literal appconfig/src/main/kotlin/io/element/android/appconfig/Applicati
     'const val DESKTOP_APPLICATION_NAME: String = "SecureChat"'
 require_literal libraries/deeplink/impl/src/main/kotlin/io/element/android/libraries/deeplink/impl/Constants.kt \
     'internal const val SCHEME = "securechat"'
-require_literal app/src/main/AndroidManifest.xml 'android:host="chat.securechat.com.au"'
-require_literal app/src/main/AndroidManifest.xml 'android:path="/securechat/"'
 require_literal features/login/impl/src/main/kotlin/io/element/android/features/login/impl/DefaultLoginIntentResolver.kt \
-    'const val SECURECHAT_HOST = "chat.securechat.com.au"'
+    'override fun parse(uriString: String): LoginParams? = null'
+require_literal app/src/main/AndroidManifest.xml 'android:host="oauth"'
+require_literal app/src/main/AndroidManifest.xml 'android:path="/callback"'
+if grep -Fq 'android:host="chat.securechat.com.au"' app/src/main/AndroidManifest.xml || \
+    grep -Fq 'android:autoVerify=' app/src/main/AndroidManifest.xml; then
+    printf 'Unverified public HTTPS App Link is enabled in the application manifest.\n' >&2
+    failure=1
+fi
 require_literal settings.gradle.kts 'rootProject.name = "SecureChat"'
 require_literal "$call_build_file" \
     'add(secureChatCallEmbeddedAar.name, libs.element.call.embedded)'
@@ -598,9 +875,13 @@ require_literal libraries/matrix/impl/src/main/kotlin/io/element/android/librari
 python3 - <<'PY' || failure=1
 import sys
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 android = "{http://schemas.android.com/apk/res/android}"
-root = ET.parse("app/src/main/res/xml/app_restrictions.xml").getroot()
+tools = "{http://schemas.android.com/tools}"
+
+restrictions_path = Path("app/src/main/res/xml/app_restrictions.xml")
+root = ET.parse(restrictions_path).getroot()
 actual = {
     item.attrib[android + "key"]: (
         item.attrib[android + "restrictionType"],
@@ -616,6 +897,83 @@ expected = {
 }
 if actual != expected:
     print(f"Managed configuration mismatch. Expected {expected!r}, got {actual!r}", file=sys.stderr)
+    raise SystemExit(1)
+
+lockscreen_path = Path("features/lockscreen/impl/src/main/AndroidManifest.xml")
+lockscreen_root = ET.parse(lockscreen_path).getroot()
+pin_activities = lockscreen_root.findall(
+    ".//activity[@{%s}name='io.element.android.features.lockscreen.impl.unlock.activity.PinUnlockActivity']"
+    % android[1:-1]
+)
+if len(pin_activities) != 1 or pin_activities[0].attrib.get(android + "exported") != "false":
+    print(f"{lockscreen_path}: PinUnlockActivity must explicitly set android:exported=false", file=sys.stderr)
+    raise SystemExit(1)
+
+notification_paths_path = Path("libraries/push/impl/src/main/res/xml/notifications_provider_paths.xml")
+notification_paths_root = ET.parse(notification_paths_path).getroot()
+notification_paths = list(notification_paths_root)
+if (
+    notification_paths_root.tag != "paths"
+    or len(notification_paths) != 1
+    or notification_paths[0].tag != "cache-path"
+    or notification_paths[0].attrib != {
+    "name": "downloads",
+    "path": "temp/notif/",
+    }
+):
+    print(
+        f"{notification_paths_path}: notification FileProvider must expose only temp/notif/",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+
+main_paths_path = Path("app/src/main/res/xml/file_providers.xml")
+main_paths_root = ET.parse(main_paths_path).getroot()
+main_paths = [
+    (entry.tag, entry.attrib)
+    for entry in list(main_paths_root)
+]
+expected_main_paths = [
+    ("cache-path", {"name": "camera_capture", "path": "temp/camera/"}),
+    ("cache-path", {"name": "media", "path": "temp/media/"}),
+    ("cache-path", {"name": "outgoing", "path": "temp/outgoing/"}),
+    ("files-path", {"name": "notification_sounds", "path": "notification_sounds/"}),
+]
+if main_paths_root.tag != "paths" or main_paths != expected_main_paths:
+    print(
+        f"{main_paths_path}: main FileProvider roots must match {expected_main_paths!r}; got {main_paths!r}",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+
+release_manifest_path = Path("app/src/release/AndroidManifest.xml")
+release_root = ET.parse(release_manifest_path).getroot()
+expected_removed_receivers = {
+    "androidx.work.impl.diagnostics.DiagnosticsReceiver",
+    "androidx.profileinstaller.ProfileInstallReceiver",
+}
+receiver_entries = release_root.findall(".//receiver")
+for receiver_name in expected_removed_receivers:
+    matches = [
+        receiver
+        for receiver in receiver_entries
+        if receiver.attrib.get(android + "name") == receiver_name
+    ]
+    if len(matches) != 1 or matches[0].attrib.get(tools + "node") != "remove":
+        print(
+            f"{release_manifest_path}: {receiver_name} must have exactly one tools:node=remove override",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+if any(
+    receiver.attrib.get(android + "name") in expected_removed_receivers
+    and receiver.attrib.get(tools + "node") != "remove"
+    for receiver in receiver_entries
+):
+    print(
+        f"{release_manifest_path}: release overlay must remove diagnostic/profile receivers",
+        file=sys.stderr,
+    )
     raise SystemExit(1)
 PY
 

@@ -10,6 +10,7 @@ package io.element.android.features.lockscreen.impl
 
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.lockscreen.api.LockScreenLockState
 import io.element.android.features.lockscreen.impl.biometric.BiometricAuthenticatorManager
 import io.element.android.features.lockscreen.impl.biometric.FakeBiometricAuthenticatorManager
 import io.element.android.features.lockscreen.impl.fixtures.aLockScreenConfig
@@ -76,6 +77,31 @@ class DefaultLockScreenServiceTest {
             sessionObserver.onSessionDeleted("userId", wasLastSession = true)
             assertThat(awaitItem()).isFalse()
         }
+    }
+
+    @Test
+    fun `lockIfPinSetup locks immediately when a pin exists`() = runTest {
+        val lockScreenStore = InMemoryLockScreenStore()
+        val secretKeyRepository = SimpleSecretKeyRepository()
+        val pinCodeManager = createDefaultPinCodeManager(
+            lockScreenStore = lockScreenStore,
+            secretKeyRepository = secretKeyRepository,
+        )
+        val sut = createDefaultLockScreenService(
+            lockScreenStore = lockScreenStore,
+            pinCodeManager = pinCodeManager,
+        )
+        pinCodeManager.createPinCode("1234")
+
+        assertThat(sut.lockIfPinSetup()).isTrue()
+        assertThat(sut.lockState.value).isEqualTo(LockScreenLockState.Locked)
+    }
+
+    @Test
+    fun `lockIfPinSetup returns false when no pin exists`() = runTest {
+        val sut = createDefaultLockScreenService()
+
+        assertThat(sut.lockIfPinSetup()).isFalse()
     }
 }
 

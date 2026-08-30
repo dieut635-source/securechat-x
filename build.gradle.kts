@@ -91,6 +91,25 @@ allprojects {
     apply {
         plugin("org.owasp.dependencycheck")
     }
+    configure<org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension> {
+        // A production security gate must fail on every dependency with a known scored
+        // vulnerability. The plugin default is 11.0, which can never be reached by CVSS and
+        // therefore only creates a report without protecting a release.
+        failBuildOnCVSS.set(0.0f)
+        failOnError.set(true)
+
+        // Gradle's --offline flag does not automatically disable Dependency-Check's own network
+        // updaters and remote analyzers. The isolated release workstation must use the reviewed
+        // vulnerability database copied into its offline cache and must never attempt a network
+        // request during the signing ceremony.
+        val offlineDependencyCheck = gradle.startParameter.isOffline
+        autoUpdate.set(!offlineDependencyCheck)
+        if (offlineDependencyCheck) {
+            analyzers.centralEnabled.set(false)
+            analyzers.nodeAudit.enabled.set(false)
+            analyzers.ossIndex.enabled.set(false)
+        }
+    }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         compilerOptions {

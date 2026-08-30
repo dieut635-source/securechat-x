@@ -24,6 +24,8 @@ Choose something memorable. If you forget this PIN, you will be logged out of th
   <string name="screen_app_lock_setup_pin_mismatch_dialog_title">"PINs don\'t match"</string>
   <string name="screen_app_lock_signout_alert_message">"You’ll need to re-login and create a new PIN to proceed"</string>
   <string name="screen_app_lock_signout_alert_title">"This device is being removed"</string>
+  <string name="screen_app_lock_admin_recovery_title" translatable="false">SecureChat is locked</string>
+  <string name="screen_app_lock_admin_recovery_message" translatable="false">The account session was preserved. Contact your SecureChat administrator to recover or re-enroll this device.</string>
   <plurals name="screen_app_lock_subtitle">
     <item quantity="one">"You have %1$d attempt to unlock"</item>
     <item quantity="other">"You have %1$d attempts to unlock"</item>

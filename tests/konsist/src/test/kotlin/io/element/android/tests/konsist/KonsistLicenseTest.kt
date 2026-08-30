@@ -23,6 +23,15 @@ class KonsistLicenseTest {
          \*/
         """.trimIndent().toRegex()
 
+    private val secureChatLicense = """
+        /\*
+         \* Copyright \(c\) 20\d\d SecureChat
+         \*
+         \* SPDX-License-Identifier: AGPL-3.0-only
+         \* Please see LICENSE files in the repository root for full details\.
+         \*/
+        """.trimIndent().toRegex()
+
     @Test
     fun `assert that FOSS files have the correct license header`() {
         Konsist
@@ -38,7 +47,7 @@ class KonsistLicenseTest {
                 assertThat(it).isNotEmpty()
             }
             .assertTrue {
-                publicLicense.containsMatchIn(it.text)
+                publicLicense.containsMatchIn(it.text) || secureChatLicense.containsMatchIn(it.text)
             }
     }
 
@@ -54,7 +63,7 @@ class KonsistLicenseTest {
                     it.name.startsWith("Template ").not()
             }
             .assertTrue {
-                it.text.count("Element Creations Ltd.") == 1
+                it.text.count("SPDX-License-Identifier:") == 1
             }
     }
 }

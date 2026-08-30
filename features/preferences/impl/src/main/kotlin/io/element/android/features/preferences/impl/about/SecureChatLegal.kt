@@ -13,6 +13,7 @@ import io.element.android.features.preferences.impl.BuildConfig
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 
 private const val COPYRIGHT_URL = BuildConfig.URL_COPYRIGHT
 private const val USE_POLICY_URL = BuildConfig.URL_ACCEPTABLE_USE
@@ -32,5 +33,5 @@ fun getAllLegals(): ImmutableList<SecureChatLegal> {
         SecureChatLegal.Copyright,
         SecureChatLegal.AcceptableUsePolicy,
         SecureChatLegal.PrivacyPolicy,
-    )
+    ).filter { legal -> legal.url.isNotBlank() }.toImmutableList()
 }

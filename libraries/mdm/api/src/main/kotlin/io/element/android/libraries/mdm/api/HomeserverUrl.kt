@@ -17,7 +17,11 @@ import java.net.URI
  */
 fun String.canonicalHomeserverUrl(): String? {
     val value = trim().let { if ("://" in it) it else "https://$it" }
-    val uri = runCatching { URI(value).parseServerAuthority() }.getOrNull() ?: return null
+    val uri = try {
+        URI(value).parseServerAuthority()
+    } catch (_: Exception) {
+        return null
+    }
     if (!uri.scheme.equals("https", ignoreCase = true) || uri.isOpaque) return null
     if (uri.rawUserInfo != null || uri.rawQuery != null || uri.rawFragment != null) return null
     val host = uri.host?.lowercase() ?: return null

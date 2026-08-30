@@ -31,7 +31,13 @@ class DefaultCacheCleaner(
     @CacheDirectory private val cacheDir: File,
 ) : CacheCleaner {
     companion object {
-        val SUBDIRS_TO_CLEANUP = listOf("temp/media", "temp/voice")
+        val SUBDIRS_TO_CLEANUP = listOf(
+            "temp/camera",
+            "temp/media",
+            "temp/notif",
+            "temp/outgoing",
+            "temp/voice",
+        )
     }
 
     override fun clearCache() {

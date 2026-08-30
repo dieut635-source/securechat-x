@@ -31,6 +31,10 @@ class ShowDeveloperSettingsProvider(
     val showDeveloperSettings: StateFlow<Boolean> = _showDeveloperSettings
 
     fun unlockDeveloperSettings(scope: CoroutineScope) {
+        // Developer settings expose diagnostic logging, crash tools, and endpoint overrides.
+        // They must never be unlockable in a production build, even when a user knows the
+        // historical multi-tap gesture.
+        if (!isDeveloperBuild) return
         if (multipleTapToUnlock.unlock(scope)) {
             _showDeveloperSettings.value = true
         }

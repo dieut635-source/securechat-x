@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong
 @ContributesBinding(AppScope::class)
 class DefaultSessionSecurityCoordinator : SessionSecurityCoordinator {
     private val mutex = Mutex()
+    private val publicationMutex = Mutex()
     private val epoch = AtomicLong(0L)
 
     override fun beginAuthentication(): Long = epoch.get()
@@ -41,4 +42,7 @@ class DefaultSessionSecurityCoordinator : SessionSecurityCoordinator {
             epoch.incrementAndGet()
         }
     }
+
+    override suspend fun <T> serializeSessionPublication(block: suspend () -> T): T =
+        publicationMutex.withLock { block() }
 }

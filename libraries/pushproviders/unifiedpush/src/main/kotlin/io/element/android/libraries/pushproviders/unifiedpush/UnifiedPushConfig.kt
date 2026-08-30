@@ -10,12 +10,13 @@ package io.element.android.libraries.pushproviders.unifiedpush
 
 object UnifiedPushConfig {
     /**
-     * It is the push gateway for UnifiedPush.
-     * Note: default_push_gateway_http_url should have path '/_matrix/push/v1/notify'
+     * Fail-closed placeholders. This module is excluded from SecureChat production builds, and
+     * these non-routable values prevent an accidental future inclusion from contacting a public
+     * gateway or distributor directory.
      */
-    const val DEFAULT_PUSH_GATEWAY_HTTP_URL: String = "https://matrix.gateway.unifiedpush.org/_matrix/push/v1/notify"
+    const val DEFAULT_PUSH_GATEWAY_HTTP_URL: String = "https://push-disabled.securechat.invalid/_matrix/push/v1/notify"
 
-    const val UNIFIED_PUSH_DISTRIBUTORS_URL = "https://unifiedpush.org/users/distributors/"
+    const val UNIFIED_PUSH_DISTRIBUTORS_URL = "https://push-disabled.securechat.invalid/distributors"
 
     const val INDEX = 1
     const val NAME = "UnifiedPush"

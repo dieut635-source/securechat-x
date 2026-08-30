@@ -15,16 +15,13 @@ import io.element.android.libraries.matrix.api.MatrixClientProvider
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.widget.CallWidgetSettingsProvider
-import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.services.appnavstate.api.ActiveRoomsHolder
-import kotlinx.coroutines.flow.firstOrNull
 
 private const val EMBEDDED_CALL_WIDGET_BASE_URL = "https://appassets.androidplatform.net/securechat-call/index.html"
 
 @ContributesBinding(AppScope::class)
 class DefaultCallWidgetProvider(
     private val matrixClientsProvider: MatrixClientProvider,
-    private val appPreferencesStore: AppPreferencesStore,
     private val callWidgetSettingsProvider: CallWidgetSettingsProvider,
     private val activeRoomsHolder: ActiveRoomsHolder,
 ) : CallWidgetProvider {
@@ -41,13 +38,12 @@ class DefaultCallWidgetProvider(
             ?: matrixClient.getJoinedRoom(roomId)
             ?: error("Room not found")
 
-        val customBaseUrl = appPreferencesStore.getCustomElementCallBaseUrlFlow().firstOrNull()
-        val baseUrl = customBaseUrl ?: EMBEDDED_CALL_WIDGET_BASE_URL
-
         val roomInfo = room.info()
         val isEncrypted = roomInfo.isEncrypted ?: room.getUpdatedIsEncrypted().getOrThrow()
         val widgetSettings = callWidgetSettingsProvider.provide(
-            baseUrl = baseUrl,
+            // SecureChat calls are bundled with the APK. Never load a user-configurable
+            // remote call application inside the privileged call WebView.
+            baseUrl = EMBEDDED_CALL_WIDGET_BASE_URL,
             encrypted = isEncrypted,
             direct = room.isDm(),
             isAudioCall = isAudioCall,
@@ -59,6 +55,9 @@ class DefaultCallWidgetProvider(
             languageTag = languageTag,
             theme = theme,
         ).getOrThrow()
+        check(isSecureChatCallDocumentUri(callUrl)) {
+            "The generated call URL escaped the bundled SecureChat call document"
+        }
 
         val driver = room.getWidgetDriver(widgetSettings).getOrThrow()
 

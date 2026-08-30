@@ -24,6 +24,8 @@ Chọn một mã dễ nhớ. Nếu quên PIN này, bạn sẽ bị đăng xuất
   <string name="screen_app_lock_setup_pin_mismatch_dialog_title">"Mã PIN không khớp"</string>
   <string name="screen_app_lock_signout_alert_message">"Đăng nhập lại và tạo PIN mới để tiếp tục."</string>
   <string name="screen_app_lock_signout_alert_title">"Thiết bị này đang được gỡ bỏ"</string>
+  <string name="screen_app_lock_admin_recovery_title">SecureChat đã bị khóa</string>
+  <string name="screen_app_lock_admin_recovery_message">Phiên tài khoản vẫn được giữ nguyên. Hãy liên hệ quản trị viên SecureChat để khôi phục hoặc đăng ký lại thiết bị này.</string>
   <plurals name="screen_app_lock_subtitle">
     <item quantity="other">"Bạn còn %1$d lần thử để mở khóa"</item>
   </plurals>

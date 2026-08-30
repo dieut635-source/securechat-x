@@ -18,7 +18,6 @@ import io.element.android.libraries.di.DependencyInjectionGraphOwner
 import io.element.android.libraries.workmanager.api.di.MetroWorkerFactory
 import io.element.android.x.di.AppGraph
 import io.element.android.x.info.logApplicationInfo
-import io.element.android.x.initializer.AutoLogoutInitializer
 import io.element.android.x.initializer.CacheCleanerInitializer
 import io.element.android.x.initializer.CrashInitializer
 import io.element.android.x.initializer.PlatformInitializer
@@ -33,12 +32,13 @@ class SecureChatApplication : Application(), DependencyInjectionGraphOwner, Conf
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate() {
         super.onCreate()
+        registerActivityLifecycleCallbacks(SecureWindowActivityLifecycleCallbacks)
         AppInitializer.getInstance(this).apply {
             initializeComponent(CrashInitializer::class.java)
             initializeComponent(PlatformInitializer::class.java)
             initializeComponent(CacheCleanerInitializer::class.java)
-            // SecureChat: applies the auto_logout_minutes managed configuration.
-            initializeComponent(AutoLogoutInitializer::class.java)
+            // Single-device enrollment is intentionally non-revocable from the app. Background
+            // protection is provided by the local PIN lock, never by remote/session logout.
         }
 
         logApplicationInfo(this)

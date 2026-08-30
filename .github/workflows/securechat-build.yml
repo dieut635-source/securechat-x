@@ -63,8 +63,7 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
 
-      # Bản fdroid dùng UnifiedPush nên KHÔNG cần google-services.json.
-      # Khi có Firebase project cho com.securechat.app thì đổi sang assembleGplayDebug.
+      # Closed-distribution build: Firebase and UnifiedPush are both excluded.
       - name: Assemble fdroid debug APK
         run: ./gradlew :app:assembleFdroidDebug $CI_GRADLE_ARG_PROPERTIES
 

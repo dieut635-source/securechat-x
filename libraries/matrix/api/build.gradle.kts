@@ -39,11 +39,11 @@ android {
         )
         buildConfigFieldStr(
             name = "TOS_URI",
-            value = BuildTimeConfig.URL_ACCEPTABLE_USE ?: "https://chat.securechat.com.au"
+            value = BuildTimeConfig.URL_ACCEPTABLE_USE ?: ""
         )
         buildConfigFieldStr(
             name = "POLICY_URI",
-            value = BuildTimeConfig.URL_POLICY ?: "https://chat.securechat.com.au"
+            value = BuildTimeConfig.URL_POLICY ?: ""
         )
     }
 }

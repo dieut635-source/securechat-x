@@ -10,28 +10,36 @@ pluginManagement {
     repositories {
         includeBuild("plugins")
         gradlePluginPortal()
-        google()
-        mavenCentral()
+        google {
+            mavenContent { releasesOnly() }
+        }
+        mavenCentral {
+            mavenContent { releasesOnly() }
+        }
     }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        maven {
-            url = uri("https://www.jitpack.io")
-            content {
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "JitPack"
+                    url = uri("https://www.jitpack.io")
+                    mavenContent { releasesOnly() }
+                }
+            }
+            filter {
                 includeModule("com.github.matrix-org", "matrix-analytics-events")
                 // Required transitively by androidx.media3:media3-exoplayer-midi for MIDI playback.
                 includeModule("com.github.philburk", "jsyn")
             }
         }
-        google()
-        mavenCentral()
-        maven {
-            url = uri("https://repo1.maven.org/maven2/")
+        google {
+            mavenContent { releasesOnly() }
         }
-        flatDir {
-            dirs("libraries/matrix/libs")
+        mavenCentral {
+            mavenContent { releasesOnly() }
         }
     }
 }

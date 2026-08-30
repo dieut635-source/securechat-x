@@ -1,26 +1,24 @@
-# Notifications and push providers
+# Notifications in the closed distribution
 
-SecureChat displays notifications from Matrix events after the SDK synchronizes the relevant room
-state. Android notification permission, channel settings, room notification rules, background
-restrictions, and battery optimization can all affect delivery.
+SecureChat is sideloaded as a closed APK and does not compile a remote push provider. Both Firebase
+and UnifiedPush are disabled in `BuildTimeConfig`; no Google project, public distributor directory,
+or public Matrix push gateway is present in the production dependency graph.
 
-Current distribution policy:
+This is an intentional confidentiality tradeoff:
 
-- F-Droid builds include UnifiedPush support.
-- Firebase is excluded because SecureChat does not yet have a configured Firebase project and push
-  gateway.
-- `PUSH_CONFIG_INCLUDE_FIREBASE` must remain `false` until both are SecureChat-owned and the
-  application IDs in `BuildTimeConfig` match the deployed gateway configuration.
+- Notifications can be created only after the app's Matrix client has synchronized the event.
+- Delivery is reliable while SecureChat is open and connected.
+- Android may suspend or kill the process in the background. With no remote wake-up channel, new
+  messages and calls can remain silent until the user opens SecureChat and synchronization resumes.
+- Sideloading from a computer does not provide a background notification transport.
 
-A future Firebase deployment requires all of the following: a SecureChat Firebase project,
-`google-services.json` for `com.securechat.app`, a SecureChat-controlled Matrix push gateway,
-documented privacy/retention behavior, release and debug test coverage, and removal of placeholder
-configuration. Never reuse another application's Firebase project or push credentials.
+The notification settings screen treats an empty provider set as a supported local-sync mode. It
+does not try to register a pusher or show a provider-configuration error. Android notification
+permission, channel settings, and Matrix room notification rules still apply to events already
+received by the process.
 
-For troubleshooting, confirm Android notification permission, the room's notification mode,
-background/battery restrictions, and the selected push provider in developer settings. F-Droid
-installations without a UnifiedPush distributor cannot receive remote push and may only update while
-the app synchronizes.
-
-Matrix push rules and gateway behavior are protocol concepts; see the current Matrix Client-Server
-API specification and the [Sygnal reference implementation](https://github.com/matrix-org/sygnal).
+Do not re-enable either provider merely to improve background delivery. A future push design needs a
+separate security review, a SecureChat-owned private transport and gateway, documented metadata and
+retention rules, certificate and endpoint pinning decisions, incident response, and release tests.
+The repository configuration audit intentionally fails if the current closed-build flags or
+non-routable fallback endpoints are weakened.

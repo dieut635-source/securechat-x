@@ -9,6 +9,7 @@
 package io.element.android.libraries.matrix.impl.auth
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.enterprise.test.FakeEnterpriseService
 import io.element.android.libraries.matrix.impl.FakeClientBuilderProvider
 import io.element.android.libraries.matrix.impl.fixtures.fakes.FakeFfiClient
 import io.element.android.libraries.matrix.impl.fixtures.fakes.FakeFfiClientBuilder
@@ -18,9 +19,9 @@ import org.junit.Test
 
 class RustHomeserverLoginCompatibilityCheckerTest {
     @Test
-    fun `check - is valid if it supports OAuth login`() = runTest {
+    fun `check - is not valid if it only supports OAuth login`() = runTest {
         val sut = createChecker { FakeFfiHomeserverLoginDetails(supportsOAuthLogin = true) }
-        assertThat(sut.check("https://matrix.host.org").getOrNull()).isTrue()
+        assertThat(sut.check("https://matrix.host.org").getOrNull()).isFalse()
     }
 
     @Test
@@ -41,6 +42,23 @@ class RustHomeserverLoginCompatibilityCheckerTest {
         assertThat(sut.check("https://matrix.host.org").isFailure).isTrue()
     }
 
+    @Test
+    fun `check - rejects an unapproved homeserver before creating a client`() = runTest {
+        var clientBuilderCreated = false
+        val sut = RustHomeServerLoginCompatibilityChecker(
+            clientBuilderProvider = FakeClientBuilderProvider {
+                clientBuilderCreated = true
+                FakeFfiClientBuilder()
+            },
+            enterpriseService = FakeEnterpriseService(
+                isAllowedToConnectToHomeserverResult = { false },
+            ),
+        )
+
+        assertThat(sut.check("https://attacker.invalid").getOrNull()).isFalse()
+        assertThat(clientBuilderCreated).isFalse()
+    }
+
     private fun createChecker(
         result: () -> FakeFfiHomeserverLoginDetails,
     ) = RustHomeServerLoginCompatibilityChecker(
@@ -49,5 +67,8 @@ class RustHomeserverLoginCompatibilityCheckerTest {
                 FakeFfiClient(homeserverLoginDetailsResult = result)
             }
         },
+        enterpriseService = FakeEnterpriseService(
+            isAllowedToConnectToHomeserverResult = { true },
+        ),
     )
 }

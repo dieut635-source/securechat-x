@@ -36,8 +36,9 @@ class DefaultLogoutUseCase(
                     try {
                         matrixClientProvider.getOrRestore(sessionId).getOrThrow()
                             .logout(userInitiated = true, ignoreSdkError = ignoreSdkError)
-                    } catch (error: Throwable) {
-                        if (error is CancellationException) throw error
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Exception) {
                         Timber.e(error, "Failed to log out MatrixClient for sessionId: $sessionId")
                         if (ignoreSdkError) {
                             // Auto-logout and PIN-forgotten flows are security boundaries. Even when
@@ -45,8 +46,9 @@ class DefaultLogoutUseCase(
                             // and continue attempting every other account.
                             try {
                                 sessionStore.removeSession(sessionId.value)
-                            } catch (removalError: Throwable) {
-                                if (removalError is CancellationException) throw removalError
+                            } catch (removalError: CancellationException) {
+                                throw removalError
+                            } catch (removalError: Exception) {
                                 Timber.e(removalError, "Failed to remove local sessionId: $sessionId")
                                 if (firstFailure == null) firstFailure = removalError
                             }

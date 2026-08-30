@@ -31,15 +31,15 @@ android {
     defaultConfig {
         buildConfigFieldStr(
             name = "URL_COPYRIGHT",
-            value = BuildTimeConfig.URL_COPYRIGHT ?: "https://chat.securechat.com.au",
+            value = BuildTimeConfig.URL_COPYRIGHT ?: "",
         )
         buildConfigFieldStr(
             name = "URL_ACCEPTABLE_USE",
-            value = BuildTimeConfig.URL_ACCEPTABLE_USE ?: "https://chat.securechat.com.au",
+            value = BuildTimeConfig.URL_ACCEPTABLE_USE ?: "",
         )
         buildConfigFieldStr(
             name = "URL_PRIVACY",
-            value = BuildTimeConfig.URL_PRIVACY ?: "https://chat.securechat.com.au",
+            value = BuildTimeConfig.URL_PRIVACY ?: "",
         )
     }
 }
@@ -63,6 +63,7 @@ dependencies {
     implementation(projects.libraries.troubleshoot.api)
     implementation(projects.libraries.testtags)
     implementation(projects.libraries.uiStrings)
+    implementation(projects.libraries.uiCommon)
     implementation(projects.libraries.matrixui)
     implementation(projects.libraries.mediaviewer.api)
     implementation(projects.libraries.mediapickers.api)

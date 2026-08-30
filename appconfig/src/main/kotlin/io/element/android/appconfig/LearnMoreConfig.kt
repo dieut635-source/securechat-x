@@ -12,7 +12,7 @@ object LearnMoreConfig {
     /**
      * Every "Learn more" link in the app points at the SecureChat site.
      *
-     * TODO: replace with real help pages once they exist, and give each topic its own anchor again.
+     * Replace these placeholders with dedicated help pages when the closed deployment publishes them.
      */
     private const val HELP_URL: String = "https://chat.securechat.com.au"
 

@@ -38,7 +38,6 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.OutlinedButton
 import io.element.android.libraries.designsystem.theme.components.Text
-import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.ui.strings.CommonStrings
 
@@ -59,15 +58,7 @@ fun ChooseSelfVerificationModeView(
     HeaderFooterPage(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = {},
-                actions = {
-                    TextButton(
-                        text = stringResource(CommonStrings.action_signout),
-                        onClick = { state.eventSink(ChooseSelfVerificationModeEvent.SignOut) }
-                    )
-                }
-            )
+            TopAppBar(title = {})
         },
         header = {
             IconTitleSubtitleMolecule(

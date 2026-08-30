@@ -8,7 +8,6 @@
 
 package io.element.android.features.login.impl
 
-import androidx.core.net.toUri
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.features.login.api.LoginIntentResolver
@@ -16,21 +15,7 @@ import io.element.android.features.login.api.LoginParams
 
 @ContributesBinding(AppScope::class)
 class DefaultLoginIntentResolver : LoginIntentResolver {
-    override fun parse(uriString: String): LoginParams? {
-        val uri = uriString.toUri()
-        if (uri.scheme != "https") return null
-        if (uri.host != SECURECHAT_HOST) return null
-        if (uri.path.orEmpty().trimEnd('/') != SECURECHAT_LOGIN_PATH) return null
-        val accountProvider = uri.getQueryParameter("account_provider") ?: return null
-        val loginHint = uri.getQueryParameter("login_hint")
-        return LoginParams(
-            accountProvider = accountProvider,
-            loginHint = loginHint,
-        )
-    }
-
-    private companion object {
-        const val SECURECHAT_HOST = "chat.securechat.com.au"
-        const val SECURECHAT_LOGIN_PATH = "/securechat"
-    }
+    // Public login/configuration links stay disabled until the SecureChat domain association is
+    // deployed with the production signing certificate and verified on supported Android versions.
+    override fun parse(uriString: String): LoginParams? = null
 }

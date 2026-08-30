@@ -387,11 +387,20 @@ class PreferencesRootViewTest : RobolectricTest() {
     }
 
     @Test
-    fun `click on Remove this device invokes the expected callback`() = runAndroidComposeUiTest {
+    fun `sign out is hidden in SecureChat single-device mode`() = runAndroidComposeUiTest {
+        setView(aPreferencesRootState(showSignOut = false))
+
+        val text = activity!!.getString(CommonStrings.action_signout)
+        onNodeWithText(text).assertDoesNotExist()
+    }
+
+    @Test
+    fun `click on explicitly enabled sign out invokes the expected callback`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<PreferencesRootEvent>(expectEvents = false)
         ensureCalledOnce { callback ->
             setView(
                 aPreferencesRootState(
+                    showSignOut = true,
                     eventSink = eventsRecorder,
                 ),
                 onSignOutClick = callback,

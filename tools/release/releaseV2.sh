@@ -8,5 +8,5 @@
 set -euo pipefail
 
 printf '%s\n' 'This inherited local release flow is disabled for SecureChat.' >&2
-printf '%s\n' 'Use the signed SecureChat Release APK workflow in GitHub Actions.' >&2
+printf '%s\n' 'Use tools/release/build_securechat_offline.sh on the isolated release workstation.' >&2
 exit 1

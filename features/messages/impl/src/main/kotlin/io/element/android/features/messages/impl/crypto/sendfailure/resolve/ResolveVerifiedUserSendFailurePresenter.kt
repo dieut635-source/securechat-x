@@ -24,6 +24,7 @@ import io.element.android.libraries.architecture.runUpdatingState
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Inject
 class ResolveVerifiedUserSendFailurePresenter(
@@ -56,7 +57,6 @@ class ResolveVerifiedUserSendFailurePresenter(
                     val sendHandle = event.messageEvent.sendhandle
                     resolver = if (sendState != null && transactionId != null && sendHandle != null) {
                         VerifiedUserSendFailureResolver(
-                            room = room,
                             transactionId = transactionId,
                             sendHandle = sendHandle,
                             iterator = VerifiedUserSendFailureIterator.from(sendState)
@@ -79,10 +79,11 @@ class ResolveVerifiedUserSendFailurePresenter(
                 }
                 ResolveVerifiedUserSendFailureEvent.ResolveAndResend -> {
                     coroutineScope.launch {
-                        resolver?.run {
-                            runUpdatingState(resolveAction) {
-                                resolveAndResend()
-                            }
+                        runUpdatingState(resolveAction) {
+                            Timber.w("Blocked attempt to bypass E2EE trust checks")
+                            Result.failure(
+                                IllegalStateException("SecureChat does not allow bypassing E2EE trust checks")
+                            )
                         }
                     }
                 }

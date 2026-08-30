@@ -10,14 +10,14 @@
 -->
 <resources>
     <string name="mdm_homeserver_url_title" translatable="false">Homeserver URL</string>
-    <string name="mdm_homeserver_url_description" translatable="false">The SecureChat server users sign in to. Must start with https://. Leave empty to use https://chat.securechat.com.au.</string>
+    <string name="mdm_homeserver_url_description" translatable="false">Compatibility key. This closed build accepts only https://chat.securechat.com.au; every other value is ignored.</string>
 
     <string name="mdm_allow_registration_title" translatable="false">Allow creating accounts</string>
-    <string name="mdm_allow_registration_description" translatable="false">When off, the app only offers Sign in. Accounts must be created by an administrator on the server.</string>
+    <string name="mdm_allow_registration_description" translatable="false">Compatibility key. Registration is always disabled in this closed build, including when this value is set to true.</string>
 
     <string name="mdm_allow_file_send_title" translatable="false">Allow sending files</string>
     <string name="mdm_allow_file_send_description" translatable="false">When off, the attachment button, voice messages and sharing into SecureChat from other apps are all disabled. Users can still receive files.</string>
 
-    <string name="mdm_auto_logout_minutes_title" translatable="false">Automatic sign-out (minutes)</string>
-    <string name="mdm_auto_logout_minutes_description" translatable="false">Sign the user out after the app has been in the background this many minutes. 0 disables automatic sign-out.</string>
+    <string name="mdm_auto_logout_minutes_title" translatable="false">Automatic sign-out (must be 0)</string>
+    <string name="mdm_auto_logout_minutes_description" translatable="false">SecureChat preserves the sole enrolled session and uses local PIN lock. Any value other than 0 is rejected.</string>
 </resources>

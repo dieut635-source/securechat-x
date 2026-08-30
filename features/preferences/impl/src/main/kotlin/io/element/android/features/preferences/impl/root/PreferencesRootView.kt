@@ -323,12 +323,14 @@ private fun ColumnScope.GeneralSection(
         )
     }
     HorizontalDivider()
-    ListItem(
-        content = { Text(stringResource(id = CommonStrings.action_signout)) },
-        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Close())),
-        style = ListItemStyle.Destructive,
-        onClick = onSignOutClick,
-    )
+    if (state.showSignOut) {
+        ListItem(
+            content = { Text(stringResource(id = CommonStrings.action_signout)) },
+            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Close())),
+            style = ListItemStyle.Destructive,
+            onClick = onSignOutClick,
+        )
+    }
     if (state.canDeactivateAccount) {
         ListItem(
             content = { Text(stringResource(id = CommonStrings.action_delete_account)) },

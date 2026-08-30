@@ -187,7 +187,7 @@ class UtdTrackerTest {
     }
 
     @Test
-    fun `when onUtd is called from a matrix-org user, the expected analytics Event is sent`() {
+    fun `when onUtd is called from an inherited public-server fixture, the legacy flag stays disabled`() {
         val fakeAnalyticsService = FakeAnalyticsService()
         val sut = UtdTracker(fakeAnalyticsService)
         sut.onUtd(
@@ -205,7 +205,7 @@ class UtdTrackerTest {
                 domain = Error.Domain.E2EE,
                 name = Error.Name.OlmKeysNotSentError,
                 isFederated = true,
-                isMatrixDotOrg = true,
+                isMatrixDotOrg = false,
                 userTrustsOwnIdentity = false,
                 eventLocalAgeMillis = 0,
             )

@@ -14,8 +14,8 @@ Fork của `element-hq/element-x-android`, rebrand thành **SecureChat** cho hom
 (Actions → SecureChat APK Build → Run workflow).
 
 - JDK 21, Gradle wrapper của repo.
-- Build `:app:assembleFdroidDebug` (bản **fdroid** dùng UnifiedPush, **không** cần `google-services.json`).
-  Khi có Firebase project cho `com.securechat.app` sẽ đổi sang `assembleGplayDebug`.
+- Build `:app:assembleFdroidDebug`; cả Firebase lẫn UnifiedPush đều bị loại khỏi dependency graph.
+  Đây là build kiểm thử, có application ID và nhãn `dbg` riêng, không thay thế được bản production.
 - Artifact: **`app-debug.apk`** (bản **arm64-v8a**, ~99 MB — mọi điện thoại Android đời mới đều là arm64).
   Cần bản universal thì cập nhật các lệnh sao chép ở bước "Collect APKs" trong workflow.
 - Job audit chạy `tools/check/check_securechat_configuration.sh` để chặn cấu hình thương hiệu,
@@ -67,9 +67,9 @@ tốn công và làm mọi lần merge upstream xung đột, trong khi người 
 
 - PostHog và Sentry chỉ được biên dịch khi có endpoint/khoá do SecureChat cấu hình. Mặc định cả hai tắt.
 - Không có endpoint upload bug report mặc định.
-- Firebase bị loại khỏi build vì repo chưa có Firebase project và push gateway thuộc SecureChat.
-  Bản F-Droid vẫn hỗ trợ UnifiedPush. Chỉ bật lại `PUSH_CONFIG_INCLUDE_FIREBASE` sau khi thay toàn bộ
-  cấu hình placeholder trong module Firebase và triển khai push gateway riêng.
+- Firebase và UnifiedPush đều bị loại khỏi build. Ứng dụng không đăng ký pusher từ xa; thông báo chỉ
+  xuất hiện sau khi tiến trình đang chạy nhận được sự kiện qua đồng bộ Matrix. Mọi thiết kế push riêng
+  trong tương lai phải qua một đợt security review độc lập trước khi bật lại.
 - Các app-link web cũ đã được bỏ khỏi manifest. Scheme chuẩn `matrix:` vẫn được hỗ trợ để tương tác
   với hệ sinh thái Matrix.
 
@@ -79,60 +79,106 @@ Bốn khoá, khai báo trong `app/src/main/res/xml/app_restrictions.xml`, đọc
 
 | Khoá | Kiểu | Mặc định | Không cấu hình thì | Cấu hình rồi thì |
 |---|---|---|---|---|
-| `homeserver_url` | string | `https://chat.securechat.com.au` | đăng nhập vào server SecureChat | khoá vào đúng server đó, không đổi được |
-| `allow_registration` | bool | `false` | chỉ có "Sign in" | `true` mới hiện "Create account" |
+| `homeserver_url` | string | `https://chat.securechat.com.au` | đăng nhập vào server SecureChat | chỉ chấp nhận URL SecureChat tương đương; giá trị khác bị bỏ qua |
+| `allow_registration` | bool | `false` | chỉ có "Sign in" | khoá tương thích; kể cả `true` cũng không thể bật tạo tài khoản |
 | `allow_file_send` | bool | `true` | gửi file bình thường | `false` → ẩn nút đính kèm, ẩn ghi âm, chặn chia sẻ file từ app khác, chặn dán ảnh từ bàn phím |
 | `auto_logout_minutes` | integer | `0` | không tự đăng xuất | `>0` → đăng xuất khi app ở nền quá N phút, kể cả khi tiến trình bị kill |
 
 **Tên khoá là hợp đồng với Knox** — đổi tên không làm build lỗi, nó chỉ âm thầm đưa thiết lập đó về
 mặc định trên mọi máy đã triển khai. Đừng đổi.
 
-Parser (`MdmConfigParser`) cố tình dễ dãi: console MDM hay đẩy sai kiểu (checkbox thành chuỗi `"true"`,
-số thành `" 30 "`). Giá trị không hiểu được thì rơi về mặc định của **riêng khoá đó**, không làm hỏng
-cả cấu hình — một máy từ chối đọc chính sách là máy quản trị viên không sửa được từ xa.
-URL `http://` bị từ chối thẳng: gõ nhầm một chữ không đáng đổi lấy kết nối không mã hoá.
+Parser (`MdmConfigParser`) cố tình dễ dãi với `allow_file_send` và `auto_logout_minutes`: console MDM
+hay đẩy sai kiểu (checkbox thành chuỗi `"true"`, số thành `" 30 "`). Giá trị không hiểu được thì rơi
+về mặc định của **riêng khoá đó**. Hai khoá nhận dạng nhạy cảm là ngoại lệ fail-closed:
+`homeserver_url` không thể chuyển khỏi SecureChat và `allow_registration` không thể bật đăng ký.
 
 Thử không cần Knox: cài **TestDPC** (Google) lên máy/emulator, mục "Managed configurations" → chọn
 SecureChat → chỉnh bốn khoá.
 
 ## Ký bản phát hành
 
-Bản release của upstream ký bằng **khoá debug** — khoá đó nằm công khai trong repo, nghĩa là ai
-cũng ký được bản cập nhật giả. Đã thay bằng cấu hình ký thật đọc từ biến môi trường.
+Bản production chỉ được ký trên máy release cô lập mạng. Production keystore, mật khẩu và bản
+base64 của keystore **không được đưa vào GitHub Secrets, CI, cloud, repository hoặc máy lập trình
+hằng ngày**. GitHub workflow `securechat-release.yml` chỉ kiểm tra đúng source revision; nó không
+nhận khóa và không tạo APK/AAB.
 
-Từ thư mục gốc của repo, dùng `keytool` đi kèm JDK 21 để sinh keystore **bên ngoài** repo:
+Gradle đã được cấu hình fail-closed: task tạo/cài release yêu cầu đủ thông tin ký, đúng certificate
+pin và marker gắn với commit do script offline tạo; keystore phải là file bên ngoài repository và
+không được là debug/nightly key. Không còn đường fallback về debug key. Shell/`local.properties` có
+MapTiler, Sentry, PostHog hoặc Rageshake cũng bị từ chối. Chữ ký APK production chỉ dùng scheme v2/v3;
+v1 bị tắt vì `minSdk` đã là API 24.
+
+### Nghi thức tạo khóa lần đầu
+
+Trên máy offline, dùng `keytool` của JDK 21 để sinh khóa RSA 4096-bit bên ngoài repository. Không
+đưa mật khẩu vào command line; `keytool` sẽ hỏi trực tiếp:
 
 ```bash
 keytool -genkeypair -v \
-  -keystore ../securechat-release.keystore \
+  -keystore /secure/offline/securechat-release.keystore \
   -storetype PKCS12 \
   -alias securechat \
   -keyalg RSA \
   -keysize 4096 \
   -validity 10000
+chmod 600 /secure/offline/securechat-release.keystore
 ```
 
-Mã hoá file để tạo giá trị secret mà không thêm keystore vào Git:
+Xuất certificate công khai và ghi vân tay SHA-256 ra một file/giấy độc lập. Lệnh này vẫn hỏi mật khẩu
+tương tác; vân tay là public nhưng bản pin phải được giữ qua kênh khác với gói APK:
 
 ```bash
-base64 < ../securechat-release.keystore | tr -d '\n'
+keytool -exportcert \
+  -keystore /secure/offline/securechat-release.keystore \
+  -alias securechat \
+  | openssl dgst -sha256
 ```
 
-Lấy vân tay chứng chỉ phát hành (giá trị `SHA256`) bằng:
+Chép đúng 64 ký tự hex vào `/secure/offline/securechat-release-cert.sha256`. Giữ hai bản sao keystore
+được mã hóa ở hai vị trí vật lý tách biệt; giữ pin certificate và mật khẩu trong hệ thống quản lý bí
+mật riêng. Kiểm tra phục hồi bản sao trước lần phát hành đầu tiên.
+
+### Mỗi lần phát hành
+
+1. Source phải sạch và commit được duyệt phải có signed annotated tag đúng phiên bản, ví dụ:
 
 ```bash
-keytool -list -v -keystore ../securechat-release.keystore -alias securechat
+git tag -s v26.08.3 -m "SecureChat 26.08.3"
+git verify-tag v26.08.3
 ```
 
-Rồi tạo 5 secret ở Settings → Secrets and variables → Actions: đặt kết quả base64 trên vào
-`SECURECHAT_KEYSTORE_BASE64`, và tạo `SECURECHAT_KEYSTORE_PASSWORD`,
-`SECURECHAT_KEY_ALIAS` (`securechat`), `SECURECHAT_KEY_PASSWORD` theo giá trị đã nhập khi sinh khoá,
-và đặt vân tay chứng chỉ vào `SECURECHAT_RELEASE_CERT_SHA256` (có hoặc không có dấu `:` đều được).
+2. Chạy **SecureChat Production Source Gate** trên đúng commit/tag. Gate phải xanh toàn bộ: LFS,
+   configuration audit, full unit test, screenshot verification, Detekt, Ktlint, dependency
+   vulnerability scan, release lint và release-source compilation. CI không tạo artifact phát hành.
 
-Build: Actions → **SecureChat Release APK** → Run workflow (hoặc đẩy tag `v*`).
+3. Bootstrap `gradle/verification-metadata.xml` bằng SHA-256 trong một môi trường sạch, đối chiếu và
+   review độc lập mọi artifact rồi commit metadata cùng source. Không tạo metadata bằng cách mặc
+   nhiên tin cache cũ. Script offline cố ý từ chối phát hành nếu file này chưa tồn tại hoặc không có
+   checksum SHA-256.
 
-Workflow tự **xác minh chữ ký** sau khi build và **thất bại** nếu APK bị ký bằng khoá debug hoặc
-không khớp chính xác vân tay `SECURECHAT_RELEASE_CERT_SHA256` đã ghim.
+4. Đồng bộ đúng commit cùng toàn bộ LFS/dependency cache sang máy release offline. Cache OWASP/NVD
+   mới, đã được duyệt từ source-gate của chính commit này, cũng phải được chuẩn bị trước. Chế độ
+   offline tắt mọi updater/remote analyzer và dùng đúng cache đã chuyển vào; không được tái sử dụng cơ
+   sở dữ liệu lỗ hổng cũ không rõ nguồn gốc.
 
-⚠️ **Mất keystore = không bao giờ cập nhật được app.** Người dùng phải gỡ cài và cài lại, mất
-toàn bộ tin nhắn đã mã hoá trên máy. Sao lưu keystore và mật khẩu ở **hai nơi tách biệt**.
+5. Khi mạng của máy release đã bị ngắt vật lý, chạy:
+
+```bash
+tools/release/build_securechat_offline.sh \
+  --keystore /secure/offline/securechat-release.keystore \
+  --alias securechat \
+  --cert-pin-file /secure/offline/securechat-release-cert.sha256
+```
+
+Script hỏi hai mật khẩu bằng input ẩn, yêu cầu đúng Android Build Tools khai báo trong `Versions.kt`,
+chạy lại toàn bộ gate với Gradle `--offline --no-daemon`, build `fdroidRelease`, xác minh **từng** APK
+(pin certificate, v2/v3, không v1/debug, zip alignment,
+application ID/version), rồi sinh `SHA256SUMS` và provenance. Hai metadata file còn được đóng vào
+JAR ký bởi chính production key để máy cài đặt xác thực độc lập.
+
+6. Cài từ máy tính theo `docs/install_from_github_release.md`; không tải APK production lên GitHub,
+   email, chat, Diawi hoặc file-sharing công cộng.
+
+⚠️ **Mất keystore = không thể cập nhật app.** Không tạo khóa mới để “thay thế”: Android sẽ từ chối
+update, và gỡ app để cài lại sẽ xóa local encrypted state. Nếu nghi khóa bị lộ, dừng phân phối ngay,
+cô lập thiết bị và thực hiện quy trình ứng phó sự cố riêng.

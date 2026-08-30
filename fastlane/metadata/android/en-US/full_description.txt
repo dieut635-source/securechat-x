@@ -14,11 +14,9 @@ Stay connected with:
 SecureChat does not include a preconfigured analytics, crash-reporting or remote bug-report upload endpoint. Your organisation can manage access and sharing policies through Android managed configurations.
 
 <b>Built for managed deployments</b>
-Administrators can enforce the homeserver, control account registration and file sending, and configure automatic logout after the app has remained in the background.
+The homeserver is fixed to SecureChat and in-app account creation is disabled. Administrators can further restrict file sending and configure automatic logout after the app has remained in the background.
 
 <b>Open protocol</b>
 SecureChat uses Matrix for interoperable, real-time communication. The Android source is available at https://github.com/dieut635-source/securechat-x.
-
-The app may request android.permission.REQUEST_INSTALL_PACKAGES when a user explicitly chooses to install an application received as an attachment.
 
 The app uses USE_FULL_SCREEN_INTENT so incoming call notifications can be presented while the device is locked.

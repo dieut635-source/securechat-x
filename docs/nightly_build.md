@@ -17,4 +17,5 @@ Build locally with JDK 21:
 For an internal deployment, provide a private `app/signature/nightly.keystore` and set
 `SECURECHAT_NIGHTLY_STORE_PASSWORD`, `SECURECHAT_NIGHTLY_KEY_ID`, and
 `SECURECHAT_NIGHTLY_KEY_PASSWORD`. Keep those values outside the repository. Production releases
-must always use `.github/workflows/securechat-release.yml` and its separate release key.
+must always use `tools/release/build_securechat_offline.sh` on the isolated workstation. The
+production key must never be reused for nightly builds or exposed to GitHub Actions.

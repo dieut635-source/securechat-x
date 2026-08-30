@@ -25,7 +25,7 @@ import java.util.Locale
 class SecureChatBrandingResourcesTest : RobolectricTest() {
     @Suppress("DEPRECATION")
     @Test
-    fun `SecureChat HTTPS login links resolve to the app`() {
+    fun `unverified HTTPS login links do not resolve to the app`() {
         val context = RuntimeEnvironment.getApplication()
         val intent = Intent(
             Intent.ACTION_VIEW,
@@ -34,9 +34,9 @@ class SecureChatBrandingResourcesTest : RobolectricTest() {
 
         val resolvedActivity = context.packageManager.resolveActivity(intent, 0)
 
-        assertWithMessage("SecureChat HTTPS login link manifest registration")
+        assertWithMessage("unverified HTTPS login link must stay disabled")
             .that(resolvedActivity?.activityInfo?.name)
-            .isEqualTo("io.element.android.x.MainActivity")
+            .isNull()
     }
 
     @Test

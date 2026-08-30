@@ -12,8 +12,8 @@ adb install -r app-debug.apk
 ```
 
 These APKs use the public Android debug key and are for testing only. They cannot update a production
-SecureChat installation signed with the release key. Use the signed release workflow described in
-`docs/install_from_github_release.md` for distributable builds.
+SecureChat installation signed with the release key. GitHub never produces a production APK. Use the
+offline release and computer-installation procedure in `docs/install_from_github_release.md`.
 
 The scripts in `tools/github/` can download artifacts when automation needs the GitHub API. Use a
 short-lived, least-privilege token; public browser downloads do not require storing a token in this

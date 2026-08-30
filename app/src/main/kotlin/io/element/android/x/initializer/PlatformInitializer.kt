@@ -13,8 +13,11 @@ import android.system.Os
 import androidx.startup.Initializer
 import io.element.android.features.rageshake.api.logs.createWriteToFilesConfiguration
 import io.element.android.libraries.architecture.bindings
+import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.matrix.api.tracing.LogLevel
 import io.element.android.libraries.matrix.api.tracing.TracingConfiguration
+import io.element.android.libraries.matrix.api.tracing.WriteToFilesConfiguration
 import io.element.android.x.di.AppBindings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -31,19 +34,28 @@ class PlatformInitializer : Initializer<Unit> {
         Timber.plant(tracingService.createTimberTree(SECURECHAT_TARGET))
         val preferencesStore = appBindings.preferencesStore()
         val featureFlagService = appBindings.featureFlagService()
-        val logLevel = runBlocking { preferencesStore.getTracingLogLevelFlow().first() }
+        val isReleaseBuild = appBindings.buildMeta().buildType == BuildType.RELEASE
+        val logLevel = if (isReleaseBuild) {
+            LogLevel.ERROR
+        } else {
+            runBlocking { preferencesStore.getTracingLogLevelFlow().first() }
+        }
         val tracingConfiguration = TracingConfiguration(
-            writesToLogcat = runBlocking { featureFlagService.isFeatureEnabled(FeatureFlags.PrintLogsToLogcat) },
-            writesToFilesConfiguration = bugReporter.createWriteToFilesConfiguration(),
+            writesToLogcat = !isReleaseBuild && runBlocking { featureFlagService.isFeatureEnabled(FeatureFlags.PrintLogsToLogcat) },
+            writesToFilesConfiguration = if (isReleaseBuild) {
+                WriteToFilesConfiguration.Disabled
+            } else {
+                bugReporter.createWriteToFilesConfiguration()
+            },
             logLevel = logLevel,
             extraTargets = listOf(SECURECHAT_TARGET),
-            traceLogPacks = runBlocking { preferencesStore.getTracingLogPacksFlow().first() },
-            sdkSentryDsn = appBindings.sentrySdkDsn()?.value?.takeIf { it.isNotBlank() },
+            traceLogPacks = if (isReleaseBuild) emptySet() else runBlocking { preferencesStore.getTracingLogPacksFlow().first() },
+            sdkSentryDsn = if (isReleaseBuild) null else appBindings.sentrySdkDsn()?.value?.takeIf { it.isNotBlank() },
         )
         bugReporter.setCurrentTracingLogLevel(logLevel.name)
         platformService.init(tracingConfiguration)
-        // Also set env variable for rust back trace
-        Os.setenv("RUST_BACKTRACE", "1", true)
+        // Backtraces are useful to local developers but can retain sensitive runtime context.
+        Os.setenv("RUST_BACKTRACE", if (isReleaseBuild) "0" else "1", true)
     }
 
     override fun dependencies(): List<Class<out Initializer<*>>> = mutableListOf()

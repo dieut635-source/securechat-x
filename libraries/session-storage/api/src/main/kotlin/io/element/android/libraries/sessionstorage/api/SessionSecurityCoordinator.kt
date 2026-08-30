@@ -20,6 +20,13 @@ interface SessionSecurityCoordinator {
     suspend fun <T> commitAuthentication(token: Long, block: suspend () -> T): T
 
     suspend fun <T> invalidateAuthenticationsAndRun(block: suspend () -> T): T
+
+    /**
+     * Serializes publication of a newly authenticated client with restoration from persisted state.
+     * This deliberately uses a different lock from authentication invalidation: logout holds the
+     * invalidation lock while asking the client provider to restore a session.
+     */
+    suspend fun <T> serializeSessionPublication(block: suspend () -> T): T
 }
 
 class AuthenticationInvalidatedException : IllegalStateException(

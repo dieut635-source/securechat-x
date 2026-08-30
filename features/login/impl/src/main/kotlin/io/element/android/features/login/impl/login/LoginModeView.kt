@@ -9,16 +9,13 @@
 package io.element.android.features.login.impl.login
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.dialogs.SlidingSyncNotSupportedDialog
 import io.element.android.features.login.impl.error.ChangeServerError
 import io.element.android.features.login.impl.screens.createaccount.AccountCreationNotSupported
-import io.element.android.libraries.androidutils.system.openGooglePlay
 import io.element.android.libraries.architecture.AsyncData
-import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
 import io.element.android.libraries.designsystem.components.dialogs.ErrorDialog
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -35,7 +32,6 @@ fun LoginModeView(
     onOAuthDetails: (OAuthDetails) -> Unit,
     onNeedLoginPassword: () -> Unit,
 ) {
-    val context = LocalContext.current
     when (loginMode) {
         is AsyncData.Failure -> {
             when (val error = loginMode.error) {
@@ -68,18 +64,13 @@ fun LoginModeView(
                             )
                         }
                         is ChangeServerError.NeedElementPro -> {
-                            ConfirmationDialog(
+                            ErrorDialog(
                                 title = stringResource(R.string.screen_change_server_error_element_pro_required_title),
                                 content = stringResource(
                                     R.string.screen_change_server_error_element_pro_required_message,
                                     error.unauthorisedAccountProviderTitle,
                                 ),
-                                submitText = stringResource(R.string.screen_change_server_error_element_pro_required_action_android),
-                                onSubmitClick = {
-                                    context.openGooglePlay(error.applicationId)
-                                    onClearError()
-                                },
-                                onDismiss = onClearError,
+                                onSubmit = onClearError,
                             )
                         }
                         is ChangeServerError.UnauthorizedAccountProvider -> {

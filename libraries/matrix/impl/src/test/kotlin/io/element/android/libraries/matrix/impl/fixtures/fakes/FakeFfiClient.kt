@@ -59,7 +59,7 @@ class FakeFfiClient(
     private val clearCachesResult: () -> Unit = { lambdaError() },
     private val withUtdHook: (UnableToDecryptDelegate) -> Unit = { lambdaError() },
     private val getProfileResult: (String) -> UserProfile = { aRustUserProfile() },
-    private val homeserverLoginDetailsResult: () -> HomeserverLoginDetails = { lambdaError() },
+    private val homeserverLoginDetailsResult: suspend () -> HomeserverLoginDetails = { lambdaError() },
     private val getStoreSizesResult: () -> StoreSizes = { lambdaError() },
     private val createRoomResult: (CreateRoomParameters) -> String = { lambdaError() },
     private val homeserverCapabilities: HomeserverCapabilities = FakeFfiHomeserverCapabilities(),

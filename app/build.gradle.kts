@@ -23,7 +23,16 @@ import extension.buildConfigFieldStr
 import extension.setupDependencyInjection
 import extension.testCommonDependencies
 import org.sonarqube.gradle.SonarResolverTask
+import java.nio.file.Files
+import java.security.KeyStore
+import java.security.MessageDigest
+import java.security.cert.X509Certificate
+import java.security.interfaces.RSAPublicKey
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.Date
 import java.util.Locale
+import java.util.Properties
 
 plugins {
     id("io.element.android-compose-application")
@@ -94,17 +103,26 @@ android {
             storeFile = file("./signature/debug.keystore")
             storePassword = "android"
         }
-        // Ký bản phát hành của SecureChat. Đọc từ biến môi trường nên khoá KHÔNG bao giờ
-        // nằm trong repo. CI nạp khoá từ GitHub Secrets; máy cá nhân không có biến này thì
-        // cấu hình bên dưới không được tạo và bản release lùi về khoá debug (có cảnh báo).
+        // SecureChat production releases are signed only on the isolated release workstation.
+        // The configuration is always present so a release can never fall back to the public
+        // debug key. Missing credentials are rejected by the validation task below.
         val scKeystore = System.getenv("SECURECHAT_KEYSTORE_FILE")
-        if (!scKeystore.isNullOrBlank() && file(scKeystore).exists()) {
-            register("securechat") {
+        register("securechat") {
+            if (!scKeystore.isNullOrBlank()) {
                 storeFile = file(scKeystore)
-                storePassword = System.getenv("SECURECHAT_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("SECURECHAT_KEY_ALIAS") ?: "securechat"
-                keyPassword = System.getenv("SECURECHAT_KEY_PASSWORD")
             }
+            storePassword = System.getenv("SECURECHAT_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("SECURECHAT_KEY_ALIAS")
+            keyPassword = System.getenv("SECURECHAT_KEY_PASSWORD")
+
+            // minSdk is API 24, where APK Signature Scheme v2 is supported. Do not emit the
+            // legacy v1/JAR signature. V2 and v3 protect the whole APK and support modern
+            // Android signing/key-rotation semantics. V4 is an optional adb sidecar and is not
+            // part of the manually distributed release package.
+            enableV1Signing = false
+            enableV2Signing = true
+            enableV3Signing = true
+            enableV4Signing = false
         }
 
         register("nightly") {
@@ -142,16 +160,8 @@ android {
                 "login_redirect_scheme",
                 oAuthRedirectSchemeBase,
             )
-            // Upstream ký bản release bằng khoá DEBUG — khoá đó nằm công khai trong repo,
-            // nghĩa là ai cũng ký được bản cập nhật giả mạo. Chỉ chấp nhận được khi build thử.
-            signingConfig = signingConfigs.findByName("securechat")
-                ?: signingConfigs.getByName("debug").also {
-                    logger.warnInBox(
-                        "CẢNH BÁO: bản release đang ký bằng khoá DEBUG.\n" +
-                            "Khoá debug nằm công khai trong repo — KHÔNG phát hành bản này cho người dùng.\n" +
-                            "Đặt SECURECHAT_KEYSTORE_FILE/_PASSWORD/_KEY_ALIAS/_KEY_PASSWORD để ký thật."
-                    )
-                }
+            // Fail closed: there is deliberately no debug-key fallback for a production build.
+            signingConfig = signingConfigs.getByName("securechat")
 
             optimization {
                 enable = true
@@ -211,6 +221,161 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+    }
+}
+
+val verifySecureChatReleaseSigningConfiguration = tasks.register("verifySecureChatReleaseSigningConfiguration") {
+    group = "verification"
+    description = "Fails unless SecureChat offline release-signing credentials are complete and stored outside the repository."
+
+    doLast {
+        val requiredEnvironment = listOf(
+            "SECURECHAT_KEYSTORE_FILE",
+            "SECURECHAT_KEYSTORE_PASSWORD",
+            "SECURECHAT_KEY_ALIAS",
+            "SECURECHAT_KEY_PASSWORD",
+            "SECURECHAT_RELEASE_CERT_SHA256",
+            "SECURECHAT_OFFLINE_RELEASE_MARKER_FILE",
+        )
+        val missingEnvironment = requiredEnvironment.filter { System.getenv(it).isNullOrBlank() }
+        if (missingEnvironment.isNotEmpty()) {
+            throw GradleException(
+                "SecureChat release signing is fail-closed. Missing: ${missingEnvironment.joinToString()}. " +
+                    "Run tools/release/build_securechat_offline.sh on the isolated release workstation."
+            )
+        }
+
+        val configuredKeystore = file(System.getenv("SECURECHAT_KEYSTORE_FILE")).canonicalFile
+        if (!configuredKeystore.isFile) {
+            throw GradleException("SecureChat release keystore is not a regular file: $configuredKeystore")
+        }
+
+        val repositoryRoot = rootProject.projectDir.canonicalFile.toPath()
+        if (configuredKeystore.toPath().startsWith(repositoryRoot)) {
+            throw GradleException("SecureChat production keystore must be stored outside the source repository.")
+        }
+
+        val publicDebugKeystore = file("./signature/debug.keystore").canonicalFile
+        val publicNightlyKeystore = file("./signature/nightly.keystore").canonicalFile
+        if (configuredKeystore == publicDebugKeystore || configuredKeystore == publicNightlyKeystore) {
+            throw GradleException("Public debug/nightly keystores cannot sign a SecureChat production release.")
+        }
+
+        val expectedCertificateSha256 = System.getenv("SECURECHAT_RELEASE_CERT_SHA256")
+            .replace(Regex("[\\s:]"), "")
+            .lowercase(Locale.ROOT)
+        if (!expectedCertificateSha256.matches(Regex("^[0-9a-f]{64}$"))) {
+            throw GradleException("SECURECHAT_RELEASE_CERT_SHA256 must contain exactly one SHA-256 certificate fingerprint.")
+        }
+
+        val keyStore = try {
+            KeyStore.getInstance(
+                configuredKeystore,
+                System.getenv("SECURECHAT_KEYSTORE_PASSWORD").toCharArray(),
+            )
+        } catch (failure: Exception) {
+            throw GradleException("Unable to open the SecureChat release keystore or verify its certificate.", failure)
+        }
+        val signingCertificate = keyStore.getCertificate(System.getenv("SECURECHAT_KEY_ALIAS"))
+            ?: throw GradleException("The configured SecureChat release alias does not contain a certificate.")
+        val x509Certificate = signingCertificate as? X509Certificate
+            ?: throw GradleException("The SecureChat release certificate must be X.509.")
+        val rsaPublicKey = x509Certificate.publicKey as? RSAPublicKey
+            ?: throw GradleException("The SecureChat release certificate must use RSA.")
+        if (rsaPublicKey.modulus.bitLength() < 3072) {
+            throw GradleException("The SecureChat release RSA key must be at least 3072 bits.")
+        }
+        if (x509Certificate.sigAlgName.contains("MD5", ignoreCase = true) ||
+            x509Certificate.sigAlgName.contains("SHA1", ignoreCase = true)
+        ) {
+            throw GradleException("MD5/SHA-1 release certificate signatures are forbidden.")
+        }
+        if (x509Certificate.subjectX500Principal.name.contains("CN=Android Debug", ignoreCase = true)) {
+            throw GradleException("The Android debug certificate is forbidden for SecureChat production.")
+        }
+        try {
+            x509Certificate.checkValidity()
+            x509Certificate.checkValidity(Date.from(Instant.now().plus(365, ChronoUnit.DAYS)))
+        } catch (failure: Exception) {
+            throw GradleException("The SecureChat release certificate must remain valid for at least one year.", failure)
+        }
+        val actualCertificateSha256 = MessageDigest.getInstance("SHA-256")
+            .digest(signingCertificate.encoded)
+            .joinToString(separator = "") { byte -> "%02x".format(Locale.ROOT, byte.toInt() and 0xff) }
+        if (actualCertificateSha256 != expectedCertificateSha256) {
+            throw GradleException("The release keystore certificate does not match the independently pinned SecureChat certificate.")
+        }
+
+        val markerInput = file(System.getenv("SECURECHAT_OFFLINE_RELEASE_MARKER_FILE"))
+        if (Files.isSymbolicLink(markerInput.toPath())) {
+            throw GradleException("The SecureChat offline release marker must not be a symbolic link.")
+        }
+        val markerFile = markerInput.canonicalFile
+        if (!markerFile.isFile || markerFile.toPath().startsWith(repositoryRoot)) {
+            throw GradleException("The SecureChat offline release marker must be a regular file outside the source repository.")
+        }
+        val gitRevision = providers.of(GitRevisionValueSource::class.java) {}.get()
+        val expectedMarker = buildString {
+            appendLine("securechat-offline-release-v1")
+            appendLine("gitRevision=$gitRevision")
+            appendLine("certificateSha256=$expectedCertificateSha256")
+        }
+        if (markerFile.readText() != expectedMarker) {
+            throw GradleException("The SecureChat offline release marker does not match this source revision and certificate pin.")
+        }
+
+        val forbiddenReleaseEnvironment = listOf(
+            "SECURECHAT_MAPTILER_API_KEY",
+            "SECURECHAT_MAPTILER_LIGHT_MAP_ID",
+            "SECURECHAT_MAPTILER_DARK_MAP_ID",
+            "SECURECHAT_CALL_SENTRY_DSN",
+            "SECURECHAT_CALL_POSTHOG_USER_ID",
+            "SECURECHAT_CALL_POSTHOG_API_HOST",
+            "SECURECHAT_CALL_POSTHOG_API_KEY",
+            "SECURECHAT_CALL_RAGESHAKE_URL",
+        ).filter { !System.getenv(it).isNullOrBlank() }
+        if (forbiddenReleaseEnvironment.isNotEmpty()) {
+            throw GradleException(
+                "Third-party service configuration is forbidden in SecureChat production: " +
+                    forbiddenReleaseEnvironment.joinToString()
+            )
+        }
+
+        val forbiddenLocalProperties = setOf(
+            "services.maptiler.apikey",
+            "services.maptiler.lightMapId",
+            "services.maptiler.darkMapId",
+            "features.call.sentry.dsn",
+            "features.call.posthog.userid",
+            "features.call.posthog.api.host",
+            "features.call.posthog.api.key",
+            "features.call.regeshake.url",
+        )
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.isFile) {
+            val localProperties = Properties().apply {
+                localPropertiesFile.inputStream().use(::load)
+            }
+            val configuredForbiddenProperties = forbiddenLocalProperties.filter(localProperties::containsKey)
+            if (configuredForbiddenProperties.isNotEmpty()) {
+                throw GradleException(
+                    "Third-party local.properties entries are forbidden in SecureChat production: " +
+                        configuredForbiddenProperties.joinToString()
+                )
+            }
+        }
+    }
+}
+
+// Only tasks that create/install a release artifact require the production key. Release lint and
+// source compilation intentionally remain available to untrusted CI without signing credentials.
+tasks.configureEach {
+    val releaseArtifactTask = name.matches(Regex("^(assemble|bundle|install)(Fdroid|Gplay)?Release$")) ||
+        name.matches(Regex("^package(Fdroid|Gplay)Release(UniversalApk|Bundle)?$")) ||
+        name.matches(Regex("^sign(Fdroid|Gplay)ReleaseBundle$")) ||
+        name.matches(Regex("^(extractApksFor|zipApksFor)(Fdroid|Gplay)Release$"))
+    if (releaseArtifactTask) {
+        dependsOn(verifySecureChatReleaseSigningConfiguration)
     }
 }
 

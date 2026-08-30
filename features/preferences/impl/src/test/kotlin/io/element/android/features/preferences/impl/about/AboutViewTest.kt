@@ -38,7 +38,7 @@ class AboutViewTest : RobolectricTest() {
 
     @Test
     fun `clicking on an item invokes the expected callback`() = runAndroidComposeUiTest {
-        val state = anAboutState()
+        val state = anAboutState(secureChatLegals = listOf(SecureChatLegal.PrivacyPolicy))
         ensureCalledOnceWithParam(state.secureChatLegals.first()) { callback ->
             setAboutView(
                 state,

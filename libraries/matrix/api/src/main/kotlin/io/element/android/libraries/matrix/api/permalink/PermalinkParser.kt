@@ -10,10 +10,8 @@ package io.element.android.libraries.matrix.api.permalink
 
 /**
  * This class turns a uri to a [PermalinkData].
- * element-based domains (e.g. https://app.element.io/#/user/@chagai95:matrix.org) permalinks
- * or matrix.to permalinks (e.g. https://matrix.to/#/@chagai95:matrix.org)
- * or client permalinks (e.g. <clientPermalinkBaseUrl>user/@chagai95:matrix.org)
- * or matrix: permalinks (e.g. matrix:u/chagai95:matrix.org)
+ * Supported inputs are validated matrix.to links, configured client permalinks, and `matrix:` URIs.
+ * Unrecognised HTTPS origins remain fallback links and are never treated as trusted app links.
  */
 interface PermalinkParser {
     /**

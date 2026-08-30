@@ -8,23 +8,21 @@
 
 package io.element.android.libraries.androidutils.clipboard
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
-import androidx.core.content.getSystemService
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
+import io.element.android.libraries.androidutils.system.CopyToClipboardUseCase
 import io.element.android.libraries.di.annotations.ApplicationContext
 
 @ContributesBinding(AppScope::class)
 @SingleIn(AppScope::class)
 class AndroidClipboardHelper(
-    @ApplicationContext private val context: Context,
+    @ApplicationContext context: Context,
 ) : ClipboardHelper {
-    private val clipboardManager = requireNotNull(context.getSystemService<ClipboardManager>())
+    private val copyToClipboardUseCase = CopyToClipboardUseCase(context)
 
     override fun copyPlainText(text: String) {
-        clipboardManager.setPrimaryClip(ClipData.newPlainText("", text))
+        copyToClipboardUseCase.execute(text, isSensitive = true)
     }
 }

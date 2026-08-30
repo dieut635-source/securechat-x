@@ -8,6 +8,7 @@
 package io.element.android.libraries.sessionstorage.impl
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.sessionstorage.api.AuthenticationInvalidatedException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -48,8 +49,8 @@ class DefaultSessionSecurityCoordinatorTest {
         logout.join()
 
         assertThat(operations).containsExactly("commit", "logout").inOrder()
-        val staleCommit = runCatching {
-            sut.commitAuthentication(token) { Unit }
+        val staleCommit = runCatchingExceptions {
+            sut.commitAuthentication(token) {}
         }
         assertThat(staleCommit.exceptionOrNull()).isInstanceOf(AuthenticationInvalidatedException::class.java)
     }
@@ -63,8 +64,8 @@ class DefaultSessionSecurityCoordinatorTest {
             tokenDuringLogout = sut.beginAuthentication()
         }
 
-        val result = runCatching {
-            sut.commitAuthentication(tokenDuringLogout) { Unit }
+        val result = runCatchingExceptions {
+            sut.commitAuthentication(tokenDuringLogout) {}
         }
         assertThat(result.exceptionOrNull()).isInstanceOf(AuthenticationInvalidatedException::class.java)
     }

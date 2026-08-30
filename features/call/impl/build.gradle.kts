@@ -137,8 +137,15 @@ abstract class PrepareSecureChatCallAssets : DefaultTask() {
         }
 
         if (relativePath == "$SECURECHAT_CALL_ASSET_DIRECTORY/index.html") {
+            check(result.contains("<head>")) { "Embedded call index no longer has an opening head tag" }
             check(result.contains("</head>")) { "Embedded call index no longer has a closing head tag" }
-            result = result.replace("</head>", "$SECURECHAT_LOGO_OVERLAY</head>")
+            // A meta-delivered CSP only protects content parsed after the meta element. Put the
+            // policy before every upstream script. Inline bootstrap scripts get a nonce, while
+            // runtime network access is restricted to the managed SecureChat deployment.
+            result = result
+                .replaceFirst("<head>", "<head>$SECURECHAT_CALL_SECURITY_POLICY")
+                .replace("<script>", "<script nonce=\"$SECURECHAT_CALL_SCRIPT_NONCE\">")
+                .replaceFirst("</head>", "$SECURECHAT_LOGO_OVERLAY</head>")
         }
         return result
     }
@@ -175,6 +182,10 @@ abstract class PrepareSecureChatCallAssets : DefaultTask() {
             svg[viewBox="0 0 300 66"],svg[viewBox="0 0 48 48"],svg[viewBox="0 0 160 22"],svg[viewBox="0 0 260 30"]{display:none!important}
             a:has(>svg[viewBox="0 0 260 30"])::after{content:"SecureChat";font:600 1rem/1.2 sans-serif;color:inherit}
             </style>
+        """.trimIndent()
+        const val SECURECHAT_CALL_SCRIPT_NONCE = "securechat-call-v1"
+        val SECURECHAT_CALL_SECURITY_POLICY = """
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'nonce-$SECURECHAT_CALL_SCRIPT_NONCE' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; connect-src 'self' data: https://chat.securechat.com.au wss://chat.securechat.com.au; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
         """.trimIndent()
     }
 }
@@ -223,6 +234,23 @@ abstract class VerifySecureChatCallAssets : DefaultTask() {
         check(index.contains("id=\"securechat-call-branding\"")) {
             "SecureChat embedded-call logo overlay is missing"
         }
+        check(index.contains("default-src 'none'")) {
+            "SecureChat embedded-call default-deny policy is missing"
+        }
+        check(index.contains("connect-src 'self' data: https://chat.securechat.com.au wss://chat.securechat.com.au")) {
+            "SecureChat embedded-call network allowlist is missing"
+        }
+        check(index.contains("script-src 'self' 'nonce-$SECURECHAT_CALL_SCRIPT_NONCE' 'wasm-unsafe-eval'")) {
+            "SecureChat embedded-call script policy is missing"
+        }
+        check(!index.contains("<script>")) {
+            "An embedded call inline script is missing the SecureChat CSP nonce"
+        }
+        val policyOffset = index.indexOf("http-equiv=\"Content-Security-Policy\"")
+        val firstScriptOffset = index.indexOf("<script")
+        check(policyOffset >= 0 && firstScriptOffset >= 0 && policyOffset < firstScriptOffset) {
+            "SecureChat embedded-call security policy must precede every script"
+        }
         REQUIRED_LOGO_VIEW_BOXES.forEach { viewBox ->
             check(index.contains("svg[viewBox=\"$viewBox\"]")) {
                 "Element logo suppression is missing for viewBox $viewBox"
@@ -241,6 +269,7 @@ abstract class VerifySecureChatCallAssets : DefaultTask() {
 
     private companion object {
         const val SECURECHAT_CALL_ASSET_DIRECTORY = "securechat-call"
+        const val SECURECHAT_CALL_SCRIPT_NONCE = "securechat-call-v1"
         val INHERITED_LOCALE_BRAND = Regex("element|vector|riot", RegexOption.IGNORE_CASE)
         val REQUIRED_LOGO_VIEW_BOXES = listOf(
             "0 0 300 66",
@@ -314,6 +343,7 @@ setupDependencyInjection()
 dependencies {
     implementation(projects.appconfig)
     implementation(projects.features.enterprise.api)
+    implementation(projects.features.lockscreen.api)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.audio.api)
@@ -337,6 +367,7 @@ dependencies {
 
     testCommonDependencies(libs, true)
     testImplementation(projects.features.call.test)
+    testImplementation(projects.features.lockscreen.test)
     testImplementation(projects.libraries.featureflag.test)
     testImplementation(projects.libraries.preferences.test)
     testImplementation(projects.libraries.matrix.test)

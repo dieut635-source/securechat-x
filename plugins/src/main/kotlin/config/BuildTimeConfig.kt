@@ -15,10 +15,12 @@ object BuildTimeConfig {
     val OAUTH_CLIENT_URL_PATH: String? = null
     val URL_WEBSITE: String? = "https://chat.securechat.com.au"
     val URL_LOGO: String? = "https://chat.securechat.com.au/securechat/favicon.svg"
-    val URL_COPYRIGHT: String? = "https://chat.securechat.com.au"
-    val URL_ACCEPTABLE_USE: String? = "https://chat.securechat.com.au"
-    val URL_PRIVACY: String? = "https://chat.securechat.com.au"
-    val URL_POLICY: String? = "https://chat.securechat.com.au"
+    // Do not publish placeholder legal links. They stay hidden until dedicated SecureChat-owned
+    // pages have been reviewed and deployed; pointing them at the homeserver UI is misleading.
+    val URL_COPYRIGHT: String? = null
+    val URL_ACCEPTABLE_USE: String? = null
+    val URL_PRIVACY: String? = null
+    val URL_POLICY: String? = null
     val SERVICES_MAPTILER_BASE_URL: String? = null
     val SERVICES_MAPTILER_APIKEY: String? = null
     val SERVICES_MAPTILER_LIGHT_MAPID: String? = null
@@ -29,10 +31,11 @@ object BuildTimeConfig {
     val SERVICES_SENTRY_DSN_RUST: String? = null
     val BUG_REPORT_URL: String? = null
     val BUG_REPORT_APP_NAME: String? = null
-    // Do not compile the inherited Firebase project or push gateway into SecureChat. Enable this
-    // only after adding a SecureChat-owned Firebase project and push gateway configuration.
+    // Closed-distribution policy: the production APK must not contain Google/Firebase or a public
+    // UnifiedPush gateway. Without a SecureChat-owned private push service the app deliberately
+    // relies on foreground/in-process Matrix sync for notifications.
     const val PUSH_CONFIG_INCLUDE_FIREBASE: Boolean = false
-    const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = true
+    const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = false
     val PUSHER_APP_ID_RELEASE: String? = "com.securechat.app.android"
     val PUSHER_APP_ID_DEBUG: String? = "com.securechat.app.android.debug"
     val PUSHER_APP_ID_NIGHTLY: String? = "com.securechat.app.android.nightly"

@@ -18,11 +18,8 @@ import io.element.android.features.lockscreen.impl.pin.model.PinEntry
 import io.element.android.features.lockscreen.impl.pin.model.assertText
 import io.element.android.features.lockscreen.impl.pin.storage.InMemoryLockScreenStore
 import io.element.android.features.lockscreen.impl.unlock.keypad.PinKeypadModel
-import io.element.android.features.logout.test.FakeLogoutUseCase
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.AsyncData
-import io.element.android.tests.testutils.lambda.assert
-import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.test
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -93,10 +90,8 @@ class PinUnlockPresenterTest {
     }
 
     @Test
-    fun `present - forgot pin flow`() = runTest {
-        val signOutLambda = lambdaRecorder<Boolean, Unit> {}
-        val signOut = FakeLogoutUseCase(signOutLambda)
-        val presenter = createPinUnlockPresenter(logoutUseCase = signOut)
+    fun `present - forgot pin preserves session and stale sign out event only closes recovery prompt`() = runTest {
+        val presenter = createPinUnlockPresenter()
         presenter.test {
             skipItems(1)
             awaitItem().also { state ->
@@ -117,16 +112,15 @@ class PinUnlockPresenterTest {
                 assertThat(state.showSignOutPrompt).isTrue()
                 state.eventSink(PinUnlockEvent.SignOut)
             }
-            skipItems(2)
             awaitItem().also { state ->
-                assertThat(state.signOutAction).isInstanceOf(AsyncAction.Success::class.java)
+                assertThat(state.showSignOutPrompt).isFalse()
+                assertThat(state.signOutAction).isInstanceOf(AsyncAction.Uninitialized::class.java)
             }
-            assert(signOutLambda).isCalledOnce()
         }
     }
 
     @Test
-    fun `present - pin is configured, but deleted in store, sign out prompt will be shown`() = runTest {
+    fun `present - pin is configured but deleted in store then admin recovery prompt is shown`() = runTest {
         val lockScreenStore = InMemoryLockScreenStore()
         val pinCodeManager = aPinCodeManager(
             lockScreenStore = lockScreenStore,
@@ -180,7 +174,6 @@ class PinUnlockPresenterTest {
         forDeviceUnlock: Boolean = false,
         biometricAuthenticatorManager: BiometricAuthenticatorManager = FakeBiometricAuthenticatorManager(),
         callback: PinCodeManager.Callback = DefaultPinCodeManagerCallback(),
-        logoutUseCase: FakeLogoutUseCase = FakeLogoutUseCase(logoutLambda = {}),
         pinCodeManager: PinCodeManager = aPinCodeManager()
     ): PinUnlockPresenter {
         pinCodeManager.apply {
@@ -191,7 +184,6 @@ class PinUnlockPresenterTest {
             forDeviceUnlock = forDeviceUnlock,
             pinCodeManager = pinCodeManager,
             biometricAuthenticatorManager = biometricAuthenticatorManager,
-            logoutUseCase = logoutUseCase,
             coroutineScope = this,
             pinUnlockHelper = PinUnlockHelper(biometricAuthenticatorManager, pinCodeManager),
         )

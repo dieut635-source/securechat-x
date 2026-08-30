@@ -14,24 +14,34 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.features.call.api.CallData
 import io.element.android.features.call.api.ElementCallEntryPoint
 import io.element.android.features.call.impl.notifications.CallNotificationData
+import io.element.android.features.call.impl.security.CallUiAccessTokenStore
+import io.element.android.features.call.impl.ui.ElementCallActivity
 import io.element.android.features.call.impl.utils.ActiveCallManager
-import io.element.android.features.call.impl.utils.IntentProvider
+import io.element.android.features.lockscreen.api.LockScreenLockState
+import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.libraries.di.annotations.ApplicationContext
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.UserId
+import io.element.android.services.appnavstate.api.AppForegroundStateService
 
 @ContributesBinding(AppScope::class)
 class DefaultElementCallEntryPoint(
     @ApplicationContext private val context: Context,
     private val activeCallManager: ActiveCallManager,
+    private val callUiAccessTokenStore: CallUiAccessTokenStore,
+    private val lockScreenService: LockScreenService,
+    private val appForegroundStateService: AppForegroundStateService,
 ) : ElementCallEntryPoint {
-    companion object {
-        const val EXTRA_CALL_TYPE = "EXTRA_CALL_TYPE"
-        const val REQUEST_CODE = 2255
-    }
-
     override fun startCall(callData: CallData) {
-        context.startActivity(IntentProvider.createIntent(context, callData))
+        val foregroundAccessToken = if (
+            appForegroundStateService.isInForeground.value &&
+            lockScreenService.lockState.value == LockScreenLockState.Unlocked
+        ) {
+            callUiAccessTokenStore.issue()
+        } else {
+            null
+        }
+        context.startActivity(ElementCallActivity.startCallIntent(context, callData, foregroundAccessToken))
     }
 
     override suspend fun handleIncomingCall(
