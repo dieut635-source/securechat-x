@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.binding
 import io.element.android.libraries.preferences.api.store.PreferenceDataStoreFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -40,7 +41,11 @@ suspend fun SecureChatDeviceIdProvider.seedDeviceIdFromLegacySessionIfNeeded(ses
  * The identifier is random rather than hardware-derived and is persisted before being returned.
  * Android backup is disabled for SecureChat, so it is not restored onto a different installation.
  */
-@ContributesBinding(AppScope::class)
+// Phải chỉ rõ kiểu: mặc định Metro gắn binding vào kiểu cha trực tiếp, ở đây là
+// SeedableSecureChatDeviceIdProvider. Nhưng RustMatrixAuthenticationService tiêm
+// SecureChatDeviceIdProvider, nên nếu không chỉ rõ thì đồ thị phụ thuộc thiếu
+// binding và :app không biên dịch được.
+@ContributesBinding(AppScope::class, binding = binding<SecureChatDeviceIdProvider>())
 @SingleIn(AppScope::class)
 class DataStoreSecureChatDeviceIdProvider(
     preferenceDataStoreFactory: PreferenceDataStoreFactory,
