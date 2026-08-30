@@ -31,11 +31,17 @@ object BuildTimeConfig {
     val SERVICES_SENTRY_DSN_RUST: String? = null
     val BUG_REPORT_URL: String? = null
     val BUG_REPORT_APP_NAME: String? = null
-    // Closed-distribution policy: the production APK must not contain Google/Firebase or a public
-    // UnifiedPush gateway. Without a SecureChat-owned private push service the app deliberately
-    // relies on foreground/in-process Matrix sync for notifications.
+    // Closed-distribution policy: the production APK must not contain Google/Firebase, and must
+    // never fall back to a public UnifiedPush gateway or distributor directory.
+    //
+    // Firebase stays out: it would route notification metadata through Google.
+    //
+    // UnifiedPush is now IN, but pointed exclusively at the SecureChat-owned ntfy service at
+    // push.securechat.com.au. The fallback gateway in UnifiedPushConfig remains a non-routable
+    // .invalid host on purpose: if that service ever stops advertising a Matrix gateway, push
+    // must fail closed rather than silently reach a third party.
     const val PUSH_CONFIG_INCLUDE_FIREBASE: Boolean = false
-    const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = false
+    const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = true
     val PUSHER_APP_ID_RELEASE: String? = "com.securechat.app.android"
     val PUSHER_APP_ID_DEBUG: String? = "com.securechat.app.android.debug"
     val PUSHER_APP_ID_NIGHTLY: String? = "com.securechat.app.android.nightly"

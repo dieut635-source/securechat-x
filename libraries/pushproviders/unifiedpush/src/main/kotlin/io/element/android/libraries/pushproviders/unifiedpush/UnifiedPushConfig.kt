@@ -10,9 +10,16 @@ package io.element.android.libraries.pushproviders.unifiedpush
 
 object UnifiedPushConfig {
     /**
-     * Fail-closed placeholders. This module is excluded from SecureChat production builds, and
-     * these non-routable values prevent an accidental future inclusion from contacting a public
-     * gateway or distributor directory.
+     * Fail-closed fallbacks. Kept non-routable on purpose.
+     *
+     * The normal path never uses these: [UnifiedPushGatewayResolver] derives the gateway from the
+     * endpoint the distributor hands out, and SecureChat's ntfy service at push.securechat.com.au
+     * advertises a Matrix gateway, so resolution succeeds against SecureChat's own host.
+     *
+     * These constants are only reached when that advertisement is missing or the endpoint is
+     * unparseable. In upstream Element that falls back to a public gateway; here it must not.
+     * A .invalid host makes push break loudly instead of quietly routing notification metadata
+     * through a third party.
      */
     const val DEFAULT_PUSH_GATEWAY_HTTP_URL: String = "https://push-disabled.securechat.invalid/_matrix/push/v1/notify"
 
