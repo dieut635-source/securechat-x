@@ -1,8 +1,10 @@
 # Visual baselines
 
-The tracked PNG files are inherited test baselines and are not published as a SecureChat gallery.
-`index.html` intentionally displays a notice until the complete baseline set has been re-recorded and
-reviewed for SecureChat branding.
+The obsolete translated gallery was removed because it contained inherited branding and was not
+part of the active Paparazzi verification suite. `index.html` intentionally displays a notice; no
+PNG gallery is published from this directory.
 
 See `docs/screenshot_testing.md` for recording, verification, and Git LFS instructions. Generated
-gallery JavaScript and metadata must not be committed while the gallery is disabled.
+gallery images, JavaScript, and metadata must not be committed while the gallery is disabled. Any
+future translated gallery must be generated from a reviewed SecureChat commit and reviewed before
+publication.
