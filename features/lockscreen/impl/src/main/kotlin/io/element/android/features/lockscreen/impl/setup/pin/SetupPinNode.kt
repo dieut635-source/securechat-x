@@ -16,6 +16,8 @@ import com.bumble.appyx.core.plugin.Plugin
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
+import io.element.android.libraries.architecture.NodeInputs
+import io.element.android.libraries.architecture.inputs
 import io.element.android.libraries.di.SessionScope
 
 @ContributesNode(SessionScope::class)
@@ -25,9 +27,23 @@ class SetupPinNode(
     @Assisted plugins: List<Plugin>,
     private val presenter: SetupPinPresenter,
 ) : Node(buildContext, plugins = plugins) {
+    /** [isDuressStep] chooses which of the two codes this screen is collecting. */
+    data class Inputs(val isDuressStep: Boolean = false) : NodeInputs
+
+    interface Callback : Plugin {
+        fun onDuressPinCreated()
+    }
+
+    private val nodeInputs: Inputs = inputs<Inputs>()
+
     @Composable
     override fun View(modifier: Modifier) {
-        val state = presenter.present()
+        if (nodeInputs.isDuressStep) {
+            presenter.onDuressPinCreated = {
+                plugins.filterIsInstance<Callback>().forEach { it.onDuressPinCreated() }
+            }
+        }
+        val state = presenter.present(isDuressStep = nodeInputs.isDuressStep)
         SetupPinView(
             state = state,
             onBackClick = this::navigateUp,

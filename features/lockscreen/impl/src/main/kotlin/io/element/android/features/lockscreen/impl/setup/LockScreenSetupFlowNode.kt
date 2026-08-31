@@ -9,6 +9,7 @@
 package io.element.android.features.lockscreen.impl.setup
 
 import android.os.Parcelable
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.bumble.appyx.core.lifecycle.subscribe
@@ -30,6 +31,8 @@ import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.di.SessionScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 
 @ContributesNode(SessionScope::class)
@@ -57,17 +60,28 @@ class LockScreenSetupFlowNode(
         @Parcelize
         data object Pin : NavTarget
 
+        /**
+         * The emergency code. Mandatory: every device in the fleet must have one, so this sits
+         * between the everyday code and biometrics rather than hiding in settings.
+         */
+        @Parcelize
+        data object DuressPin : NavTarget
+
         @Parcelize
         data object Biometric : NavTarget
     }
 
     private val pinCodeManagerCallback = object : DefaultPinCodeManagerCallback() {
         override fun onPinCodeCreated() {
-            if (biometricAuthenticatorManager.hasAvailableAuthenticator) {
-                backstack.newRoot(NavTarget.Biometric)
-            } else {
-                callback.onSetupDone()
-            }
+            backstack.newRoot(NavTarget.DuressPin)
+        }
+    }
+
+    private fun onSetupComplete() {
+        if (biometricAuthenticatorManager.hasAvailableAuthenticator) {
+            backstack.newRoot(NavTarget.Biometric)
+        } else {
+            callback.onSetupDone()
         }
     }
 
@@ -75,6 +89,13 @@ class LockScreenSetupFlowNode(
         lifecycle.subscribe(
             onCreate = {
                 pinCodeManager.addCallback(pinCodeManagerCallback)
+                // Killed between the two steps, the device would be left with an everyday code and
+                // no emergency one, and nothing would ever ask again. Resume where it stopped.
+                lifecycleScope.launch {
+                    if (pinCodeManager.hasPinCode().first() && !pinCodeManager.hasDuressPinCode()) {
+                        backstack.newRoot(NavTarget.DuressPin)
+                    }
+                }
             },
             onDestroy = {
                 pinCodeManager.removeCallback(pinCodeManagerCallback)
@@ -85,7 +106,18 @@ class LockScreenSetupFlowNode(
     override fun resolve(navTarget: NavTarget, buildContext: BuildContext): Node {
         return when (navTarget) {
             NavTarget.Pin -> {
-                createNode<SetupPinNode>(buildContext)
+                createNode<SetupPinNode>(buildContext, plugins = listOf(SetupPinNode.Inputs(isDuressStep = false)))
+            }
+            NavTarget.DuressPin -> {
+                val duressCallback = object : SetupPinNode.Callback {
+                    override fun onDuressPinCreated() {
+                        onSetupComplete()
+                    }
+                }
+                createNode<SetupPinNode>(
+                    buildContext,
+                    plugins = listOf(SetupPinNode.Inputs(isDuressStep = true), duressCallback),
+                )
             }
             NavTarget.Biometric -> {
                 val callback = object : SetupBiometricNode.Callback {

@@ -36,8 +36,20 @@ class SetupPinPresenter(
     private val buildMeta: BuildMeta,
     private val pinCodeManager: PinCodeManager,
 ) : Presenter<SetupPinState> {
+    /**
+     * Set by the node for the emergency step. PinCodeManager only reports the everyday code being
+     * created, so the emergency step needs its own way to say it is finished.
+     */
+    var onDuressPinCreated: () -> Unit = {}
     @Composable
-    override fun present(): SetupPinState {
+    override fun present(): SetupPinState = present(isDuressStep = false)
+
+    /**
+     * The emergency code is chosen with the same two-step flow as the everyday one, so this is the
+     * same presenter with a different validation rule and a different destination.
+     */
+    @Composable
+    fun present(isDuressStep: Boolean): SetupPinState {
         var choosePinEntry by remember {
             mutableStateOf(PinEntry.createEmpty(lockScreenConfig.pinSize))
         }
@@ -52,7 +64,16 @@ class SetupPinPresenter(
         }
         LaunchedEffect(choosePinEntry) {
             if (choosePinEntry.isComplete()) {
-                when (val pinValidationResult = pinValidator.isPinValid(choosePinEntry)) {
+                val validation = if (isDuressStep) {
+                    // The real code never leaves PinCodeManager; only the distance comes back.
+                    pinValidator.isDuressPinValid(
+                        duressPin = choosePinEntry,
+                        differingDigitsFromMainPin = pinCodeManager.countDifferencesFromPinCode(choosePinEntry.toText()),
+                    )
+                } else {
+                    pinValidator.isPinValid(choosePinEntry)
+                }
+                when (val pinValidationResult = validation) {
                     is PinValidator.Result.Invalid -> {
                         setupPinFailure = pinValidationResult.failure
                     }
@@ -67,7 +88,12 @@ class SetupPinPresenter(
         LaunchedEffect(confirmPinEntry) {
             if (confirmPinEntry.isComplete()) {
                 if (confirmPinEntry == choosePinEntry) {
-                    pinCodeManager.createPinCode(confirmPinEntry.toText())
+                    if (isDuressStep) {
+                        pinCodeManager.createDuressPinCode(confirmPinEntry.toText())
+                        onDuressPinCreated()
+                    } else {
+                        pinCodeManager.createPinCode(confirmPinEntry.toText())
+                    }
                 } else {
                     setupPinFailure = SetupPinFailure.PinsDoNotMatch
                 }
@@ -112,6 +138,7 @@ class SetupPinPresenter(
             confirmPinEntry = confirmPinEntry,
             isConfirmationStep = isConfirmationStep,
             setupPinFailure = setupPinFailure,
+            isDuressStep = isDuressStep,
             appName = buildMeta.applicationName,
             eventSink = ::handleEvent,
         )

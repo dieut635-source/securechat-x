@@ -68,7 +68,7 @@ fun SetupPinView(
                     .verticalScroll(state = scrollState)
                     .padding(vertical = 16.dp, horizontal = 20.dp),
             ) {
-                SetupPinHeader(state.isConfirmationStep, state.appName)
+                SetupPinHeader(state.isConfirmationStep, state.isDuressStep, state.appName)
                 SetupPinContent(state)
             }
         }
@@ -78,18 +78,26 @@ fun SetupPinView(
 @Composable
 private fun SetupPinHeader(
     isValidationStep: Boolean,
+    isDuressStep: Boolean,
     appName: String,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         IconTitleSubtitleMolecule(
-            title = if (isValidationStep) {
-                stringResource(id = R.string.screen_app_lock_setup_confirm_pin)
-            } else {
-                stringResource(id = R.string.screen_app_lock_setup_choose_pin)
+            title = when {
+                isDuressStep && isValidationStep -> stringResource(id = R.string.securechat_setup_duress_pin_confirm_title)
+                isDuressStep -> stringResource(id = R.string.securechat_setup_duress_pin_title)
+                isValidationStep -> stringResource(id = R.string.screen_app_lock_setup_confirm_pin)
+                else -> stringResource(id = R.string.screen_app_lock_setup_choose_pin)
             },
-            subTitle = stringResource(id = R.string.screen_app_lock_setup_pin_context, appName),
+            subTitle = if (isDuressStep) {
+                // Spelled out here because this is the only place the user is told what the second
+                // code does. It is never explained anywhere the app can be read over a shoulder.
+                stringResource(id = R.string.securechat_setup_duress_pin_subtitle)
+            } else {
+                stringResource(id = R.string.screen_app_lock_setup_pin_context, appName)
+            },
             iconStyle = BigIcon.Style.Default(CompoundIcons.LockSolid()),
         )
     }

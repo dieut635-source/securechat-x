@@ -84,6 +84,18 @@ interface PinCodeManager {
     suspend fun createDuressPinCode(pinCode: String)
 
     /**
+     * How many digit positions [pinCode] differs from the main code in.
+     *
+     * The setup screen needs to know whether a proposed duress code is dangerously close to the
+     * real one, but it must never hold the real one to find out — a PIN in a Compose state, or
+     * worse in a Parcelize'd nav target, is a PIN written to disk. So the comparison happens in
+     * here, where the code is already decrypted, and only a number comes out.
+     *
+     * Returns [Int.MAX_VALUE] when there is no main code to compare against.
+     */
+    suspend fun countDifferencesFromPinCode(pinCode: String): Int
+
+    /**
      * Deletes the previously created pin code.
      */
     suspend fun deletePinCode()

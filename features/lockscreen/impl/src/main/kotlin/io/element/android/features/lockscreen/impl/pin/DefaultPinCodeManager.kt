@@ -80,6 +80,25 @@ class DefaultPinCodeManager(
         lockScreenStore.saveEncryptedDuressPinCode(encrypted)
     }
 
+    override suspend fun countDifferencesFromPinCode(pinCode: String): Int {
+        val encryptedPinCode = lockScreenStore.getEncryptedCode() ?: return Int.MAX_VALUE
+        return try {
+            val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+            val mainPinCode = encryptionDecryptionService
+                .decrypt(secretKey, EncryptionResult.fromBase64(encryptedPinCode))
+                .toString(Charsets.UTF_8)
+            if (mainPinCode.length != pinCode.length) {
+                maxOf(mainPinCode.length, pinCode.length)
+            } else {
+                mainPinCode.indices.count { mainPinCode[it] != pinCode[it] }
+            }
+        } catch (_: Throwable) {
+            // Cannot compare, so cannot promise the codes are far enough apart. Report them as
+            // identical: the setup screen refuses, which is the safe direction.
+            0
+        }
+    }
+
     override suspend fun verifyPinCode(pinCode: String): Boolean {
         val encryptedPinCode = lockScreenStore.getEncryptedCode() ?: return false
         return try {

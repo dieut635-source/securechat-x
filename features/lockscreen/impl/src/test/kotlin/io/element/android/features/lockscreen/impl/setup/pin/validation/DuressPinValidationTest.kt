@@ -33,25 +33,25 @@ class DuressPinValidationTest {
 
     @Test
     fun `a code one digit away from the real one is refused`() {
-        val result = sut.isDuressPinValid(pin("9875"), mainPin = "9876")
+        val result = sut.isDuressPinValid(pin("9875"), differingDigitsFromMainPin = 1)
         assertThat(result).isEqualTo(PinValidator.Result.Invalid(SetupPinFailure.DuressPinTooSimilar))
     }
 
     @Test
     fun `an identical code is refused`() {
-        val result = sut.isDuressPinValid(pin("9876"), mainPin = "9876")
+        val result = sut.isDuressPinValid(pin("9876"), differingDigitsFromMainPin = 0)
         assertThat(result).isEqualTo(PinValidator.Result.Invalid(SetupPinFailure.DuressPinTooSimilar))
     }
 
     @Test
     fun `two digits apart is accepted`() {
-        val result = sut.isDuressPinValid(pin("9855"), mainPin = "9876")
+        val result = sut.isDuressPinValid(pin("9855"), differingDigitsFromMainPin = 2)
         assertThat(result).isEqualTo(PinValidator.Result.Valid)
     }
 
     @Test
     fun `completely different is accepted`() {
-        val result = sut.isDuressPinValid(pin("1357"), mainPin = "9876")
+        val result = sut.isDuressPinValid(pin("1357"), differingDigitsFromMainPin = 4)
         assertThat(result).isEqualTo(PinValidator.Result.Valid)
     }
 
@@ -61,7 +61,7 @@ class DuressPinValidationTest {
      */
     @Test
     fun `a forbidden code is still refused even if far from the real one`() {
-        val result = sut.isDuressPinValid(pin("1234"), mainPin = "9876")
+        val result = sut.isDuressPinValid(pin("1234"), differingDigitsFromMainPin = 4)
         assertThat(result).isEqualTo(PinValidator.Result.Invalid(SetupPinFailure.ForbiddenPin))
     }
 }
