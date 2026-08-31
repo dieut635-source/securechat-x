@@ -14,12 +14,15 @@ import io.element.android.features.lockscreen.impl.pin.storage.InMemoryLockScree
 import io.element.android.features.lockscreen.impl.storage.LockScreenStore
 import io.element.android.libraries.cryptography.api.EncryptionDecryptionService
 import io.element.android.libraries.cryptography.impl.AESEncryptionDecryptionService
+import io.element.android.features.logout.api.SecureChatDataWiper
+import io.element.android.features.logout.test.FakeSecureChatDataWiper
 import io.element.android.libraries.cryptography.test.SimpleSecretKeyRepository
 
 internal fun aPinCodeManager(
     lockScreenStore: LockScreenStore = InMemoryLockScreenStore(),
     secretKeyRepository: SimpleSecretKeyRepository = SimpleSecretKeyRepository(),
     encryptionDecryptionService: EncryptionDecryptionService = AESEncryptionDecryptionService(),
+    dataWiper: SecureChatDataWiper = FakeSecureChatDataWiper(),
 ): PinCodeManager {
-    return DefaultPinCodeManager(secretKeyRepository, encryptionDecryptionService, lockScreenStore)
+    return DefaultPinCodeManager(secretKeyRepository, encryptionDecryptionService, lockScreenStore, dataWiper)
 }

@@ -11,6 +11,8 @@ package io.element.android.features.lockscreen.impl.pin
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.lockscreen.impl.pin.storage.InMemoryLockScreenStore
+import io.element.android.features.logout.api.SecureChatDataWiper
+import io.element.android.features.logout.test.FakeSecureChatDataWiper
 import io.element.android.features.lockscreen.impl.storage.LockScreenStore
 import io.element.android.libraries.cryptography.api.EncryptionDecryptionService
 import io.element.android.libraries.cryptography.api.SecretKeyRepository
@@ -46,14 +48,96 @@ class DefaultPinCodeManagerTest {
         pinCodeManager.createPinCode("1234")
         assertThat(pinCodeManager.verifyPinCode("1235")).isFalse()
     }
+
+    /**
+     * The whole point of a duress code: from the outside it must be indistinguishable from the real
+     * one. No error, no warning, no different screen. Anything that betrayed the difference would
+     * tell whoever is standing over the phone to keep pressing.
+     */
+    @Test
+    fun `the duress code unlocks exactly like the real one`() = runTest {
+        val wiper = FakeSecureChatDataWiper()
+        val pinCodeManager = createDefaultPinCodeManager(dataWiper = wiper)
+        pinCodeManager.createPinCode("1234")
+        pinCodeManager.createDuressPinCode("9876")
+
+        assertThat(pinCodeManager.verifyPinCode("9876")).isTrue()
+    }
+
+    @Test
+    fun `the duress code erases every account`() = runTest {
+        val wiper = FakeSecureChatDataWiper()
+        val pinCodeManager = createDefaultPinCodeManager(dataWiper = wiper)
+        pinCodeManager.createPinCode("1234")
+        pinCodeManager.createDuressPinCode("9876")
+
+        pinCodeManager.verifyPinCode("9876")
+
+        assertThat(wiper.wipeEverythingCount).isEqualTo(1)
+    }
+
+    /**
+     * The dangerous direction. A normal unlock must never destroy anything.
+     */
+    @Test
+    fun `the real code erases nothing`() = runTest {
+        val wiper = FakeSecureChatDataWiper()
+        val pinCodeManager = createDefaultPinCodeManager(dataWiper = wiper)
+        pinCodeManager.createPinCode("1234")
+        pinCodeManager.createDuressPinCode("9876")
+
+        assertThat(pinCodeManager.verifyPinCode("1234")).isTrue()
+        assertThat(wiper.wipeEverythingCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `a code that is neither is refused and erases nothing`() = runTest {
+        val wiper = FakeSecureChatDataWiper()
+        val pinCodeManager = createDefaultPinCodeManager(dataWiper = wiper)
+        pinCodeManager.createPinCode("1234")
+        pinCodeManager.createDuressPinCode("9876")
+
+        assertThat(pinCodeManager.verifyPinCode("5555")).isFalse()
+        assertThat(wiper.wipeEverythingCount).isEqualTo(0)
+    }
+
+    /**
+     * Belt and braces. The setup screen refuses a duress code too close to the real one, but if one
+     * ever became identical through some other path, the real code must still win: unlocking must
+     * never be the thing that destroys the data.
+     */
+    @Test
+    fun `if both codes were somehow identical the real one wins and nothing is erased`() = runTest {
+        val wiper = FakeSecureChatDataWiper()
+        val pinCodeManager = createDefaultPinCodeManager(dataWiper = wiper)
+        pinCodeManager.createPinCode("1234")
+        pinCodeManager.createDuressPinCode("1234")
+
+        assertThat(pinCodeManager.verifyPinCode("1234")).isTrue()
+        assertThat(wiper.wipeEverythingCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `deleting the pin code removes the duress code with it`() = runTest {
+        val pinCodeManager = createDefaultPinCodeManager()
+        pinCodeManager.createPinCode("1234")
+        pinCodeManager.createDuressPinCode("9876")
+        assertThat(pinCodeManager.hasDuressPinCode()).isTrue()
+
+        pinCodeManager.deletePinCode()
+
+        assertThat(pinCodeManager.hasDuressPinCode()).isFalse()
+    }
 }
 
 fun createDefaultPinCodeManager(
     lockScreenStore: LockScreenStore = InMemoryLockScreenStore(),
     secretKeyRepository: SecretKeyRepository = SimpleSecretKeyRepository(),
     encryptionDecryptionService: EncryptionDecryptionService = AESEncryptionDecryptionService(),
+    dataWiper: SecureChatDataWiper = FakeSecureChatDataWiper(),
 ) = DefaultPinCodeManager(
     lockScreenStore = lockScreenStore,
     secretKeyRepository = secretKeyRepository,
     encryptionDecryptionService = encryptionDecryptionService,
+    dataWiper = dataWiper,
 )

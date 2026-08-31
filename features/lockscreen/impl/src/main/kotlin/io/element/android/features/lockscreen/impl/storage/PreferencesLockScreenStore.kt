@@ -29,6 +29,10 @@ class PreferencesLockScreenStore(
     private val dataStore = preferenceDataStoreFactory.create("pin_code_store")
 
     private val pinCodeKey = stringPreferencesKey("encoded_pin_code")
+
+    // Deliberately anodyne name. A key called "duress" in a preferences file tells anyone who looks
+    // that this app has a duress mechanism, which is the one thing that must not be obvious.
+    private val duressPinCodeKey = stringPreferencesKey("encoded_pin_code_alt")
     private val remainingAttemptsKey = intPreferencesKey("remaining_pin_code_attempts")
     private val biometricUnlockKey = booleanPreferencesKey("biometric_unlock_enabled")
 
@@ -67,6 +71,27 @@ class PreferencesLockScreenStore(
     override suspend fun deleteEncryptedPinCode() {
         dataStore.edit { preferences ->
             preferences.remove(pinCodeKey)
+            // Removing the lock removes the duress code with it: a duress code with no lock to
+            // enter it on is unreachable, and leaving it behind is a needless artefact.
+            preferences.remove(duressPinCodeKey)
+        }
+    }
+
+    override suspend fun getEncryptedDuressCode(): String? {
+        return dataStore.data.map { preferences ->
+            preferences[duressPinCodeKey]
+        }.first()
+    }
+
+    override suspend fun saveEncryptedDuressPinCode(pinCode: String) {
+        dataStore.edit { preferences ->
+            preferences[duressPinCodeKey] = pinCode
+        }
+    }
+
+    override suspend fun deleteEncryptedDuressPinCode() {
+        dataStore.edit { preferences ->
+            preferences.remove(duressPinCodeKey)
         }
     }
 

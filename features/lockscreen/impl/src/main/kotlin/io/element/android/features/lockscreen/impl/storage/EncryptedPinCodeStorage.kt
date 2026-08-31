@@ -27,4 +27,16 @@ interface EncryptedPinCodeStorage {
      * Deletes the PIN code from some persistable storage.
      */
     suspend fun deleteEncryptedPinCode()
+
+    /**
+     * The duress code, encrypted with the same key as the main one.
+     *
+     * Kept in a separate entry rather than beside the main code so that reading one never
+     * accidentally reads the other.
+     */
+    suspend fun getEncryptedDuressCode(): String?
+
+    suspend fun saveEncryptedDuressPinCode(pinCode: String)
+
+    suspend fun deleteEncryptedDuressPinCode()
 }

@@ -131,6 +131,7 @@ private fun SetupPinFailure.content(): String {
     return when (this) {
         SetupPinFailure.ForbiddenPin -> stringResource(id = R.string.screen_app_lock_setup_pin_forbidden_dialog_content)
         SetupPinFailure.PinsDoNotMatch -> stringResource(id = R.string.screen_app_lock_setup_pin_mismatch_dialog_content)
+        SetupPinFailure.DuressPinTooSimilar -> stringResource(id = R.string.securechat_setup_duress_pin_too_similar_dialog_content)
     }
 }
 
@@ -140,6 +141,7 @@ private fun SetupPinFailure.title(): String {
     return when (this) {
         SetupPinFailure.ForbiddenPin -> stringResource(id = R.string.screen_app_lock_setup_pin_forbidden_dialog_title)
         SetupPinFailure.PinsDoNotMatch -> stringResource(id = R.string.screen_app_lock_setup_pin_mismatch_dialog_title)
+        SetupPinFailure.DuressPinTooSimilar -> stringResource(id = R.string.securechat_setup_duress_pin_too_similar_dialog_title)
     }
 }
 

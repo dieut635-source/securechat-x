@@ -93,6 +93,12 @@ class SetupPinPresenter(
                         is SetupPinFailure.ForbiddenPin -> {
                             choosePinEntry = choosePinEntry.clear()
                         }
+                        is SetupPinFailure.DuressPinTooSimilar -> {
+                            // Clear both: the user has to pick a different emergency code, and
+                            // leaving the confirmation half-filled invites another near miss.
+                            choosePinEntry = choosePinEntry.clear()
+                            confirmPinEntry = confirmPinEntry.clear()
+                        }
                         null -> Unit
                     }
                     isConfirmationStep = false

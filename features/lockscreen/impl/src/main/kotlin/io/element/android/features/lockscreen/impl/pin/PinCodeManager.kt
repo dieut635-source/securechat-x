@@ -64,7 +64,24 @@ interface PinCodeManager {
     /**
      * @return true if the pin code is correct.
      */
+    /**
+     * Verifies the code that was entered.
+     *
+     * Returns true for the main code and, indistinguishably, for the duress code — entering the
+     * duress code erases every account first and then reports success. From the outside the two are
+     * identical: no error, no warning, no different screen. Anything that betrayed the difference
+     * would tell whoever is standing over the phone to keep pressing.
+     */
     suspend fun verifyPinCode(pinCode: String): Boolean
+
+    /** True once a duress code has been set. */
+    suspend fun hasDuressPinCode(): Boolean
+
+    /**
+     * Stores the duress code. The caller is responsible for refusing one that is too close to the
+     * main code; see PinValidator.
+     */
+    suspend fun createDuressPinCode(pinCode: String)
 
     /**
      * Deletes the previously created pin code.

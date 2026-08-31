@@ -11,6 +11,7 @@ package io.element.android.features.lockscreen.impl.pin
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
+import io.element.android.features.logout.api.SecureChatDataWiper
 import io.element.android.features.lockscreen.impl.storage.LockScreenStore
 import io.element.android.libraries.cryptography.api.EncryptionDecryptionService
 import io.element.android.libraries.cryptography.api.EncryptionResult
@@ -30,6 +31,7 @@ class DefaultPinCodeManager(
     private val secretKeyRepository: SecretKeyRepository,
     private val encryptionDecryptionService: EncryptionDecryptionService,
     private val lockScreenStore: LockScreenStore,
+    private val dataWiper: SecureChatDataWiper,
 ) : PinCodeManager {
     private val callbacks = CopyOnWriteArrayList<PinCodeManager.Callback>()
 
@@ -70,24 +72,58 @@ class DefaultPinCodeManager(
         callbacks.forEach { it.onPinCodeCreated() }
     }
 
+    override suspend fun hasDuressPinCode(): Boolean = lockScreenStore.getEncryptedDuressCode() != null
+
+    override suspend fun createDuressPinCode(pinCode: String) {
+        val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+        val encrypted = encryptionDecryptionService.encrypt(secretKey, pinCode.toByteArray()).toBase64()
+        lockScreenStore.saveEncryptedDuressPinCode(encrypted)
+    }
+
     override suspend fun verifyPinCode(pinCode: String): Boolean {
         val encryptedPinCode = lockScreenStore.getEncryptedCode() ?: return false
         return try {
             val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
-            val decryptedPinCode = encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(encryptedPinCode))
             val pinCodeToCheck = pinCode.toByteArray()
-            decryptedPinCode.contentEquals(pinCodeToCheck).also { isPinCodeCorrect ->
-                if (isPinCodeCorrect) {
-                    lockScreenStore.resetCounter()
-                    callbacks.forEach { callback ->
-                        callback.onPinCodeVerified()
-                    }
-                } else {
-                    lockScreenStore.onWrongPin()
-                }
+            val decryptedPinCode = encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(encryptedPinCode))
+
+            // The main code is checked first, so a duress code that somehow equals it can never
+            // shadow it and destroy data on a normal unlock.
+            if (decryptedPinCode.contentEquals(pinCodeToCheck)) {
+                onCodeAccepted()
+                return true
             }
+
+            if (isDuressCode(secretKey, pinCodeToCheck)) {
+                // Erase before reporting success, so the data is already gone by the time anything
+                // is on screen. wipeEverything is NonCancellable, so it finishes even if this
+                // screen is torn down.
+                dataWiper.wipeEverything(reason = "duress code entered")
+                // Then behave exactly as if the main code had been entered. The PIN itself is left
+                // in place on purpose: removing it here would change what happens on screen at the
+                // very moment nothing may look unusual, and the mechanism is discoverable from the
+                // source anyway, so hiding the stored entry buys nothing.
+                onCodeAccepted()
+                return true
+            }
+
+            lockScreenStore.onWrongPin()
+            false
         } catch (_: Throwable) {
             false
+        }
+    }
+
+    private suspend fun isDuressCode(secretKey: javax.crypto.SecretKey, enteredCode: ByteArray): Boolean {
+        val encryptedDuressCode = lockScreenStore.getEncryptedDuressCode() ?: return false
+        val decrypted = encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(encryptedDuressCode))
+        return decrypted.contentEquals(enteredCode)
+    }
+
+    private suspend fun onCodeAccepted() {
+        lockScreenStore.resetCounter()
+        callbacks.forEach { callback ->
+            callback.onPinCodeVerified()
         }
     }
 

@@ -19,6 +19,31 @@ class PinValidator(private val lockScreenConfig: LockScreenConfig) {
         data class Invalid(val failure: SetupPinFailure) : Result
     }
 
+    /**
+     * Checks a duress code against the real one.
+     *
+     * Requiring more than one differing digit is not fussiness. With a four-digit code, a single
+     * mistyped digit has 36 neighbours; if the duress code is one of them, one slip erases
+     * everything the user has, with no confirmation and no way back. Two digits apart makes that
+     * essentially impossible while staying easy to remember.
+     */
+    fun isDuressPinValid(duressPin: PinEntry, mainPin: String): Result {
+        val basic = isPinValid(duressPin)
+        if (basic is Result.Invalid) return basic
+        val duressAsText = duressPin.toText()
+        return if (differingDigits(duressAsText, mainPin) < MIN_DURESS_PIN_DIFFERENCE) {
+            Result.Invalid(SetupPinFailure.DuressPinTooSimilar)
+        } else {
+            Result.Valid
+        }
+    }
+
+    private fun differingDigits(a: String, b: String): Int {
+        // Different lengths already make them far apart; count every position that cannot match.
+        if (a.length != b.length) return maxOf(a.length, b.length)
+        return a.indices.count { a[it] != b[it] }
+    }
+
     fun isPinValid(pinEntry: PinEntry): Result {
         val pinAsText = pinEntry.toText()
         val isForbidden = lockScreenConfig.forbiddenPinCodes.any { it == pinAsText }
@@ -27,5 +52,9 @@ class PinValidator(private val lockScreenConfig: LockScreenConfig) {
         } else {
             Result.Valid
         }
+    }
+
+    companion object {
+        const val MIN_DURESS_PIN_DIFFERENCE = 2
     }
 }
