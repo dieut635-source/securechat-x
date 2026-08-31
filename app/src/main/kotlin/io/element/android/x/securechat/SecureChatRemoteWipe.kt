@@ -7,24 +7,17 @@
 
 package io.element.android.x.securechat
 
-import android.content.Context
-import coil3.SingletonImageLoader
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
-import io.element.android.libraries.core.coroutine.CoroutineDispatchers
+import io.element.android.features.logout.api.SecureChatDataWiper
 import io.element.android.libraries.di.annotations.AppCoroutineScope
-import io.element.android.libraries.di.annotations.ApplicationContext
-import io.element.android.libraries.sessionstorage.api.SessionData
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.withContext
-import timber.log.Timber
-import java.io.File
 
 /**
  * Erases everything SecureChat holds for an account the homeserver has revoked.
@@ -55,48 +48,21 @@ import java.io.File
 @SingleIn(AppScope::class)
 @Inject
 class SecureChatRemoteWipe(
-    @ApplicationContext private val context: Context,
     @AppCoroutineScope private val coroutineScope: CoroutineScope,
     private val sessionStore: SessionStore,
-    private val dispatchers: CoroutineDispatchers,
+    private val dataWiper: SecureChatDataWiper,
 ) {
     fun start() {
         sessionStore.sessionsFlow()
             .map { sessions -> sessions.filter { !it.isTokenValid } }
             .distinctUntilChanged()
-            .onEach { revoked -> revoked.forEach { wipe(it) } }
+            .onEach { revoked -> revoked.forEach { wipe(it.userId) } }
             .launchIn(coroutineScope)
     }
 
-    private suspend fun wipe(session: SessionData) = withContext(dispatchers.io) {
-        Timber.w("Remote wipe: homeserver revoked this session, erasing local data")
-
-        // Every step is best-effort and independent: one failure must not stop the rest, and the
-        // session row is removed last so an interrupted wipe is retried on the next app start.
-        deleteQuietly("session directory") { File(session.sessionPath).deleteRecursively() }
-        deleteQuietly("session cache") { File(session.cachePath).deleteRecursively() }
-
-        deleteQuietly("image cache") {
-            SingletonImageLoader.get(context).run {
-                diskCache?.clear()
-                memoryCache?.clear()
-            }
-            true
-        }
-
-        // The whole cache directory, logs included: on a lost device the logs are evidence of who
-        // used it and when.
-        deleteQuietly("app cache directory") {
-            context.cacheDir?.listFiles()?.forEach { it.deleteRecursively() }
-            true
-        }
-
-        runCatching { sessionStore.removeSession(session.userId) }
-            .onSuccess { Timber.w("Remote wipe: complete") }
-            .onFailure { Timber.e(it, "Remote wipe: could not remove the session row; will retry on next start") }
-    }
-
-    private inline fun deleteQuietly(what: String, block: () -> Any?) {
-        runCatching { block() }.onFailure { Timber.e(it, "Remote wipe: failed to clear $what") }
+    private suspend fun wipe(userId: String) {
+        // Only this account: the phone may legitimately hold another one, and a revocation says
+        // nothing about the others. Duress is the case where everything goes.
+        dataWiper.wipeSession(userId, reason = "homeserver revoked this session")
     }
 }
