@@ -333,7 +333,6 @@ class ResolveVerifiedUserSendFailurePresenterTest {
         room: FakeJoinedRoom = FakeJoinedRoom(),
     ): ResolveVerifiedUserSendFailurePresenter {
         return ResolveVerifiedUserSendFailurePresenter(
-            room = room,
             verifiedUserSendFailureFactory = VerifiedUserSendFailureFactory(room),
         )
     }
