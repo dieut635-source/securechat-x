@@ -70,7 +70,7 @@ class DefaultMdmServiceTest : RobolectricTest() {
     @Test
     fun `a startup reconciliation read failure overrides an earlier valid snapshot`() {
         val restrictions = Bundle().apply {
-            putInt(MdmConfig.KEY_AUTO_LOGOUT_MINUTES, 15)
+            putBoolean(MdmConfig.KEY_ALLOW_FILE_SEND, false)
         }
         var reads = 0
         val restrictionsManager = mockk<RestrictionsManager> {

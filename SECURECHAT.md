@@ -91,13 +91,12 @@ Bốn khoá, khai báo trong `app/src/main/res/xml/app_restrictions.xml`, đọc
 | `homeserver_url` | string | `https://chat.securechat.com.au` | đăng nhập vào server SecureChat | chỉ chấp nhận URL SecureChat tương đương; giá trị khác bị bỏ qua |
 | `allow_registration` | bool | `false` | chỉ có "Sign in" | khoá tương thích; kể cả `true` cũng không thể bật tạo tài khoản |
 | `allow_file_send` | bool | `true` | gửi file bình thường | `false` → ẩn nút đính kèm, ẩn ghi âm, chặn chia sẻ file từ app khác, chặn dán ảnh từ bàn phím |
-| `auto_logout_minutes` | integer | `0` | không tự đăng xuất | `>0` → đăng xuất khi app ở nền quá N phút, kể cả khi tiến trình bị kill |
 
 **Tên khoá là hợp đồng với Knox** — đổi tên không làm build lỗi, nó chỉ âm thầm đưa thiết lập đó về
 mặc định trên mọi máy đã triển khai. Đừng đổi.
 
-Parser (`MdmConfigParser`) cố tình dễ dãi với `allow_file_send` và `auto_logout_minutes`: console MDM
-hay đẩy sai kiểu (checkbox thành chuỗi `"true"`, số thành `" 30 "`). Giá trị không hiểu được thì rơi
+Parser (`MdmConfigParser`) cố tình dễ dãi với `allow_file_send`: console MDM
+hay đẩy sai kiểu (checkbox thành chuỗi `"true"`). Giá trị không hiểu được thì rơi
 về mặc định của **riêng khoá đó**. Hai khoá nhận dạng nhạy cảm là ngoại lệ fail-closed:
 `homeserver_url` không thể chuyển khỏi SecureChat và `allow_registration` không thể bật đăng ký.
 
@@ -237,3 +236,29 @@ xoá từ xa (xem `SecureChatRemoteWipe`) nếu máy còn online. Phải nằm t
 - Không giấu được khỏi người đọc mã nguồn: repo công khai theo AGPL. Bảo vệ nằm ở chỗ
   kẻ ép không biết mã nào là mã nào, không phải ở chỗ giấu cơ chế.
 - Sau khi xoá, app ra màn hình đăng nhập — trông như máy chưa từng đăng nhập.
+
+
+## Vì sao KHÔNG có tự động đăng xuất
+
+`auto_logout_minutes` từng là một trong bốn khoá bắt buộc. Đã **gỡ hẳn** ngày 31/08/2026, không phải
+vì khó làm, mà vì đo lại thì nó không mua được gì đáng giá.
+
+Điểm mấu chốt: **mã PIN không bảo vệ dữ liệu, nó chỉ khoá giao diện.** Passphrase mã hoá cơ sở dữ liệu
+phiên nằm trong `SessionData.passphrase`, hoàn toàn độc lập với PIN — không một dòng nào trong module
+`lockscreen` dính tới nó. Ai đọc được thư mục dữ liệu của app thì PIN vô dụng; thứ thật sự bảo vệ dữ
+liệu trên đĩa là mã hoá toàn đĩa của Android, tức **khoá màn hình của máy**.
+
+Vậy tự đăng xuất bịt được đúng một tình huống: máy bị lấy **khi đang mở khoá** rồi bị sao chép dữ liệu.
+Ngoài ra nó không thêm gì so với các lớp đã có: PIN mỗi lần mở, mã cưỡng bức, xoá từ xa, và yêu cầu
+bootloader khoá + verified boot.
+
+Cái giá thì cao: bắt nhập lại **mật khẩu đầy đủ** thay vì mã PIN. Và nếu sau này bật module một-thiết-bị
+ở chế độ `enforce`, người dùng bị đăng xuất còn **không tự đăng nhập lại được** — phải chờ quản trị viên
+bind lại máy.
+
+Ngoài ra khoá này đang là một cái bẫy đang hoạt động: `MdmConfigParser` từ chối mọi giá trị khác 0 bằng
+cách trả `MdmConfig.restrictionsPending`, mà trạng thái đó đặt `allowFileSend = false`. Quản trị viên bật
+tự đăng xuất sẽ **vô tình chặn gửi file toàn đội**, không một thông báo lỗi nào.
+
+Hồ sơ MDM cũ còn sót khoá này thì nay được **bỏ qua lặng lẽ**, không gây tác dụng phụ. Có test giữ đúng
+tính chất đó (`a leftover auto_logout_minutes in an old profile is ignored`).

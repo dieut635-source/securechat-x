@@ -19,7 +19,6 @@ class MdmConfigParserTest {
         assertThat(config.homeserverUrl).isEqualTo("https://chat.securechat.com.au")
         assertThat(config.allowRegistration).isFalse()
         assertThat(config.allowFileSend).isTrue()
-        assertThat(config.autoLogoutMinutes).isEqualTo(0)
         assertThat(config.restrictionsPending).isFalse()
     }
 
@@ -29,7 +28,6 @@ class MdmConfigParserTest {
             mapOf(
                 MdmConfig.KEY_RESTRICTIONS_PENDING to true,
                 MdmConfig.KEY_ALLOW_FILE_SEND to true,
-                MdmConfig.KEY_AUTO_LOGOUT_MINUTES to 0,
             )
         )
 
@@ -45,7 +43,6 @@ class MdmConfigParserTest {
                 MdmConfig.KEY_HOMESERVER_URL to MdmConfig.DEFAULT_HOMESERVER_URL,
                 MdmConfig.KEY_ALLOW_REGISTRATION to false,
                 MdmConfig.KEY_ALLOW_FILE_SEND to false,
-                MdmConfig.KEY_AUTO_LOGOUT_MINUTES to 0,
             )
         )
         assertThat(config).isEqualTo(MdmConfig.default.copy(allowFileSend = false))
@@ -68,25 +65,7 @@ class MdmConfigParserTest {
         }
     }
 
-    @Test
-    fun `only bounded Bundle integers are accepted for minutes`() {
-        assertThat(MdmConfigParser.parseMinutes(0)).isEqualTo(0)
-        assertThat(MdmConfigParser.parseMinutes(MdmConfigParser.MAX_AUTO_LOGOUT_MINUTES))
-            .isEqualTo(MdmConfigParser.MAX_AUTO_LOGOUT_MINUTES)
-        for (value in listOf<Any>("30", 30L, -1, MdmConfigParser.MAX_AUTO_LOGOUT_MINUTES + 1)) {
-            assertThat(MdmConfigParser.parseMinutes(value)).isNull()
-            assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_AUTO_LOGOUT_MINUTES to value)))
-                .isEqualTo(MdmConfig.restrictionsPending)
-        }
-    }
 
-    @Test
-    fun `nonzero automatic logout is rejected because PIN lock preserves the sole session`() {
-        for (minutes in listOf(1, 15, MdmConfigParser.MAX_AUTO_LOGOUT_MINUTES)) {
-            assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_AUTO_LOGOUT_MINUTES to minutes)))
-                .isEqualTo(MdmConfig.restrictionsPending)
-        }
-    }
 
     @Test
     fun `canonical homeserver spellings resolve to the one locked value`() {
@@ -169,18 +148,33 @@ class MdmConfigParserTest {
             .isEqualTo(MdmConfig.default)
     }
 
+    /**
+     * auto_logout_minutes was removed. Profiles already pushed to devices may still carry it, so a
+     * leftover value must simply be ignored — not rejected, and above all not tipped into
+     * restrictionsPending, which would silently switch file sending off across the fleet.
+     */
+    @Test
+    fun `a leftover auto_logout_minutes in an old profile is ignored`() {
+        val config = MdmConfigParser.parse(
+            mapOf(
+                MdmConfig.KEY_ALLOW_FILE_SEND to false,
+                "auto_logout_minutes" to 15,
+            )
+        )
+        assertThat(config.restrictionsPending).isFalse()
+        assertThat(config.allowFileSend).isFalse()
+    }
+
     @Test
     fun `describe lists all policy values so a log line is enough to diagnose a device`() {
         val text = MdmConfig.default.copy(
             homeserverUrl = "https://matrix.example.com",
             allowRegistration = true,
             allowFileSend = false,
-            autoLogoutMinutes = 15,
         ).describe()
         assertThat(text).contains("homeserver_url=https://matrix.example.com")
         assertThat(text).contains("allow_registration=true")
         assertThat(text).contains("allow_file_send=false")
-        assertThat(text).contains("auto_logout_minutes=15")
         assertThat(text).contains("restrictions_pending=false")
     }
 }

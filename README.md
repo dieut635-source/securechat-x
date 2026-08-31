@@ -92,7 +92,6 @@ SecureChat exposes four Android Enterprise restrictions:
 | `homeserver_url` | string | `https://chat.securechat.com.au` | Compatibility key; only the fixed SecureChat homeserver is accepted |
 | `allow_registration` | boolean | `false` | Compatibility key; account creation remains disabled even if set to `true` |
 | `allow_file_send` | boolean | `true` | Controls attachments, media sharing, voice messages, and inbound file shares |
-| `auto_logout_minutes` | integer | `0` | Logs out after the configured background interval; `0` disables automatic logout |
 
 The key names are a deployment contract. Renaming them silently resets already-managed devices to defaults.
 

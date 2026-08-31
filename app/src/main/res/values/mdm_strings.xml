@@ -17,7 +17,4 @@
 
     <string name="mdm_allow_file_send_title" translatable="false">Allow sending files</string>
     <string name="mdm_allow_file_send_description" translatable="false">When off, the attachment button, voice messages and sharing into SecureChat from other apps are all disabled. Users can still receive files.</string>
-
-    <string name="mdm_auto_logout_minutes_title" translatable="false">Automatic sign-out (must be 0)</string>
-    <string name="mdm_auto_logout_minutes_description" translatable="false">SecureChat preserves the sole enrolled session and uses local PIN lock. Any value other than 0 is rejected.</string>
 </resources>

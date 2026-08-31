@@ -22,8 +22,6 @@ data class MdmConfig(
     val allowRegistration: Boolean,
     /** Whether the user may send files, images, voice messages or shared content. Key: `allow_file_send`. */
     val allowFileSend: Boolean,
-    /** Sign the user out after this many minutes in the background. 0 disables it. Key: `auto_logout_minutes`. */
-    val autoLogoutMinutes: Int,
     /** Managed restrictions are pending, unreadable, or malformed and therefore cannot be trusted. */
     val restrictionsPending: Boolean = false,
 ) {
@@ -35,14 +33,13 @@ data class MdmConfig(
      */
     fun describe(): String =
         "homeserver_url=$homeserverUrl allow_registration=$allowRegistration " +
-            "allow_file_send=$allowFileSend auto_logout_minutes=$autoLogoutMinutes " +
+            "allow_file_send=$allowFileSend " +
             "restrictions_pending=$restrictionsPending"
 
     companion object {
         const val KEY_HOMESERVER_URL = "homeserver_url"
         const val KEY_ALLOW_REGISTRATION = "allow_registration"
         const val KEY_ALLOW_FILE_SEND = "allow_file_send"
-        const val KEY_AUTO_LOGOUT_MINUTES = "auto_logout_minutes"
         // System-owned sentinel from UserManager.KEY_RESTRICTIONS_PENDING. It is intentionally not
         // declared in app_restrictions.xml because administrators must not configure it manually.
         const val KEY_RESTRICTIONS_PENDING = "restrictions_pending"
@@ -57,7 +54,6 @@ data class MdmConfig(
             homeserverUrl = DEFAULT_HOMESERVER_URL,
             allowRegistration = false,
             allowFileSend = true,
-            autoLogoutMinutes = 0,
             restrictionsPending = false,
         )
 

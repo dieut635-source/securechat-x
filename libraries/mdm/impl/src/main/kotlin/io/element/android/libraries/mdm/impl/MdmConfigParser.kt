@@ -57,21 +57,11 @@ object MdmConfigParser {
             default = default.allowFileSend,
             parser = ::parseBoolean,
         ) ?: return MdmConfig.restrictionsPending
-        val autoLogoutMinutes = parseOptional(
-            raw = raw,
-            key = MdmConfig.KEY_AUTO_LOGOUT_MINUTES,
-            default = default.autoLogoutMinutes,
-            parser = ::parseMinutes,
-        ) ?: return MdmConfig.restrictionsPending
-        // A server-bound single session cannot safely be recreated by the user. Automatic logout
-        // is therefore non-relaxable: local PIN lock is the only background access control.
-        if (autoLogoutMinutes != 0) return MdmConfig.restrictionsPending
 
         return MdmConfig(
             homeserverUrl = homeserverUrl,
             allowRegistration = allowRegistration,
             allowFileSend = allowFileSend,
-            autoLogoutMinutes = autoLogoutMinutes,
             restrictionsPending = false,
         )
     }
@@ -113,10 +103,5 @@ object MdmConfigParser {
     /** Android `restrictionType="bool"` values must arrive as a real Bundle Boolean. */
     internal fun parseBoolean(value: Any?): Boolean? = value as? Boolean
 
-    /** Android `restrictionType="integer"` values must be a bounded Bundle Int. */
-    internal fun parseMinutes(value: Any?): Int? =
-        (value as? Int)?.takeIf { it in 0..MAX_AUTO_LOGOUT_MINUTES }
 
-    /** Avoid accepting an accidentally enormous timeout that is operationally equivalent to off. */
-    internal const val MAX_AUTO_LOGOUT_MINUTES = 43_200 // 30 days
 }
