@@ -24,8 +24,12 @@
         <receiver
             android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
             tools:node="remove" />
+        <!-- androidx.profileinstaller is not a dependency of the F-Droid variant, so lint reports
+             MissingClass for this name. The removal stays as a guard in case the library is ever
+             pulled in transitively: deleting it would silently ship the receiver at that point. -->
         <receiver
             android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:ignore="MissingClass"
             tools:node="remove" />
     </application>
 
