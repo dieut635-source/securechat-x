@@ -47,6 +47,16 @@ class DefaultUnifiedPushGatewayResolver(
             Timber.tag(loggerTag.value).d("ErrorInvalidUrl")
             UnifiedPushGatewayResolverResult.ErrorInvalidUrl
         } else {
+            // Từ chối mọi host không phải của SecureChat TRƯỚC khi hỏi nó bất cứ điều gì.
+            // Máy nào chưa trỏ ntfy về máy chủ của mình sẽ giữ mặc định ntfy.sh công cộng,
+            // mà chỗ đó CÓ quảng bá Matrix gateway hợp lệ — nên nếu không chặn ở đây thì
+            // toàn bộ siêu dữ liệu push đi qua bên thứ ba mà không ai hay biết.
+            if (!url.host.equals(UnifiedPushConfig.ALLOWED_GATEWAY_HOST, ignoreCase = true)) {
+                Timber.tag(loggerTag.value).w(
+                    "Refusing endpoint on host '${url.host}': only ${UnifiedPushConfig.ALLOWED_GATEWAY_HOST} is allowed"
+                )
+                return UnifiedPushGatewayResolverResult.ErrorInvalidUrl
+            }
             val port = if (url.port != -1) ":${url.port}" else ""
             val customBase = "${url.protocol}://${url.host}$port"
             val customUrl = "$customBase/_matrix/push/v1/notify"
