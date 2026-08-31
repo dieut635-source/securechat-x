@@ -8,6 +8,25 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+      SecureChat does not ship location sharing: no MapTiler key is configured, so
+      LocationService.isServiceAvailable() is false and the attach-location entry point is
+      never shown. The permissions below are merged in by features:location:impl; strip them
+      here so the shipped APK does not request location access it cannot use.
+
+      To re-enable location sharing, supply the MapTiler build config values and delete this
+      block — do not simply grant the permissions back.
+    -->
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_LOCATION"
+        tools:node="remove" />
+
     <application
         android:name=".SecureChatApplication"
         android:allowBackup="false"
