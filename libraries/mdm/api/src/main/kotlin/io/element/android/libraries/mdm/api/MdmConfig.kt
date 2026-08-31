@@ -40,6 +40,7 @@ data class MdmConfig(
         const val KEY_HOMESERVER_URL = "homeserver_url"
         const val KEY_ALLOW_REGISTRATION = "allow_registration"
         const val KEY_ALLOW_FILE_SEND = "allow_file_send"
+
         // System-owned sentinel from UserManager.KEY_RESTRICTIONS_PENDING. It is intentionally not
         // declared in app_restrictions.xml because administrators must not configure it manually.
         const val KEY_RESTRICTIONS_PENDING = "restrictions_pending"

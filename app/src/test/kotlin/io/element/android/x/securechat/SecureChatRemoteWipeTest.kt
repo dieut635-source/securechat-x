@@ -27,8 +27,12 @@ class SecureChatRemoteWipeTest {
     private class RecordingWiper : SecureChatDataWiper {
         val wipedSessions = mutableListOf<String>()
         var wipedEverything = false
-        override suspend fun wipeSession(userId: String, reason: String) { wipedSessions += userId }
-        override suspend fun wipeEverything(reason: String) { wipedEverything = true }
+        override suspend fun wipeSession(userId: String, reason: String) {
+            wipedSessions += userId
+        }
+        override suspend fun wipeEverything(reason: String) {
+            wipedEverything = true
+        }
     }
 
     // A self-cancelling child scope: the session flow never completes, so running it in the

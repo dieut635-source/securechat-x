@@ -12,6 +12,7 @@ package io.element.android.features.viewfolder.impl.file
 import android.content.Context
 import android.net.Uri
 import com.google.common.truth.Truth.assertThat
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.matrix.test.core.aBuildMeta
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.tests.testutils.testCoroutineDispatchers
@@ -63,7 +64,7 @@ class DefaultFileShareTest : RobolectricTest() {
         val directory = File(context.cacheDir, "logs/${UUID.randomUUID()}").apply { mkdirs() }
         val sut = createSut(context)
 
-        val failure = runCatching {
+        val failure = runCatchingExceptions {
             sut.stageForSharing(directory)
         }.exceptionOrNull()
 
@@ -81,7 +82,7 @@ class DefaultFileShareTest : RobolectricTest() {
         }
         val sut = createSut(context)
 
-        val failure = runCatching {
+        val failure = runCatchingExceptions {
             sut.stageForSharing(source)
         }.exceptionOrNull()
 
@@ -138,7 +139,7 @@ class DefaultFileShareTest : RobolectricTest() {
         }
         val sut = createSut(context)
 
-        val failure = runCatching {
+        val failure = runCatchingExceptions {
             sut.stageForSharing(source)
         }.exceptionOrNull()
 
@@ -154,7 +155,7 @@ class DefaultFileShareTest : RobolectricTest() {
 
         val results = List(DefaultFileShare.MAX_ACTIVE_SHARES + 3) {
             async(Dispatchers.Default) {
-                runCatching { sut.stageForSharing(source) }
+                runCatchingExceptions { sut.stageForSharing(source) }
             }
         }.awaitAll()
 

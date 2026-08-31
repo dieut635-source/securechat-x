@@ -15,6 +15,7 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.element.android.features.logout.api.SecureChatDataWiper
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.di.annotations.ApplicationContext
 import io.element.android.libraries.sessionstorage.api.SessionData
 import io.element.android.libraries.sessionstorage.api.SessionStore
@@ -83,6 +84,6 @@ class DefaultSecureChatDataWiper(
     }
 
     private inline fun quietly(what: String, block: () -> Unit) {
-        runCatching(block).onFailure { Timber.e(it, "Wipe: failed to erase $what") }
+        runCatchingExceptions(block).onFailure { Timber.e(it, "Wipe: failed to erase $what") }
     }
 }

@@ -24,6 +24,7 @@ interface SecureChatDataWiper {
     /**
      * Erases one account: its message store, crypto store, media, and its row in session storage.
      *
+     * @param userId the account to erase. Other accounts on the device are left untouched.
      * @param reason short, non-sensitive text for the log. Never a PIN, a token, or anything that
      * identifies a person: on a phone that has just been seized, the log is evidence.
      */
@@ -32,6 +33,8 @@ interface SecureChatDataWiper {
     /**
      * Erases every account plus every shared cache. Used for duress, where leaving one account
      * behind would defeat the point.
+     *
+     * @param reason short, non-sensitive text for the log, same rule as above.
      */
     suspend fun wipeEverything(reason: String)
 }

@@ -62,10 +62,9 @@ interface PinCodeManager {
     suspend fun createPinCode(pinCode: String)
 
     /**
-     * @return true if the pin code is correct.
-     */
-    /**
      * Verifies the code that was entered.
+     *
+     * @return true if the code is correct.
      *
      * Returns true for the main code and, indistinguishably, for the duress code — entering the
      * duress code erases every account first and then reports success. From the outside the two are

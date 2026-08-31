@@ -15,6 +15,7 @@ import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.test.A_SESSION_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
+import io.element.android.libraries.sessionstorage.test.FakeSessionSecurityCoordinator
 import io.element.android.services.analytics.test.FakeAnalyticsService
 import io.element.android.services.appnavstate.test.FakeAppForegroundStateService
 import io.element.android.tests.testutils.testCoroutineDispatchers
@@ -150,6 +151,7 @@ class MatrixSessionCacheTest {
         authenticationService = authenticationService,
         syncOrchestratorFactory = syncOrchestratorFactory,
         analyticsService = analyticsService,
+        sessionSecurityCoordinator = FakeSessionSecurityCoordinator(),
     )
 
     private fun TestScope.createSyncOrchestratorFactory(): SyncOrchestrator.Factory {

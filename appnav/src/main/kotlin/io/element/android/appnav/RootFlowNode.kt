@@ -48,7 +48,6 @@ import io.element.android.features.logout.api.AutoLogoutSecurityGate
 import io.element.android.features.rageshake.api.bugreport.BugReportEntryPoint
 import io.element.android.features.share.api.ShareIntentData
 import io.element.android.features.signedout.api.SignedOutEntryPoint
-import io.element.android.libraries.accountselect.api.AccountSelectEntryPoint
 import io.element.android.libraries.architecture.BackstackView
 import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.appyx.rememberDelegateTransitionHandler
@@ -107,7 +106,6 @@ class RootFlowNode(
     private val presenter: RootPresenter,
     private val bugReportEntryPoint: BugReportEntryPoint,
     private val signedOutEntryPoint: SignedOutEntryPoint,
-    private val accountSelectEntryPoint: AccountSelectEntryPoint,
     private val intentResolver: IntentResolver,
     private val featureFlagService: FeatureFlagService,
     private val announcementService: AnnouncementService,

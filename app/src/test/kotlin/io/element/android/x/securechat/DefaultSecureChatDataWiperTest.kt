@@ -31,9 +31,15 @@ class DefaultSecureChatDataWiperTest : RobolectricTest() {
     }
 
     private fun onDisk(userId: String): OnDisk {
-        val root = File.createTempFile("wipe", "").let { it.delete(); it.mkdirs(); it }
-        val sessionDir = File(root, "session").apply { mkdirs(); File(this, "messages.db").writeText("secret") }
-        val cacheDir = File(root, "cache").apply { mkdirs(); File(this, "photo.jpg").writeText("secret") }
+        val root = File.createTempFile("wipe", "")
+        root.delete()
+        root.mkdirs()
+        val sessionDir = File(root, "session")
+        sessionDir.mkdirs()
+        File(sessionDir, "messages.db").writeText("secret")
+        val cacheDir = File(root, "cache")
+        cacheDir.mkdirs()
+        File(cacheDir, "photo.jpg").writeText("secret")
         return OnDisk(
             data = aSessionData(
                 sessionPath = sessionDir.absolutePath,

@@ -11,9 +11,9 @@ package io.element.android.features.lockscreen.impl.pin
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.lockscreen.impl.pin.storage.InMemoryLockScreenStore
+import io.element.android.features.lockscreen.impl.storage.LockScreenStore
 import io.element.android.features.logout.api.SecureChatDataWiper
 import io.element.android.features.logout.test.FakeSecureChatDataWiper
-import io.element.android.features.lockscreen.impl.storage.LockScreenStore
 import io.element.android.libraries.cryptography.api.EncryptionDecryptionService
 import io.element.android.libraries.cryptography.api.SecretKeyRepository
 import io.element.android.libraries.cryptography.impl.AESEncryptionDecryptionService

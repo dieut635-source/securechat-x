@@ -65,8 +65,6 @@ class MdmConfigParserTest {
         }
     }
 
-
-
     @Test
     fun `canonical homeserver spellings resolve to the one locked value`() {
         for (value in listOf(

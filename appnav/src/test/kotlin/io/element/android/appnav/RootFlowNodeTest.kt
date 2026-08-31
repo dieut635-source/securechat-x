@@ -39,7 +39,6 @@ import io.element.android.features.rageshake.test.FakeBugReportEntryPoint
 import io.element.android.features.rageshake.test.logs.FakeAnnouncementService
 import io.element.android.features.share.test.FakeShareIntentHandler
 import io.element.android.features.signedout.test.FakeSignedOutEntryPoint
-import io.element.android.libraries.accountselect.test.FakeAccountSelectEntryPoint
 import io.element.android.libraries.architecture.AssistedNodeFactory
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
@@ -60,6 +59,7 @@ import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.oauth.test.FakeOAuthIntentResolver
 import io.element.android.libraries.preferences.test.FakeSessionPreferencesStoreFactory
 import io.element.android.libraries.sessionstorage.api.SessionStore
+import io.element.android.libraries.sessionstorage.test.FakeSessionSecurityCoordinator
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.services.analytics.test.FakeAnalyticsService
@@ -347,7 +347,6 @@ class RootFlowNodeTest : RobolectricTest() {
             ),
             bugReportEntryPoint = FakeBugReportEntryPoint(),
             signedOutEntryPoint = FakeSignedOutEntryPoint(),
-            accountSelectEntryPoint = FakeAccountSelectEntryPoint(),
             intentResolver = IntentResolver(
                 deeplinkParser = { null },
                 loginIntentResolver = FakeLoginIntentResolver { A_LOGIN_PARAMS },
@@ -368,6 +367,7 @@ class RootFlowNodeTest : RobolectricTest() {
             authenticationService = authenticationService,
             syncOrchestratorFactory = createSyncOrchestratorFactory(),
             analyticsService = FakeAnalyticsService(),
+            sessionSecurityCoordinator = FakeSessionSecurityCoordinator(),
         )
     }
 

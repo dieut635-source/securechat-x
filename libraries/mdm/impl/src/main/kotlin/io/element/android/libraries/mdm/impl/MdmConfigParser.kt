@@ -102,6 +102,4 @@ object MdmConfigParser {
 
     /** Android `restrictionType="bool"` values must arrive as a real Bundle Boolean. */
     internal fun parseBoolean(value: Any?): Boolean? = value as? Boolean
-
-
 }

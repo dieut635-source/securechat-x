@@ -40,11 +40,12 @@ suspend fun SecureChatDeviceIdProvider.seedDeviceIdFromLegacySessionIfNeeded(ses
  *
  * The identifier is random rather than hardware-derived and is persisted before being returned.
  * Android backup is disabled for SecureChat, so it is not restored onto a different installation.
+ *
+ * The binding type is spelled out on purpose. Metro binds to the immediate supertype, which here is
+ * [SeedableSecureChatDeviceIdProvider], but RustMatrixAuthenticationService injects
+ * [SecureChatDeviceIdProvider]. Without naming it, the dependency graph is missing that binding and
+ * :app does not compile.
  */
-// Phải chỉ rõ kiểu: mặc định Metro gắn binding vào kiểu cha trực tiếp, ở đây là
-// SeedableSecureChatDeviceIdProvider. Nhưng RustMatrixAuthenticationService tiêm
-// SecureChatDeviceIdProvider, nên nếu không chỉ rõ thì đồ thị phụ thuộc thiếu
-// binding và :app không biên dịch được.
 @ContributesBinding(AppScope::class, binding = binding<SecureChatDeviceIdProvider>())
 @SingleIn(AppScope::class)
 class DataStoreSecureChatDeviceIdProvider(

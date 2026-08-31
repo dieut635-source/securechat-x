@@ -11,8 +11,8 @@ package io.element.android.features.lockscreen.impl.pin
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
-import io.element.android.features.logout.api.SecureChatDataWiper
 import io.element.android.features.lockscreen.impl.storage.LockScreenStore
+import io.element.android.features.logout.api.SecureChatDataWiper
 import io.element.android.libraries.cryptography.api.EncryptionDecryptionService
 import io.element.android.libraries.cryptography.api.EncryptionResult
 import io.element.android.libraries.cryptography.api.SecretKeyRepository
