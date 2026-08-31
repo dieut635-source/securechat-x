@@ -454,6 +454,10 @@ dependencies {
     implementation(projects.appnav)
     implementation(projects.appconfig)
     implementation(projects.libraries.uiStrings)
+    // Xoá dữ liệu từ xa: cần đọc/xoá bản ghi phiên và các annotation tiêm phụ thuộc.
+    implementation(projects.libraries.core)
+    implementation(projects.libraries.di)
+    implementation(projects.libraries.sessionStorage.api)
     implementation(projects.services.analytics.compose)
 
     if (ModulesConfig.pushProvidersConfig.includeFirebase) {
@@ -482,6 +486,7 @@ dependencies {
 
     testCommonDependencies(libs)
     testImplementation(projects.libraries.matrix.test)
+    testImplementation(projects.libraries.sessionStorage.test)
     testImplementation(projects.services.toolbox.test)
 }
 

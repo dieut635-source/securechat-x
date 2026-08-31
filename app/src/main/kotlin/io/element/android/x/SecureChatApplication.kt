@@ -21,6 +21,7 @@ import io.element.android.x.info.logApplicationInfo
 import io.element.android.x.initializer.CacheCleanerInitializer
 import io.element.android.x.initializer.CrashInitializer
 import io.element.android.x.initializer.PlatformInitializer
+import io.element.android.x.initializer.RemoteWipeInitializer
 
 class SecureChatApplication : Application(), DependencyInjectionGraphOwner, Configuration.Provider {
     override val graph: AppGraph = createGraphFactory<AppGraph.Factory>().create(this)
@@ -39,6 +40,11 @@ class SecureChatApplication : Application(), DependencyInjectionGraphOwner, Conf
             initializeComponent(CacheCleanerInitializer::class.java)
             // Single-device enrollment is intentionally non-revocable from the app. Background
             // protection is provided by the local PIN lock, never by remote/session logout.
+            //
+            // RemoteWipeInitializer does not weaken that: it never logs anyone out. It only erases
+            // what is left behind AFTER the homeserver has already revoked the session, and it
+            // needs the device to be online, so the PIN lock remains the first line of defence.
+            initializeComponent(RemoteWipeInitializer::class.java)
         }
 
         logApplicationInfo(this)
