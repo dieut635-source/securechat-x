@@ -168,7 +168,15 @@ sonar {
 
 allprojects {
     tasks.withType<Test> {
-        maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+        // Defaults sized for CI. On a developer machine the Gradle daemon needs -Xmx8g for R8, so
+        // the default fork count can exhaust a 16 GB laptop before the full suite finishes. Both
+        // knobs are overridable so the whole gate stays runnable locally:
+        //   ./gradlew test -Psecurechat.test.maxParallelForks=1 -Psecurechat.test.maxHeapSize=1g
+        // See scripts/run-full-test-gate.sh, which wraps this with a smaller daemon heap too.
+        maxParallelForks = (project.findProperty("securechat.test.maxParallelForks") as String?)
+            ?.toIntOrNull()
+            ?.coerceAtLeast(1)
+            ?: (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
 
         val isScreenshotTest = project.gradle.startParameter.taskNames.any { it.contains("paparazzi", ignoreCase = true) }
         if (isScreenshotTest) {
@@ -187,6 +195,9 @@ allprojects {
             exclude("ui/*.class")
             exclude("translations/*.class")
         }
+
+        // Applied last so it also caps the screenshot-test heap set above.
+        (project.findProperty("securechat.test.maxHeapSize") as String?)?.let { maxHeapSize = it }
     }
 }
 
