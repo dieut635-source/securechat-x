@@ -980,6 +980,9 @@ class RustMatrixAuthenticationServiceTest {
             enterpriseService = FakeEnterpriseService(
                 isAllowedToConnectToHomeserverResult = { allowed && it == accountProvider },
             ),
+            // Without this the installation check rejects the session before a client is ever
+            // created, and the policy-flip path under test is never reached.
+            secureChatDeviceIdProvider = SecureChatDeviceIdProvider { TEST_SECURECHAT_DEVICE_ID },
         )
 
         val result = sut.restoreSession(SessionId(A_USER_ID.value))
