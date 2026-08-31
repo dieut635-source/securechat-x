@@ -191,3 +191,49 @@ JAR ký bởi chính production key để máy cài đặt xác thực độc l�
 ⚠️ **Mất keystore = không thể cập nhật app.** Không tạo khóa mới để “thay thế”: Android sẽ từ chối
 update, và gỡ app để cài lại sẽ xóa local encrypted state. Nếu nghi khóa bị lộ, dừng phân phối ngay,
 cô lập thiết bị và thực hiện quy trình ứng phó sự cố riêng.
+
+
+## Mã PIN cưỡng bức
+
+Người dùng đặt hai mã lúc thiết lập khoá màn hình. Mã thường mở khoá bình thường.
+Mã cưỡng bức **cũng mở khoá bình thường** — không báo lỗi, không cảnh báo, không màn
+hình khác — nhưng xoá sạch dữ liệu trước đó. Bất cứ dấu hiệu nào lộ ra khác biệt sẽ
+mách người đang ép mở máy rằng còn thứ để ép tiếp.
+
+Hai mã bắt buộc khác nhau **ít nhất 2 chữ số**. Với mã 4 số, lệch một chữ số có 36
+mã lân cận; nếu mã cưỡng bức rơi vào đó thì một lần bấm nhầm là mất sạch, không xác
+nhận, không hoàn tác.
+
+### Phạm vi xoá — đọc kỹ
+
+Xoá **chỉ trên thiết bị đó**, và **chỉ cục bộ**:
+
+| | |
+|---|---|
+| Xoá | tin nhắn, kho khoá mã hoá, media, cache ảnh, bản ghi phiên của MỌI tài khoản trên máy |
+| KHÔNG xoá | tài khoản trên máy chủ |
+| KHÔNG đụng | tin nhắn trên máy chủ và trên các thiết bị khác |
+| KHÔNG gửi | bất cứ thứ gì lên máy chủ |
+
+### Lỗ hổng đã biết: token vẫn còn hiệu lực
+
+Vì không gọi gì lên máy chủ, **access token của thiết bị đó vẫn sống** sau khi xoá.
+Kẻ đã trích được token TRƯỚC đó vẫn dùng tiếp được.
+
+Cố ý không vá trong app. Muốn vô hiệu token thì phải giữ lại token, xoá xong rồi gọi
+`/logout` — tức nhét một lời gọi mạng vào đúng đường đi cưỡng bức, nơi mọi thứ phải
+nhanh và không được treo. Máy đang offline thì lời gọi đó vô dụng, mà lại thêm một
+chỗ hỏng.
+
+**Cách xử lý đúng là ở vận hành:** khi biết có sự cố, quản trị viên xoá thiết bị đó
+qua Synapse admin API. Việc này vô hiệu token ngay và đồng thời kích hoạt luôn cơ chế
+xoá từ xa (xem `SecureChatRemoteWipe`) nếu máy còn online. Phải nằm trong quy trình
+ứng phó sự cố.
+
+### Giới hạn khác
+
+- Chỉ bảo vệ khi máy **chưa bị mở**. Máy đang mở khoá và đưa cho người khác thì mã
+  cưỡng bức không giúp gì.
+- Không giấu được khỏi người đọc mã nguồn: repo công khai theo AGPL. Bảo vệ nằm ở chỗ
+  kẻ ép không biết mã nào là mã nào, không phải ở chỗ giấu cơ chế.
+- Sau khi xoá, app ra màn hình đăng nhập — trông như máy chưa từng đăng nhập.
