@@ -65,15 +65,27 @@ echo "==> Sẽ tải về toàn bộ phụ thuộc chưa có trong cache. Việc
 echo
 
 # --write-verification-metadata không chạy chung với configuration cache.
-# --refresh-dependencies buộc tải lại để checksum phản ánh kho thật, không phải
-# một bản cache cũ có thể đã hỏng.
 # Heap 3g và max-workers 2 vì cùng lý do như run-full-test-gate.sh.
+#
+# KHÔNG dùng --refresh-dependencies. Bản đầu của script này có nó, với lập luận
+# "để checksum phản ánh kho thật chứ không phải cache cũ". Lập luận đó sai:
+# Gradle vẫn băm từ artifact trong cache, và một artifact đã bị sửa mà khớp
+# metadata từ xa thì cờ này cũng không tải lại. Nó không thêm được bảo đảm nào.
+#
+# Cái giá thì rất thật: lần chạy có cờ đó treo sau ~50 phút ở một lần tải dở -
+# kết nối còn mở, luồng vẫn nằm trong ContentLengthInputStream.read, nhưng
+# không file nào trong cache được ghi thêm. Nhìn từ ngoài y hệt "mạng chậm".
+#
+# Hai timeout dưới đây để một mirror treo làm build ĐỎ nhanh thay vì đứng im
+# hàng giờ. Đó là lỗi tệ nhất của lần chạy trước: nó không hỏng, nó chỉ không
+# bao giờ xong.
 ./gradlew "${TASKS[@]}" \
     --write-verification-metadata sha256 \
     --no-configuration-cache \
-    --refresh-dependencies \
     --console=plain \
     --max-workers=2 \
+    -Dorg.gradle.internal.http.connectionTimeout=30000 \
+    -Dorg.gradle.internal.http.socketTimeout=60000 \
     -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8 -XX:+UseG1GC"
 
 [ -f "$METADATA" ] || { echo "LỖI: Gradle không sinh ra $METADATA"; exit 1; }
