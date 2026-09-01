@@ -158,7 +158,12 @@ jobs:
       - name: Static quality gates
         run: ./gradlew detekt ktlintCheck $CI_GRADLE_ARG_PROPERTIES
 
+      # NVD_API_KEY is required: Dependency-Check 13 fetches the CVE database through the NVD API,
+      # which rejects unauthenticated callers. Without it this gate fails outright rather than
+      # passing on an empty database - see the dependencyCheck block in build.gradle.kts.
       - name: Dependency vulnerability scan
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: >-
           ./gradlew
           :dependencyCheckAggregate

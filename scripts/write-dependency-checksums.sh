@@ -62,6 +62,11 @@ TASKS=(
     :app:processFdroidDebugResources
     detekt
     ktlintCheck
+    # dependencyCheckAggregate giải quyết cấu hình :detekt ở dự án GỐC (classpath của
+    # detekt-cli). Task `detekt` ở gốc là NO-SOURCE nên cấu hình đó không bao giờ được
+    # giải quyết qua đường thường, và 32 artifact của nó thiếu khỏi bảng - làm chính
+    # bước quét lỗ hổng trên CI đỏ.
+    :dependencyCheckAggregate
 )
 
 echo "==> Sinh checksum cho: ${TASKS[*]}"

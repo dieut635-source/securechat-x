@@ -109,6 +109,33 @@ allprojects {
             analyzers.nodeAudit.enabled.set(false)
             analyzers.ossIndex.enabled.set(false)
         }
+
+        // Dependency-Check 13 downloads the CVE database through the NVD API, which now requires a
+        // free key. Without one the task dies with "Invalid API Key, length of 0 too short", which
+        // reads like a code fault rather than missing configuration - so fail early and say what to
+        // do instead. Get a key at https://nvd.nist.gov/developers/request-an-api-key and pass it
+        // as the NVD_API_KEY environment variable (a GitHub secret in CI).
+        //
+        // The key is a credential: never commit it, and never put it in gradle.properties inside
+        // the repository.
+        if (!offlineDependencyCheck) {
+            val nvdApiKey = providers.environmentVariable("NVD_API_KEY").orNull
+                ?: providers.gradleProperty("nvdApiKey").orNull
+            if (nvdApiKey.isNullOrBlank()) {
+                tasks.matching { it.name.startsWith("dependencyCheck") }.configureEach {
+                    doFirst {
+                        error(
+                            "NVD_API_KEY is not set, so the CVE database cannot be downloaded and this " +
+                                "security gate would silently scan nothing. Request a free key at " +
+                                "https://nvd.nist.gov/developers/request-an-api-key and export it as " +
+                                "NVD_API_KEY."
+                        )
+                    }
+                }
+            } else {
+                nvd.apiKey.set(nvdApiKey)
+            }
+        }
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
