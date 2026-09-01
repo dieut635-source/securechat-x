@@ -31,6 +31,17 @@ LOG="$OUT_DIR/gradle.log"
 STAMP="$OUT_DIR/.start-stamp"
 touch "$STAMP"
 
+# Xoá kết quả test cũ. Đây là output mà Gradle khai báo cho các task test, nên
+# xoá đi khiến chúng hết up-to-date và PHẢI chạy lại - trong khi mã đã biên dịch
+# vẫn được giữ, nên không tốn thời gian build lại.
+#
+# Vì sao bắt buộc: một lượt chạy ngay sau lượt trước sẽ có gần như mọi task ở
+# trạng thái up-to-date. Gradle báo BUILD SUCCESSFUL, script đếm được một nhúm
+# test rồi kết luận XANH - trong khi bộ test thật chưa hề chạy. Đã xảy ra: một
+# lượt đếm 27 test và báo xanh, ngay sau lượt đếm 3852 test.
+echo "==> Xoá kết quả test cũ để buộc mọi test chạy lại"
+find . -type d -path "*/build/test-results" -prune -exec rm -rf {} + 2>/dev/null || true
+
 echo "==> Chạy: ${TASKS[*]}"
 echo "==> Log:  $LOG"
 echo
@@ -38,9 +49,21 @@ echo
 # --max-workers=2 giới hạn số task chạy song song; maxParallelForks=1 buộc mỗi
 # module chỉ mở một JVM test. -Xmx3g cho daemon là đủ để biên dịch, không đủ để
 # chạy R8 - đó là chủ ý.
+#
+# --no-configuration-cache là BẮT BUỘC, không phải tuỳ chọn. Với số worker thấp,
+# việc ghi configuration cache song song (org.gradle.configuration-cache.parallel)
+# deadlock: CalculateArtifactsCodec.encode giữ một ReentrantLock trong khi
+# execution worker chờ lease, và cả hai chờ nhau vô hạn. Build đứng im ở 0% CPU
+# và trông y như đang chạy. Cổng phát hành trên CI cũng tắt cache cấu hình vì lý
+# do tương tự - xem CI_GRADLE_ARG_PROPERTIES trong securechat-release.yml.
 set +e
+# --continue để một lần chạy lộ ra MỌI module hỏng, không phải dừng ở cái đầu tiên.
+# Bộ test này mất nhiều phút mỗi lượt; sửa từng lỗi một rồi chạy lại là cách chắc
+# chắn nhất để không bao giờ biết tổng số lỗi thật.
 ./gradlew "${TASKS[@]}" \
     --console=plain \
+    --no-configuration-cache \
+    --continue \
     --max-workers=2 \
     -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8 -XX:+UseG1GC" \
     -Psecurechat.test.maxParallelForks=1 \
@@ -103,11 +126,15 @@ with open(summary, "w") as handle:
 print()
 print(f"  Tóm tắt ghi tại: {summary}")
 
-# Bộ test rỗng là thất bại, không phải thành công. Trường hợp này xảy ra khi mọi
-# task đều up-to-date và không ai để ý.
-if total == 0:
+# Một bộ test nhỏ bất thường cũng là thất bại, không chỉ bộ test rỗng. Ngưỡng
+# này bắt trường hợp phần lớn task up-to-date nên chỉ một nhúm test chạy, mà
+# script lại kết luận XANH. Con số lấy từ lượt chạy đầy đủ thật (3852 test /
+# 601 lớp); để rộng tay phòng khi có module bị gỡ bớt.
+MIN_TESTS = 3000
+if total < MIN_TESTS:
     print()
-    print("  CẢNH BÁO: không có test nào chạy. Thử lại với --rerun-tasks.")
+    print(f"  CẢNH BÁO: chỉ {total} test chạy, dưới ngưỡng {MIN_TESTS}.")
+    print("  Bộ test thật chưa chạy hết - KHÔNG được coi đây là xanh.")
     sys.exit(2)
 sys.exit(1 if failed else 0)
 PY
