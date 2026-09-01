@@ -147,6 +147,32 @@ PY
 fi
 
 echo
+echo "==> Sinh bảng riêng cho build phụ plugins/"
+
+# plugins/ được nạp bằng includeBuild, tức là một build Gradle ĐỘC LẬP: nó có vòng
+# đời kiểm chứng riêng và bảng riêng ở plugins/gradle/verification-metadata.xml.
+# Bảng gốc không bao giờ phủ được nó, thêm bao nhiêu task vào danh sách trên cũng
+# vô ích - lệnh phải chạy với -p plugins.
+#
+# Lỗ này chỉ lộ ra trên CI. Máy phát triển đã có sẵn artifact của plugins trong
+# cache từ trước khi bảng tồn tại nên không bị kiểm; CI checkout sạch thì đỏ ngay
+# ở bước đầu với:
+#   Dependency verification failed for configuration ':plugins:compileClasspath'
+set +e
+./gradlew -p plugins classes \
+    --write-verification-metadata sha256 \
+    --no-configuration-cache \
+    --console=plain \
+    --max-workers=2 \
+    -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8 -XX:+UseG1GC"
+PLUGINS_STATUS=$?
+set -e
+if [ "$PLUGINS_STATUS" -ne 0 ]; then
+    echo "CẢNH BÁO: không sinh được bảng cho plugins/ (mã $PLUGINS_STATUS)."
+    GRADLE_STATUS=$PLUGINS_STATUS
+fi
+
+echo
 echo "==> Bổ sung aapt2 cho các nền tảng khác"
 
 # aapt2 có classifier theo nền tảng: macOS lấy -osx.jar, CI Linux lấy -linux.jar.
