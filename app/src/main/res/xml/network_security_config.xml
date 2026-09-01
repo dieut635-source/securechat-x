@@ -6,4 +6,46 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+
+    <!--
+      Certificate pinning for SecureChat's own hosts.
+
+      Without it the app accepts any of the ~150 CAs Android ships with, so a single compromised or
+      mis-issuing CA is enough to intercept logins, tokens and metadata. Pinning narrows that to
+      Let's Encrypt alone.
+
+      What is pinned, and why not the server certificate: the leaf renews every 60 days and gets a
+      new key each time, and this APK is installed by hand over USB. Pinning it would take every
+      phone offline on each renewal until someone walked round with a cable. The two pins below are
+      the ISRG roots the live chain actually terminates in, both valid until September 2032, so
+      renewals do not touch them.
+
+      Computed from the real chain served by chat.securechat.com.au on 2026-09-01, not copied from
+      documentation:
+        openssl s_client -showcerts -connect chat.securechat.com.au:443 \
+          -servername chat.securechat.com.au </dev/null
+        # then for each certificate:
+        openssl x509 -noout -pubkey | openssl pkey -pubin -outform der \
+          | openssl dgst -sha256 -binary | base64
+
+      What this does NOT stop: anyone who can pass Let's Encrypt's domain validation - by taking the
+      server, the DNS, or the route - still gets a certificate this pin accepts. Closing that needs
+      pinning our own key, which brings back the renewal risk above.
+
+      expiration is a deliberate safety valve, not an oversight. After that date Android ignores
+      these pins instead of refusing to connect, so a forgotten APK update degrades to "unpinned"
+      rather than to a fleet of phones that cannot reach the server. Re-check the pins and move the
+      date forward well before it passes; see docs/TLS-PINNING.md.
+    -->
+    <domain-config>
+        <domain includeSubdomains="false">chat.securechat.com.au</domain>
+        <domain includeSubdomains="false">push.securechat.com.au</domain>
+        <pin-set expiration="2027-09-01">
+            <!-- ISRG Root X2 - the anchor of the current chain. -->
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+            <!-- ISRG Root YE - one level down, kept as the backup pin so a single change at the
+                 top of Let's Encrypt's hierarchy cannot lock the fleet out. -->
+            <pin digest="SHA-256">sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=</pin>
+        </pin-set>
+    </domain-config>
 </network-security-config>
