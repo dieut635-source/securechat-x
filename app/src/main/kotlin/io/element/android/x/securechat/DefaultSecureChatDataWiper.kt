@@ -11,7 +11,6 @@ import android.content.Context
 import coil3.SingletonImageLoader
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
-import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.element.android.features.logout.api.SecureChatDataWiper
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
@@ -30,7 +29,6 @@ import java.io.File
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
-@Inject
 class DefaultSecureChatDataWiper(
     @ApplicationContext private val context: Context,
     private val sessionStore: SessionStore,
