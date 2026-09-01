@@ -15,6 +15,7 @@ import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.RoomIdOrAlias
 import io.element.android.libraries.matrix.api.core.toRoomIdOrAlias
 import io.element.android.libraries.matrix.impl.analytics.toAnalyticsJoinedRoom
+import io.element.android.libraries.matrix.test.room.encryption.FakeRoomEncryptionGuard
 import io.element.android.libraries.matrix.test.A_ROOM_ALIAS
 import io.element.android.libraries.matrix.test.A_ROOM_ID
 import io.element.android.libraries.matrix.test.A_SERVER_LIST
@@ -49,6 +50,7 @@ class DefaultJoinRoomTest {
         val sut = DefaultJoinRoom(
             client = client,
             analyticsService = analyticsService,
+            encryptionGuard = FakeRoomEncryptionGuard(),
         )
         sut.invoke(A_ROOM_ID.toRoomIdOrAlias(), emptyList(), aTrigger)
         joinRoomByIdOrAliasLambda
@@ -86,6 +88,7 @@ class DefaultJoinRoomTest {
         val sut = DefaultJoinRoom(
             client = client,
             analyticsService = analyticsService,
+            encryptionGuard = FakeRoomEncryptionGuard(),
         )
         sut.invoke(A_ROOM_ID.toRoomIdOrAlias(), A_SERVER_LIST, aTrigger)
         joinRoomByIdOrAliasLambda
@@ -124,6 +127,7 @@ class DefaultJoinRoomTest {
         val sut = DefaultJoinRoom(
             client = client,
             analyticsService = analyticsService,
+            encryptionGuard = FakeRoomEncryptionGuard(),
         )
         sut.invoke(A_ROOM_ALIAS.toRoomIdOrAlias(), A_SERVER_LIST, aTrigger)
         joinRoomByIdOrAliasLambda
