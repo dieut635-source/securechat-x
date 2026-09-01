@@ -13,12 +13,21 @@ require_literal() {
     fi
 }
 
-# Closed-distribution invariants. There is intentionally no remote wake-up transport: compiling a
-# provider would silently reintroduce Google or a public UnifiedPush gateway into production APKs.
+# Closed-distribution invariants. Firebase stays out: it would route wake-ups through Google.
+#
+# UnifiedPush is now compiled in, which reverses the original rule here. That rule existed because
+# a push provider could "silently reintroduce Google or a public UnifiedPush gateway"; the second
+# half of that risk is real and is now handled by a hard host allowlist rather than by refusing to
+# build the provider at all. Assert the allowlist instead, so this guard still protects the thing
+# it was written to protect: the app must refuse any gateway that is not our own server.
 require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
     'const val PUSH_CONFIG_INCLUDE_FIREBASE: Boolean = false'
 require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
-    'const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = false'
+    'const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = true'
+require_literal libraries/pushproviders/unifiedpush/src/main/kotlin/io/element/android/libraries/pushproviders/unifiedpush/UnifiedPushConfig.kt \
+    'const val ALLOWED_GATEWAY_HOST = "push.securechat.com.au"'
+require_literal libraries/pushproviders/unifiedpush/src/main/kotlin/io/element/android/libraries/pushproviders/unifiedpush/UnifiedPushGatewayResolver.kt \
+    'UnifiedPushConfig.ALLOWED_GATEWAY_HOST'
 require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
     'val URL_COPYRIGHT: String? = null'
 require_literal plugins/src/main/kotlin/config/BuildTimeConfig.kt \
@@ -845,8 +854,18 @@ require_literal libraries/deeplink/impl/src/main/kotlin/io/element/android/libra
     'internal const val SCHEME = "securechat"'
 require_literal features/login/impl/src/main/kotlin/io/element/android/features/login/impl/DefaultLoginIntentResolver.kt \
     'override fun parse(uriString: String): LoginParams? = null'
-require_literal app/src/main/AndroidManifest.xml 'android:host="oauth"'
-require_literal app/src/main/AndroidManifest.xml 'android:path="/callback"'
+# SecureChat authenticates with a password only: RustMatrixAuthenticationService revokes any
+# restored session whose loginType is not PASSWORD, and DefaultLoginIntentResolver.parse returns
+# null so no login deep link is honoured. An OAuth callback surface would therefore be an entry
+# point with nothing behind it.
+#
+# This guard previously REQUIRED android:host="oauth" and android:path="/callback" in the manifest.
+# Those lines have never existed in this fork, so the check could never pass and the whole script
+# has never run green. Assert the actual posture instead: there must be no OAuth callback at all.
+if grep -Fq 'android:host="oauth"' app/src/main/AndroidManifest.xml; then
+    printf 'An OAuth callback host is declared in the application manifest, but SecureChat is password-only.\n' >&2
+    failure=1
+fi
 if grep -Fq 'android:host="chat.securechat.com.au"' app/src/main/AndroidManifest.xml || \
     grep -Fq 'android:autoVerify=' app/src/main/AndroidManifest.xml; then
     printf 'Unverified public HTTPS App Link is enabled in the application manifest.\n' >&2
@@ -889,11 +908,15 @@ actual = {
     )
     for item in root.findall("restriction")
 }
+# auto_logout_minutes was removed on 2026-08-31. A PIN only locks the interface: the session
+# database passphrase lives in SessionData.passphrase, independent of it, so self-logout bought
+# almost nothing while forcing a full password re-entry. It was also an active trap - the parser
+# rejected any non-zero value via restrictionsPending, and that state sets allowFileSend = false,
+# so an admin enabling auto-logout would silently block file sending for the whole team.
 expected = {
     "homeserver_url": ("string", "https://chat.securechat.com.au"),
     "allow_registration": ("bool", "false"),
     "allow_file_send": ("bool", "true"),
-    "auto_logout_minutes": ("integer", "0"),
 }
 if actual != expected:
     print(f"Managed configuration mismatch. Expected {expected!r}, got {actual!r}", file=sys.stderr)
