@@ -149,9 +149,14 @@ class ConfigureRoomPresenter(
         val availableJoinRules = remember(parentSpace, isSpace, isKnockFeatureEnabled) {
             when {
                 isSpace && parentSpace != null -> TODO("Adding a space to a parent space is not supported yet! How did you get here?")
+                // SecureChat never offers public visibility. Both PublicVisibility options build
+                // the room with isEncrypted = false (see createRoom below), which leaves message
+                // bodies readable on the server - and therefore inside server backups and the
+                // 7-day retention window. One mis-tap would defeat the deployment's
+                // confidentiality model without any technical fault, so the option is not shown.
+                // The LaunchedEffect below already falls back to Private for a stored rule that
+                // is no longer available, so existing drafts degrade safely.
                 parentSpace == null || parentSpace.joinRule == JoinRule.Public -> listOfNotNull(
-                    JoinRuleItem.PublicVisibility.Public,
-                    JoinRuleItem.PublicVisibility.AskToJoin.takeIf { !isSpace && isKnockFeatureEnabled },
                     JoinRuleItem.PrivateVisibility.Private,
                 ).toImmutableList()
                 else -> listOfNotNull(
@@ -241,7 +246,10 @@ class ConfigureRoomPresenter(
                     CreateRoomParameters(
                         name = config.roomName,
                         topic = config.topic,
-                        isEncrypted = false,
+                        // Unreachable while availableJoinRules omits PublicVisibility, but kept
+                        // encrypted so re-enabling that option cannot silently start writing
+                        // plaintext message bodies to the server.
+                        isEncrypted = true,
                         isDirect = false,
                         visibility = RoomVisibility.Public,
                         joinRuleOverride = config.visibilityState.joinRuleItem.toJoinRule()

@@ -18,7 +18,6 @@ import io.element.android.features.createroom.impl.configureroom.ConfigureRoomSt
 import io.element.android.features.createroom.impl.configureroom.CreateRoomConfig
 import io.element.android.features.createroom.impl.configureroom.CreateRoomConfigStore
 import io.element.android.features.createroom.impl.configureroom.JoinRuleItem
-import io.element.android.features.createroom.impl.configureroom.RoomAddress
 import io.element.android.features.createroom.impl.configureroom.RoomVisibilityState
 import io.element.android.features.enterprise.test.FakeSessionEnterpriseService
 import io.element.android.libraries.architecture.AsyncAction
@@ -43,7 +42,6 @@ import io.element.android.libraries.matrix.test.room.aRoomInfo
 import io.element.android.libraries.matrix.test.room.alias.FakeRoomAliasHelper
 import io.element.android.libraries.matrix.test.spaces.FakeSpaceService
 import io.element.android.libraries.matrix.ui.media.AvatarAction
-import io.element.android.libraries.matrix.ui.room.address.RoomAddressValidity
 import io.element.android.libraries.mediapickers.api.PickerProvider
 import io.element.android.libraries.mediapickers.test.FakePickerProvider
 import io.element.android.libraries.mediaupload.api.MediaPreProcessor
@@ -63,10 +61,8 @@ import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.tests.testutils.test
 import io.mockk.mockk
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -183,16 +179,13 @@ class ConfigureRoomPresenterTest : RobolectricTest() {
             expectedConfig = expectedConfig.copy(avatarUri = null)
             assertThat(newState.config).isEqualTo(expectedConfig)
 
-            // Room privacy
+            // Room privacy: SecureChat downgrades a public join rule to private, because a public
+            // room is created unencrypted and would leave message bodies readable on the server.
+            // The config is already private, so the downgrade produces no new state at all.
             newState.eventSink(ConfigureRoomEvent.JoinRuleChanged(JoinRuleItem.PublicVisibility.Public))
-            newState = awaitItem()
-            expectedConfig = expectedConfig.copy(
-                visibilityState = RoomVisibilityState.Public(
-                    roomAddress = RoomAddress.AutoFilled(roomAliasHelper.roomAliasNameFromRoomDisplayName(expectedConfig.roomName ?: "")),
-                    joinRuleItem = JoinRuleItem.PublicVisibility.Public,
-                )
-            )
-            assertThat(newState.config).isEqualTo(expectedConfig)
+            expectNoEvents()
+            assertThat(newState.config.visibilityState)
+                .isEqualTo(RoomVisibilityState.Private(JoinRuleItem.PrivateVisibility.Private))
         }
     }
 
@@ -237,13 +230,12 @@ class ConfigureRoomPresenterTest : RobolectricTest() {
 
             matrixClient.givenCreateRoomResult(createRoomResult)
 
-            // Use a public parent space so AskToJoin is a valid option
             val parentSpace = aSpaceRoom(joinRule = JoinRule.Public)
             initialState.eventSink(ConfigureRoomEvent.SetParentSpace(parentSpace))
             assertThat(awaitItem().config.parentSpace).isEqualTo(parentSpace)
 
-            initialState.eventSink(ConfigureRoomEvent.JoinRuleChanged(JoinRuleItem.PublicVisibility.AskToJoin))
-            assertThat(awaitItem().config.visibilityState.joinRuleItem).isEqualTo(JoinRuleItem.PublicVisibility.AskToJoin)
+            // No join rule is set here: SecureChat offers no public rule, and this test covers
+            // adding the new room to a parent space, not visibility. The room stays private.
 
             initialState.eventSink(ConfigureRoomEvent.CreateRoom)
             assertThat(awaitItem().createRoomAction).isInstanceOf(AsyncAction.Loading::class.java)
@@ -280,13 +272,12 @@ class ConfigureRoomPresenterTest : RobolectricTest() {
 
             matrixClient.givenCreateRoomResult(createRoomResult)
 
-            // Use a public parent space so AskToJoin is a valid option
             val parentSpace = aSpaceRoom(joinRule = JoinRule.Public)
             initialState.eventSink(ConfigureRoomEvent.SetParentSpace(parentSpace))
             assertThat(awaitItem().config.parentSpace).isEqualTo(parentSpace)
 
-            initialState.eventSink(ConfigureRoomEvent.JoinRuleChanged(JoinRuleItem.PublicVisibility.AskToJoin))
-            assertThat(awaitItem().config.visibilityState.joinRuleItem).isEqualTo(JoinRuleItem.PublicVisibility.AskToJoin)
+            // No join rule is set here: SecureChat offers no public rule, and this test covers
+            // adding the new room to a parent space, not visibility. The room stays private.
 
             initialState.eventSink(ConfigureRoomEvent.CreateRoom)
 
@@ -419,65 +410,27 @@ class ConfigureRoomPresenterTest : RobolectricTest() {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `present - address is invalid when format is invalid`() = runTest {
-        val aliasHelper = FakeRoomAliasHelper(
-            isRoomAliasValidLambda = { false }
-        )
-        val presenter = createConfigureRoomPresenter(
-            roomAliasHelper = aliasHelper
-        )
+    fun `present - a public join rule never reaches the room config`() = runTest {
+        // Replaces three earlier tests that drove the room-address flow through public visibility.
+        // SecureChat no longer offers a public join rule, so that flow is unreachable and those
+        // tests only exercised dead code. The downgrade itself is pinned in CreateRoomConfigStoreTest,
+        // where it does not depend on whether the presenter happens to emit a new state.
+        val presenter = createConfigureRoomPresenter()
         presenter.test {
             val initialState = initialState()
-            initialState.eventSink(ConfigureRoomEvent.JoinRuleChanged(JoinRuleItem.PublicVisibility.Public))
-            skipItems(1)
-            initialState.eventSink(ConfigureRoomEvent.RoomAddressChanged("invalid address"))
-            skipItems(1)
-            advanceUntilIdle()
-            awaitItem().also { state ->
-                assertThat(state.roomAddressValidity).isEqualTo(RoomAddressValidity.InvalidSymbols)
-            }
-        }
-    }
+            assertThat(initialState.config.visibilityState)
+                .isEqualTo(RoomVisibilityState.Private(JoinRuleItem.PrivateVisibility.Private))
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun `present - address is not available when alias is not available`() = runTest {
-        val fakeMatrixClient = createMatrixClient(isAliasAvailable = false)
-        val presenter = createConfigureRoomPresenter(
-            matrixClient = fakeMatrixClient,
-        )
-        presenter.test {
-            val initialState = initialState()
             initialState.eventSink(ConfigureRoomEvent.JoinRuleChanged(JoinRuleItem.PublicVisibility.Public))
-            skipItems(1)
-            initialState.eventSink(ConfigureRoomEvent.RoomAddressChanged("address"))
-            skipItems(1)
-            advanceUntilIdle()
-            awaitItem().also { state ->
-                assertThat(state.roomAddressValidity).isEqualTo(RoomAddressValidity.NotAvailable)
-            }
-        }
-    }
+            expectNoEvents()
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun `present - address is valid when alias is available and format is valid`() = runTest {
-        val fakeMatrixClient = createMatrixClient(isAliasAvailable = true)
-        val presenter = createConfigureRoomPresenter(
-            matrixClient = fakeMatrixClient,
-        )
-        presenter.test {
-            val initialState = initialState()
-            initialState.eventSink(ConfigureRoomEvent.JoinRuleChanged(JoinRuleItem.PublicVisibility.Public))
-            skipItems(1)
-            initialState.eventSink(ConfigureRoomEvent.RoomAddressChanged("address"))
-            skipItems(1)
-            advanceUntilIdle()
-            awaitItem().also { state ->
-                assertThat(state.roomAddressValidity).isEqualTo(RoomAddressValidity.Valid)
-            }
+            initialState.eventSink(ConfigureRoomEvent.JoinRuleChanged(JoinRuleItem.PublicVisibility.AskToJoin))
+            expectNoEvents()
+
+            // A room address is only meaningful for a public room; it must not create one either.
+            initialState.eventSink(ConfigureRoomEvent.RoomAddressChanged("some-address"))
+            expectNoEvents()
         }
     }
 
@@ -487,19 +440,13 @@ class ConfigureRoomPresenterTest : RobolectricTest() {
         presenter.test {
             val initialState = initialState()
 
-            // First change the join rule to public
+            // A public join rule is refused outright now, so the state stays private and the
+            // presenter emits nothing at all.
             initialState.eventSink(ConfigureRoomEvent.JoinRuleChanged(JoinRuleItem.PublicVisibility.Public))
-            assertThat(awaitItem().config.visibilityState).isInstanceOf(RoomVisibilityState.Public::class.java)
+            expectNoEvents()
 
-            // Then check changing the parent space resets it to private
-            // (via LaunchedEffect fallback since Public is not in availableJoinRules for non-public parent)
+            // Selecting a parent space keeps it private.
             initialState.eventSink(ConfigureRoomEvent.SetParentSpace(aSpaceRoom()))
-            skipItems(1) // Skip intermediate state
-            assertThat(awaitItem().config.visibilityState).isEqualTo(RoomVisibilityState.Private(JoinRuleItem.PrivateVisibility.Private))
-
-            // If we change the join rule back to public
-            initialState.eventSink(ConfigureRoomEvent.JoinRuleChanged(JoinRuleItem.PublicVisibility.Public))
-            skipItems(1) // Skip intermediate state (Public is still invalid)
             assertThat(awaitItem().config.visibilityState).isEqualTo(RoomVisibilityState.Private(JoinRuleItem.PrivateVisibility.Private))
 
             // Then remove the parent space, the join rule stays private
