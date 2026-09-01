@@ -21,9 +21,16 @@ class RetrofitFactory(
     private val callFactory: () -> Call.Factory,
     private val json: () -> JsonProvider,
 ) {
-    fun create(baseUrl: String): Retrofit = Retrofit.Builder()
+    fun create(baseUrl: String): Retrofit = create(baseUrl, callFactory())
+
+    /**
+     * Variant for callers that need different HTTP behaviour from the shared client - the push
+     * gateway resolver disables redirects, which must not change how the rest of the app talks to
+     * anything else.
+     */
+    fun create(baseUrl: String, callFactory: Call.Factory): Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl.ensureTrailingSlash())
         .addConverterFactory(json()().asConverterFactory("application/json".toMediaType()))
-        .callFactory(callFactory())
+        .callFactory(callFactory)
         .build()
 }
