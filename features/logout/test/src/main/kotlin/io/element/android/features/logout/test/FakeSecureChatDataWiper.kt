@@ -21,4 +21,12 @@ class FakeSecureChatDataWiper : SecureChatDataWiper {
     override suspend fun wipeEverything(reason: String) {
         wipeEverythingCount++
     }
+
+    /** Counted separately so a test can tell the deferred duress path from the blocking one. */
+    var beginWipeEverythingCount = 0
+        private set
+
+    override suspend fun beginWipeEverything(reason: String) {
+        beginWipeEverythingCount++
+    }
 }

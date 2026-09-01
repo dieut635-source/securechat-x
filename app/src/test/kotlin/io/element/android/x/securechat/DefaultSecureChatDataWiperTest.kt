@@ -10,6 +10,7 @@ package io.element.android.x.securechat
 import android.app.Application
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.sessionstorage.api.SessionData
+import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.tests.testutils.robolectric.RobolectricTest
@@ -50,10 +51,26 @@ class DefaultSecureChatDataWiperTest : RobolectricTest() {
         )
     }
 
-    private fun TestScope.createSut(store: InMemorySessionStore) = DefaultSecureChatDataWiper(
+    private fun TestScope.createSutWith(
+        store: SessionStore,
+        marker: SecureChatWipeMarker,
+    ) = DefaultSecureChatDataWiper(
         context = RuntimeEnvironment.getApplication(),
         sessionStore = store,
         dispatchers = testCoroutineDispatchers(),
+        wipeMarker = marker,
+        appCoroutineScope = backgroundScope,
+    )
+
+    private fun TestScope.createSut(
+        store: InMemorySessionStore,
+        marker: SecureChatWipeMarker = SecureChatWipeMarker(RuntimeEnvironment.getApplication()),
+    ) = DefaultSecureChatDataWiper(
+        context = RuntimeEnvironment.getApplication(),
+        sessionStore = store,
+        dispatchers = testCoroutineDispatchers(),
+        wipeMarker = marker,
+        appCoroutineScope = backgroundScope,
     )
 
     @Test
@@ -112,5 +129,53 @@ class DefaultSecureChatDataWiperTest : RobolectricTest() {
         val store = InMemorySessionStore()
         createSut(store).wipeSession("@never-existed:securechat.com.au", reason = "test")
         assertThat(store.getAllSessions()).isEmpty()
+    }
+
+    @Test
+    fun `an erasure that could not finish keeps the marker so the next start retries`() = runTest {
+        val target = onDisk("@target:securechat.com.au")
+        // A store whose row removal always fails. Chosen over an undeletable directory because
+        // Robolectric's filesystem does not honour permission bits, so that version of this test
+        // could pass without ever reaching the assertion it exists to make.
+        val backing = InMemorySessionStore()
+        backing.addSession(target.data)
+        val store = object : SessionStore by backing {
+            override suspend fun removeSession(sessionId: String) = error("storage unavailable")
+        }
+        val marker = SecureChatWipeMarker(RuntimeEnvironment.getApplication())
+
+        createSutWith(store, marker).wipeSession("@target:securechat.com.au", reason = "test")
+
+        // The row still holds the passphrase and the tokens, so the app must not report success.
+        assertThat(marker.isPending()).isTrue()
+    }
+
+    @Test
+    fun `a completed erasure clears the marker`() = runTest {
+        val target = onDisk("@target:securechat.com.au")
+        val store = InMemorySessionStore()
+        store.addSession(target.data)
+        val marker = SecureChatWipeMarker(RuntimeEnvironment.getApplication())
+
+        createSut(store, marker).wipeSession("@target:securechat.com.au", reason = "test")
+
+        assertThat(target.stillThere()).isFalse()
+        assertThat(marker.isPending()).isFalse()
+    }
+
+    @Test
+    fun `beginWipeEverything destroys the keys before it returns`() = runTest {
+        val target = onDisk("@target:securechat.com.au")
+        val store = InMemorySessionStore()
+        store.addSession(target.data)
+        val marker = SecureChatWipeMarker(RuntimeEnvironment.getApplication())
+
+        createSut(store, marker).beginWipeEverything(reason = "duress")
+
+        // The row carries the database passphrase. Once it is gone the files on disk are unreadable,
+        // which is what makes deferring the slow deletion safe. If this ever regresses, the duress
+        // PIN would leave readable data behind for as long as the background wipe takes.
+        assertThat(store.getAllSessions()).isEmpty()
+        assertThat(marker.isPending()).isTrue()
     }
 }

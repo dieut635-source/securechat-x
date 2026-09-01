@@ -13,4 +13,6 @@ import dev.zacsweers.metro.ContributesTo
 @ContributesTo(AppScope::class)
 interface SecureChatBindings {
     fun secureChatRemoteWipe(): SecureChatRemoteWipe
+
+    fun secureChatWipeResumer(): SecureChatWipeResumer
 }

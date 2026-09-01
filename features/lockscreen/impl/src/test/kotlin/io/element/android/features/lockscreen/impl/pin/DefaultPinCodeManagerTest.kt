@@ -73,7 +73,11 @@ class DefaultPinCodeManagerTest {
 
         pinCodeManager.verifyPinCode("9876")
 
-        assertThat(wiper.wipeEverythingCount).isEqualTo(1)
+        // beginWipeEverything, not wipeEverything: the duress unlock must return as soon as the keys
+        // are destroyed. Waiting for the files to go froze the screen for seconds and gave away
+        // which code had been typed - see SecureChatDataWiper.beginWipeEverything.
+        assertThat(wiper.beginWipeEverythingCount).isEqualTo(1)
+        assertThat(wiper.wipeEverythingCount).isEqualTo(0)
     }
 
     /**
@@ -88,6 +92,7 @@ class DefaultPinCodeManagerTest {
 
         assertThat(pinCodeManager.verifyPinCode("1234")).isTrue()
         assertThat(wiper.wipeEverythingCount).isEqualTo(0)
+        assertThat(wiper.beginWipeEverythingCount).isEqualTo(0)
     }
 
     @Test

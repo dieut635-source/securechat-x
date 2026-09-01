@@ -33,6 +33,10 @@ class SecureChatRemoteWipeTest {
         override suspend fun wipeEverything(reason: String) {
             wipedEverything = true
         }
+
+        override suspend fun beginWipeEverything(reason: String) {
+            wipedEverything = true
+        }
     }
 
     // A self-cancelling child scope: the session flow never completes, so running it in the

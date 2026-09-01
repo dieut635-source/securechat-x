@@ -37,4 +37,17 @@ interface SecureChatDataWiper {
      * @param reason short, non-sensitive text for the log, same rule as above.
      */
     suspend fun wipeEverything(reason: String)
+
+    /**
+     * Starts erasing everything and returns as soon as the data is unreadable, without waiting for
+     * the files to go.
+     *
+     * Written for the duress PIN. [wipeEverything] deletes the session directories before it
+     * returns, which can take seconds on a full device - long enough for whoever is forcing the
+     * unlock to notice that this code behaved differently from the real one. This variant records a
+     * durable marker and destroys the database passphrase first, both of which are near-instant,
+     * then finishes the bulk deletion in the background and resumes it after a restart if it was
+     * interrupted.
+     */
+    suspend fun beginWipeEverything(reason: String)
 }

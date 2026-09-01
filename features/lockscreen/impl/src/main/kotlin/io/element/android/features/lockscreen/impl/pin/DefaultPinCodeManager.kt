@@ -104,20 +104,31 @@ class DefaultPinCodeManager(
         return try {
             val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
             val pinCodeToCheck = pinCode.toByteArray()
-            val decryptedPinCode = encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(encryptedPinCode))
 
-            // The main code is checked first, so a duress code that somehow equals it can never
+            // Both codes are read and decrypted every time, before either comparison, so the work
+            // done does not depend on which code was typed. The previous version only touched the
+            // duress store after the main comparison failed, which made a duress entry measurably
+            // slower than a correct unlock.
+            val decryptedPinCode = encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(encryptedPinCode))
+            val decryptedDuressCode = lockScreenStore.getEncryptedDuressCode()?.let {
+                encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(it))
+            }
+
+            val matchesMain = decryptedPinCode.contentEquals(pinCodeToCheck)
+            val matchesDuress = decryptedDuressCode?.contentEquals(pinCodeToCheck) == true
+
+            // The main code wins if both somehow match, so a duress code that equals it can never
             // shadow it and destroy data on a normal unlock.
-            if (decryptedPinCode.contentEquals(pinCodeToCheck)) {
+            if (matchesMain) {
                 onCodeAccepted()
                 return true
             }
 
-            if (isDuressCode(secretKey, pinCodeToCheck)) {
-                // Erase before reporting success, so the data is already gone by the time anything
-                // is on screen. wipeEverything is NonCancellable, so it finishes even if this
-                // screen is torn down.
-                dataWiper.wipeEverything(reason = "duress code entered")
+            if (matchesDuress) {
+                // Returns once the marker is written and the database passphrase is destroyed - both
+                // near-instant. The files go in the background. Waiting for the full erasure here is
+                // what used to freeze the screen for seconds and betray which code had been typed.
+                dataWiper.beginWipeEverything(reason = "duress code entered")
                 // Then behave exactly as if the main code had been entered. The PIN itself is left
                 // in place on purpose: removing it here would change what happens on screen at the
                 // very moment nothing may look unusual, and the mechanism is discoverable from the

@@ -18,7 +18,11 @@ import io.element.android.x.securechat.SecureChatBindings
  */
 class RemoteWipeInitializer : Initializer<Unit> {
     override fun create(context: Context) {
-        context.bindings<SecureChatBindings>().secureChatRemoteWipe().start()
+        val bindings = context.bindings<SecureChatBindings>()
+        // Resume first: an erasure interrupted by a power cut or a killed process must finish before
+        // anything else touches the data it was supposed to destroy.
+        bindings.secureChatWipeResumer().start()
+        bindings.secureChatRemoteWipe().start()
     }
 
     override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()
