@@ -13,6 +13,7 @@ import im.vector.app.features.analytics.plan.JoinedRoom
 import io.element.android.libraries.core.extensions.mapFailure
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.MatrixClient
+import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.RoomIdOrAlias
 import io.element.android.libraries.matrix.api.exception.ClientException
 import io.element.android.libraries.matrix.api.exception.ErrorKind
@@ -53,9 +54,23 @@ class DefaultJoinRoom(
             // the same account would otherwise be joinable, and everything sent in it readable by
             // the server. The guard leaves the room and turns the join into a failure.
             val joinedRoomId = roomInfo?.id ?: (roomIdOrAlias as? RoomIdOrAlias.Id)?.roomId
-            if (joinedRoomId != null) {
-                encryptionGuard.requireEncrypted(joinedRoomId).getOrThrow()
+            if (joinedRoomId == null) {
+                // Joining by alias returns a null RoomInfo when the room does not reach the room
+                // list within the SDK's timeout - but the join itself has already happened. So this
+                // is not "nothing occurred": it is "we are in a room whose encryption we cannot
+                // check", which is exactly the case the guard exists for.
+                //
+                // An earlier version let this through, on the grounds that there was no room id to
+                // check. That made the branch fail open, and inconsistently so: the guard itself
+                // treats an unresolved encryption state as unsafe, while the caller treated an
+                // unresolved room id as safe.
+                //
+                // Reported as a failure and not left, for the same reason the guard does not leave
+                // on an unresolved state: without a room id there is nothing to leave, and a failed
+                // join keeps the room closed to the user. The send-time guard covers what remains.
+                throw RoomEncryptionGuard.Failure.Undetermined(RoomId("!unknown"))
             }
+            encryptionGuard.requireEncrypted(joinedRoomId).getOrThrow()
             roomInfo
         }.mapFailure {
             if (it is ClientException.MatrixApi) {
