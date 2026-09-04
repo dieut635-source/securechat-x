@@ -18,7 +18,7 @@ import org.junit.Test
  * assertion rather than a hope. Most of what follows checks that it did *not*.
  */
 class SecureChatDeviceOwnerTest {
-    private class FakeGateway(
+    private class FakeDevicePolicyGateway(
         override var isDeviceOwner: Boolean = true,
         private val applyResult: Result<Unit> = Result.success(Unit),
         private val wipeResult: Result<Unit> = Result.success(Unit),
@@ -53,13 +53,13 @@ class SecureChatDeviceOwnerTest {
 
     private val reason = "lost handset, ticket 4471"
 
-    private fun owner(gateway: FakeGateway) = SecureChatDeviceOwner(gateway = gateway)
+    private fun owner(gateway: FakeDevicePolicyGateway) = SecureChatDeviceOwner(gateway = gateway)
 
     // --- wiping -----------------------------------------------------------------------------
 
     @Test
     fun `an authorised wipe reaches the device`() {
-        val gateway = FakeGateway()
+        val gateway = FakeDevicePolicyGateway()
         val owner = owner(gateway)
         val challenge = owner.armWipe(reason).getOrThrow()
 
@@ -71,7 +71,7 @@ class SecureChatDeviceOwnerTest {
 
     @Test
     fun `an unauthorised wipe never reaches the device`() {
-        val gateway = FakeGateway()
+        val gateway = FakeDevicePolicyGateway()
 
         val result = owner(gateway).wipeDevice("any-challenge", reason)
 
@@ -81,7 +81,7 @@ class SecureChatDeviceOwnerTest {
 
     @Test
     fun `without device owner nothing can be wiped`() {
-        val gateway = FakeGateway(isDeviceOwner = false)
+        val gateway = FakeDevicePolicyGateway(isDeviceOwner = false)
         val owner = owner(gateway)
 
         val armed = owner.armWipe(reason)
@@ -95,7 +95,7 @@ class SecureChatDeviceOwnerTest {
     @Test
     fun `losing device owner between arming and wiping stops the wipe`() {
         // Device owner is not a fact that stays true. It is re-read at the moment it matters.
-        val gateway = FakeGateway(isDeviceOwner = true)
+        val gateway = FakeDevicePolicyGateway(isDeviceOwner = true)
         val owner = owner(gateway)
         val challenge = owner.armWipe(reason).getOrThrow()
 
@@ -108,7 +108,7 @@ class SecureChatDeviceOwnerTest {
 
     @Test
     fun `a wipe refused for lack of device owner does not leave live authority behind`() {
-        val gateway = FakeGateway(isDeviceOwner = true)
+        val gateway = FakeDevicePolicyGateway(isDeviceOwner = true)
         val owner = owner(gateway)
         val challenge = owner.armWipe(reason).getOrThrow()
 
@@ -125,7 +125,7 @@ class SecureChatDeviceOwnerTest {
 
     @Test
     fun `a failure inside Android is reported and not swallowed`() {
-        val gateway = FakeGateway(wipeResult = Result.failure(IllegalStateException("binder died")))
+        val gateway = FakeDevicePolicyGateway(wipeResult = Result.failure(IllegalStateException("binder died")))
         val owner = owner(gateway)
         val challenge = owner.armWipe(reason).getOrThrow()
 
@@ -139,7 +139,7 @@ class SecureChatDeviceOwnerTest {
 
     @Test
     fun `configuration is published under the keys the app reads`() {
-        val gateway = FakeGateway()
+        val gateway = FakeDevicePolicyGateway()
 
         val result = owner(gateway).applyManagedConfiguration(
             MdmConfig(
@@ -161,7 +161,7 @@ class SecureChatDeviceOwnerTest {
 
     @Test
     fun `the framework-owned pending sentinel is never forged`() {
-        val gateway = FakeGateway()
+        val gateway = FakeDevicePolicyGateway()
 
         owner(gateway).applyManagedConfiguration(MdmConfig.restrictionsPending)
 
@@ -170,7 +170,7 @@ class SecureChatDeviceOwnerTest {
 
     @Test
     fun `configuration is not published without device owner`() {
-        val gateway = FakeGateway(isDeviceOwner = false)
+        val gateway = FakeDevicePolicyGateway(isDeviceOwner = false)
 
         val result = owner(gateway).applyManagedConfiguration(MdmConfig.default)
 
@@ -182,7 +182,7 @@ class SecureChatDeviceOwnerTest {
     fun `an unchanged policy is not rewritten`() {
         // Every write makes the framework broadcast a change to the app. Republishing identical
         // values on each launch would churn state other components react to, for nothing.
-        val gateway = FakeGateway()
+        val gateway = FakeDevicePolicyGateway()
         val owner = owner(gateway)
         owner.applyManagedConfiguration(MdmConfig.default)
 
@@ -194,7 +194,7 @@ class SecureChatDeviceOwnerTest {
 
     @Test
     fun `a changed policy is rewritten`() {
-        val gateway = FakeGateway()
+        val gateway = FakeDevicePolicyGateway()
         val owner = owner(gateway)
         owner.applyManagedConfiguration(MdmConfig.default)
 
@@ -202,14 +202,14 @@ class SecureChatDeviceOwnerTest {
 
         assertThat(second.getOrThrow()).isEqualTo(SecureChatDeviceOwner.ApplyOutcome.Applied)
         assertThat(gateway.applyCount).isEqualTo(2)
-        assertThat(gateway.lastRestrictions?.get(MdmConfig.KEY_ALLOW_FILE_SEND)).isEqualTo(false)
+        assertThat(gateway.lastRestrictions).containsEntry(MdmConfig.KEY_ALLOW_FILE_SEND, false)
     }
 
     @Test
     fun `an unreadable current policy is republished rather than assumed correct`() {
         // The dangerous reading of a failed read is "probably already right". A handset left on a
         // stale policy because the check failed is the outcome that matters.
-        val gateway = FakeGateway()
+        val gateway = FakeDevicePolicyGateway()
         val owner = owner(gateway)
         owner.applyManagedConfiguration(MdmConfig.default)
         gateway.readFails = true
@@ -224,7 +224,7 @@ class SecureChatDeviceOwnerTest {
     fun `applying configuration never wipes anything`() {
         // Guards the one confusion that would be catastrophic and is entirely plausible: these two
         // capabilities live on the same class and both go through the same gateway.
-        val gateway = FakeGateway()
+        val gateway = FakeDevicePolicyGateway()
 
         owner(gateway).applyManagedConfiguration(MdmConfig.default)
 
@@ -236,7 +236,7 @@ class SecureChatDeviceOwnerTest {
     fun `the app never gives up device owner on its own`() {
         // Relinquishing exists as a recovery route for an operator holding a cable, not as
         // something the app may decide to do. Nothing in the normal paths may call it.
-        val gateway = FakeGateway()
+        val gateway = FakeDevicePolicyGateway()
         val owner = owner(gateway)
 
         owner.applyManagedConfiguration(MdmConfig.default)

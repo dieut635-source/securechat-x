@@ -37,6 +37,6 @@ fun interface SecureChatPolicySource {
  * defaults drift, and the one that drifts silently is the one nobody reads.
  */
 @ContributesBinding(AppScope::class)
-class BuildTimePolicySource : SecureChatPolicySource {
+class DefaultSecureChatPolicySource : SecureChatPolicySource {
     override fun currentPolicy(): MdmConfig = MdmConfig.default
 }
