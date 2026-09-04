@@ -8,7 +8,6 @@
 package io.element.android.libraries.matrix.impl.room.encryption
 
 import dev.zacsweers.metro.ContributesBinding
-import dev.zacsweers.metro.Inject
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.room.encryption.RoomEncryptionGuard
@@ -29,7 +28,6 @@ import timber.log.Timber
 private const val ENCRYPTION_STATE_TIMEOUT_MS = 10_000L
 
 @ContributesBinding(SessionScope::class)
-@Inject
 class DefaultRoomEncryptionGuard(
     private val client: MatrixClient,
 ) : RoomEncryptionGuard {
