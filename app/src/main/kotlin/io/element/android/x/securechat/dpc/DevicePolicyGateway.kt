@@ -10,7 +10,11 @@ package io.element.android.x.securechat.dpc
 import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.os.Bundle
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.SingleIn
 import io.element.android.libraries.core.extensions.runCatchingExceptions
+import io.element.android.libraries.di.annotations.ApplicationContext
 import timber.log.Timber
 
 /**
@@ -31,6 +35,15 @@ interface DevicePolicyGateway {
     /** Publish managed configuration for this app's own package. */
     fun applyRestrictions(restrictions: Map<String, Any>): Result<Unit>
 
+    /**
+     * Read back the managed configuration currently published for this app.
+     *
+     * Used to avoid rewriting an identical policy on every launch. Each write makes the framework
+     * broadcast a configuration change to the app, so republishing unchanged values is not free:
+     * it churns state that other components react to, for no gain.
+     */
+    fun readRestrictions(): Result<Map<String, Any>>
+
     /** Destroy user data on this handset. Irreversible. */
     fun wipeDevice(): Result<Unit>
 
@@ -45,8 +58,10 @@ interface DevicePolicyGateway {
     fun relinquishDeviceOwner(): Result<Unit>
 }
 
+@ContributesBinding(AppScope::class)
+@SingleIn(AppScope::class)
 class AndroidDevicePolicyGateway(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
 ) : DevicePolicyGateway {
     private val manager: DevicePolicyManager?
         get() = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
@@ -80,6 +95,18 @@ class AndroidDevicePolicyGateway(
             context.packageName,
             bundle,
         )
+    }
+
+    override fun readRestrictions(): Result<Map<String, Any>> = runCatchingExceptions {
+        val dpm = manager ?: error("DevicePolicyManager unavailable")
+        val bundle = dpm.getApplicationRestrictions(
+            SecureChatDeviceAdminReceiver.componentName(context),
+            context.packageName,
+        )
+        @Suppress("DEPRECATION")
+        bundle.keySet().orEmpty().mapNotNull { key ->
+            bundle.get(key)?.let { key to it }
+        }.toMap()
     }
 
     override fun wipeDevice(): Result<Unit> = runCatchingExceptions {

@@ -27,10 +27,18 @@ class SecureChatDeviceOwnerTest {
         var relinquishCount = 0
         var lastRestrictions: Map<String, Any>? = null
 
+        var published: Map<String, Any>? = null
+        var applyCount = 0
+        var readFails = false
+
         override fun applyRestrictions(restrictions: Map<String, Any>): Result<Unit> {
+            applyCount++
             lastRestrictions = restrictions
-            return applyResult
+            return applyResult.onSuccess { published = restrictions }
         }
+
+        override fun readRestrictions(): Result<Map<String, Any>> =
+            if (readFails) Result.failure(IllegalStateException("binder died")) else Result.success(published.orEmpty())
 
         override fun wipeDevice(): Result<Unit> {
             wipeCount++
@@ -45,10 +53,7 @@ class SecureChatDeviceOwnerTest {
 
     private val reason = "lost handset, ticket 4471"
 
-    private fun owner(gateway: FakeGateway) = SecureChatDeviceOwner(
-        gateway = gateway,
-        wipeAuthority = DeviceWipeAuthority(generateChallenge = { CHALLENGE }),
-    )
+    private fun owner(gateway: FakeGateway) = SecureChatDeviceOwner(gateway = gateway)
 
     // --- wiping -----------------------------------------------------------------------------
 
@@ -68,7 +73,7 @@ class SecureChatDeviceOwnerTest {
     fun `an unauthorised wipe never reaches the device`() {
         val gateway = FakeGateway()
 
-        val result = owner(gateway).wipeDevice(CHALLENGE, reason)
+        val result = owner(gateway).wipeDevice("any-challenge", reason)
 
         assertThat(result.isFailure).isTrue()
         assertThat(gateway.wipeCount).isEqualTo(0)
@@ -80,7 +85,7 @@ class SecureChatDeviceOwnerTest {
         val owner = owner(gateway)
 
         val armed = owner.armWipe(reason)
-        val wiped = owner.wipeDevice(CHALLENGE, reason)
+        val wiped = owner.wipeDevice("any-challenge", reason)
 
         assertThat(armed.exceptionOrNull()).isInstanceOf(SecureChatDeviceOwner.Refusal.NotDeviceOwner::class.java)
         assertThat(wiped.exceptionOrNull()).isInstanceOf(SecureChatDeviceOwner.Refusal.NotDeviceOwner::class.java)
@@ -144,7 +149,7 @@ class SecureChatDeviceOwnerTest {
             )
         )
 
-        assertThat(result.isSuccess).isTrue()
+        assertThat(result.getOrThrow()).isEqualTo(SecureChatDeviceOwner.ApplyOutcome.Applied)
         assertThat(gateway.lastRestrictions).isEqualTo(
             mapOf(
                 MdmConfig.KEY_HOMESERVER_URL to "https://chat.securechat.com.au",
@@ -174,6 +179,48 @@ class SecureChatDeviceOwnerTest {
     }
 
     @Test
+    fun `an unchanged policy is not rewritten`() {
+        // Every write makes the framework broadcast a change to the app. Republishing identical
+        // values on each launch would churn state other components react to, for nothing.
+        val gateway = FakeGateway()
+        val owner = owner(gateway)
+        owner.applyManagedConfiguration(MdmConfig.default)
+
+        val second = owner.applyManagedConfiguration(MdmConfig.default)
+
+        assertThat(second.getOrThrow()).isEqualTo(SecureChatDeviceOwner.ApplyOutcome.Unchanged)
+        assertThat(gateway.applyCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `a changed policy is rewritten`() {
+        val gateway = FakeGateway()
+        val owner = owner(gateway)
+        owner.applyManagedConfiguration(MdmConfig.default)
+
+        val second = owner.applyManagedConfiguration(MdmConfig.default.copy(allowFileSend = false))
+
+        assertThat(second.getOrThrow()).isEqualTo(SecureChatDeviceOwner.ApplyOutcome.Applied)
+        assertThat(gateway.applyCount).isEqualTo(2)
+        assertThat(gateway.lastRestrictions?.get(MdmConfig.KEY_ALLOW_FILE_SEND)).isEqualTo(false)
+    }
+
+    @Test
+    fun `an unreadable current policy is republished rather than assumed correct`() {
+        // The dangerous reading of a failed read is "probably already right". A handset left on a
+        // stale policy because the check failed is the outcome that matters.
+        val gateway = FakeGateway()
+        val owner = owner(gateway)
+        owner.applyManagedConfiguration(MdmConfig.default)
+        gateway.readFails = true
+
+        val second = owner.applyManagedConfiguration(MdmConfig.default)
+
+        assertThat(second.getOrThrow()).isEqualTo(SecureChatDeviceOwner.ApplyOutcome.Applied)
+        assertThat(gateway.applyCount).isEqualTo(2)
+    }
+
+    @Test
     fun `applying configuration never wipes anything`() {
         // Guards the one confusion that would be catastrophic and is entirely plausible: these two
         // capabilities live on the same class and both go through the same gateway.
@@ -197,9 +244,5 @@ class SecureChatDeviceOwnerTest {
         owner.wipeDevice(challenge, reason)
 
         assertThat(gateway.relinquishCount).isEqualTo(0)
-    }
-
-    private companion object {
-        const val CHALLENGE = "test-challenge"
     }
 }

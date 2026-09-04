@@ -20,6 +20,7 @@ import io.element.android.x.di.AppGraph
 import io.element.android.x.info.logApplicationInfo
 import io.element.android.x.initializer.CacheCleanerInitializer
 import io.element.android.x.initializer.CrashInitializer
+import io.element.android.x.initializer.ManagedConfigInitializer
 import io.element.android.x.initializer.PlatformInitializer
 import io.element.android.x.initializer.RemoteWipeInitializer
 
@@ -38,6 +39,8 @@ class SecureChatApplication : Application(), DependencyInjectionGraphOwner, Conf
             initializeComponent(CrashInitializer::class.java)
             initializeComponent(PlatformInitializer::class.java)
             initializeComponent(CacheCleanerInitializer::class.java)
+            // Before anything reads managed configuration. See ManagedConfigInitializer.
+            initializeComponent(ManagedConfigInitializer::class.java)
             // Single-device enrollment is intentionally non-revocable from the app. Background
             // protection is provided by the local PIN lock, never by remote/session logout.
             //

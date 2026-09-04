@@ -9,9 +9,12 @@ package io.element.android.x.securechat
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesTo
+import io.element.android.x.securechat.dpc.SecureChatPolicyPublisher
 
 @ContributesTo(AppScope::class)
 interface SecureChatBindings {
+    fun secureChatPolicyPublisher(): SecureChatPolicyPublisher
+
     fun secureChatRemoteWipe(): SecureChatRemoteWipe
 
     fun secureChatWipeResumer(): SecureChatWipeResumer

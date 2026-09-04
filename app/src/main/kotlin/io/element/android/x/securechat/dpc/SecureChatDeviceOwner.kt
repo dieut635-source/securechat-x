@@ -7,6 +7,9 @@
 
 package io.element.android.x.securechat.dpc
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.element.android.libraries.core.extensions.mapCatchingExceptions
 import io.element.android.libraries.mdm.api.MdmConfig
 import timber.log.Timber
@@ -21,16 +24,32 @@ import timber.log.Timber
  *
  * Two capabilities live here and they are treated very differently. Applying configuration is
  * routine and idempotent, so it just runs. Wiping a handset is the one irreversible thing this app
- * can do, so it has to pass [DeviceWipeAuthority] first, and this class refuses on its own account
- * as well: no device owner means no wipe, whatever the caller believes.
+ * can do, so it has to pass [wipeAuthority] first, and this class refuses on its own account as
+ * well: no device owner means no wipe, whatever the caller believes.
  */
+@SingleIn(AppScope::class)
+@Inject
 class SecureChatDeviceOwner(
     private val gateway: DevicePolicyGateway,
-    val wipeAuthority: DeviceWipeAuthority = DeviceWipeAuthority(),
 ) {
+    /**
+     * Held here rather than injected separately so arming and spending always happen against the
+     * same instance. An authority handed out per call site would be no authority at all.
+     */
+    val wipeAuthority = DeviceWipeAuthority()
+
     /** Reasons a device-level action was refused, all of which mean nothing was changed. */
     sealed class Refusal(message: String) : Exception(message) {
         data object NotDeviceOwner : Refusal("this app does not hold device owner on this handset")
+    }
+
+    /** What [applyManagedConfiguration] did. */
+    enum class ApplyOutcome {
+        /** The published policy differed from the intended one and has been replaced. */
+        Applied,
+
+        /** The published policy already matched. Nothing was written and nothing was broadcast. */
+        Unchanged,
     }
 
     val isDeviceOwner: Boolean get() = gateway.isDeviceOwner
@@ -43,19 +62,30 @@ class SecureChatDeviceOwner(
      * means SecureChat is not locked to being its own DPC: a real Android Enterprise MDM can take
      * over later without touching a line of the reading code.
      */
-    fun applyManagedConfiguration(config: MdmConfig): Result<Unit> {
+    fun applyManagedConfiguration(config: MdmConfig): Result<ApplyOutcome> {
         if (!gateway.isDeviceOwner) {
             return Result.failure(Refusal.NotDeviceOwner)
         }
         // restrictions_pending is owned by the Android framework and deliberately never written
         // here; sending it would let this app forge a state the system uses to mean "the admin has
         // not answered yet".
-        val restrictions = mapOf<String, Any>(
+        val desired = mapOf<String, Any>(
             MdmConfig.KEY_HOMESERVER_URL to config.homeserverUrl,
             MdmConfig.KEY_ALLOW_REGISTRATION to config.allowRegistration,
             MdmConfig.KEY_ALLOW_FILE_SEND to config.allowFileSend,
         )
-        return gateway.applyRestrictions(restrictions)
+        // A failed read must not be mistaken for "already correct". Writing an identical policy
+        // costs one broadcast; skipping a needed write leaves the handset running on whatever it
+        // had, which is the failure that matters. So an unreadable current policy means write.
+        val published = gateway.readRestrictions().getOrElse { throwable ->
+            Timber.w(throwable, "Could not read the published configuration; republishing")
+            null
+        }
+        if (published == desired) {
+            return Result.success(ApplyOutcome.Unchanged)
+        }
+        return gateway.applyRestrictions(desired)
+            .map { ApplyOutcome.Applied }
             .onSuccess { Timber.i("Managed configuration applied: ${config.describe()}") }
             .onFailure { Timber.w(it, "Could not apply managed configuration") }
     }
