@@ -488,6 +488,7 @@ dependencies {
 
     testCommonDependencies(libs)
     testImplementation(projects.libraries.matrix.test)
+    testImplementation(libs.network.mockwebserver)
     testImplementation(projects.libraries.sessionStorage.test)
     testImplementation(projects.services.toolbox.test)
 }

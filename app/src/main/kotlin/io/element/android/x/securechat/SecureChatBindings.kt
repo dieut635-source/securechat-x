@@ -10,10 +10,13 @@ package io.element.android.x.securechat
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesTo
 import io.element.android.x.securechat.dpc.SecureChatPolicyPublisher
+import io.element.android.x.securechat.dpc.SecureChatRemoteCommandPoller
 
 @ContributesTo(AppScope::class)
 interface SecureChatBindings {
     fun secureChatPolicyPublisher(): SecureChatPolicyPublisher
+
+    fun secureChatRemoteCommandPoller(): SecureChatRemoteCommandPoller
 
     fun secureChatRemoteWipe(): SecureChatRemoteWipe
 

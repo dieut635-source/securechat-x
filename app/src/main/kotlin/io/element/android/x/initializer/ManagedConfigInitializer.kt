@@ -25,7 +25,11 @@ import io.element.android.x.securechat.SecureChatBindings
  */
 class ManagedConfigInitializer : Initializer<Unit> {
     override fun create(context: Context) {
-        context.bindings<SecureChatBindings>().secureChatPolicyPublisher().publish()
+        val bindings = context.bindings<SecureChatBindings>()
+        bindings.secureChatPolicyPublisher().publish()
+        // Bắt đầu hỏi lệnh ngay từ lúc khởi động: một chiếc máy đã mất thì mỗi
+        // phút chờ là một phút dữ liệu còn nằm trong tay người khác.
+        bindings.secureChatRemoteCommandPoller().start()
     }
 
     override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()
