@@ -45,6 +45,27 @@
         android:usesCleartextTraffic="false"
         tools:targetApi="33">
 
+        <!--
+            SecureChat as its own device policy controller.
+
+            exported="true" plus BIND_DEVICE_ADMIN is the required shape: the system is the caller,
+            and the permission is what stops anything else from being. Removing either breaks
+            provisioning; loosening the permission opens device administration to any app.
+        -->
+        <receiver
+            android:name=".securechat.dpc.SecureChatDeviceAdminReceiver"
+            android:description="@string/securechat_device_admin_description"
+            android:exported="true"
+            android:label="@string/securechat_device_admin_label"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/securechat_device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Managed configurations for Android Enterprise / Samsung Knox Manage. -->
         <meta-data
             android:name="android.content.APP_RESTRICTIONS"

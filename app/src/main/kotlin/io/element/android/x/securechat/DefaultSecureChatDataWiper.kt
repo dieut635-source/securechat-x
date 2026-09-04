@@ -164,5 +164,4 @@ class DefaultSecureChatDataWiper(
         runCatchingExceptions(block)
             .onFailure { Timber.e(it, "Wipe: failed to erase $what") }
             .isSuccess
-
 }

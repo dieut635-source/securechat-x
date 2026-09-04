@@ -458,6 +458,8 @@ dependencies {
     implementation(projects.libraries.core)
     implementation(projects.libraries.di)
     implementation(projects.libraries.sessionStorage.api)
+    // The app supplies the three managed-configuration keys that libraries/mdm reads back.
+    implementation(projects.libraries.mdm.api)
     implementation(projects.services.analytics.compose)
 
     if (ModulesConfig.pushProvidersConfig.includeFirebase) {
