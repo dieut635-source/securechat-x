@@ -25,6 +25,7 @@ import io.element.android.libraries.sessionstorage.api.observer.SessionObserver
 import io.element.android.libraries.sessionstorage.test.observer.FakeSessionObserver
 import io.element.android.services.appnavstate.api.AppForegroundStateService
 import io.element.android.services.appnavstate.test.FakeAppForegroundStateService
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -42,20 +43,82 @@ class DefaultLockScreenServiceTest {
 
     @Test
     fun `when the pin is mandatory, isSetupRequired emits true`() = runTest {
+        val lockScreenStore = InMemoryLockScreenStore()
         val secretKeyRepository = SimpleSecretKeyRepository()
+        val pinCodeManager = createDefaultPinCodeManager(
+            lockScreenStore = lockScreenStore,
+            secretKeyRepository = secretKeyRepository,
+        )
         val sut = createDefaultLockScreenService(
             lockScreenConfig = aLockScreenConfig(isPinMandatory = true),
+            lockScreenStore = lockScreenStore,
             secretKeyRepository = secretKeyRepository,
+            pinCodeManager = pinCodeManager,
         )
         sut.isSetupRequired().test {
             assertThat(awaitItem()).isTrue()
-            // When the user configures the pin code, the setup is not required anymore
+            // An everyday code alone does NOT finish setup - the emergency code is still owed.
             secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, true)
-            assertThat(awaitItem()).isFalse()
-            // Users deletes the pin code
+            assertThat(awaitItem()).isTrue()
+            // Users deletes the pin code. Still true, now for the original reason: no code at all
+            // on a handset where one is mandatory. The flow does not dedupe, so it emits again.
             secretKeyRepository.deleteKey("elementx.SECRET_KEY_ALIAS_PIN_CODE")
             assertThat(awaitItem()).isTrue()
         }
+    }
+
+    @Test
+    fun `a main code without a duress code leaves setup unfinished`() = runTest {
+        // The hole this covers, seen on hardware 04/09/2026: the duress step still offered a back
+        // button, and leaving it landed the user in the app. isSetupRequired asked only whether an
+        // everyday code existed, so it answered "done" and the app never asked again - a handset
+        // with an everyday code, no emergency code, and no route back to the step that makes one.
+        val lockScreenStore = InMemoryLockScreenStore()
+        val secretKeyRepository = SimpleSecretKeyRepository()
+        val pinCodeManager = createDefaultPinCodeManager(
+            lockScreenStore = lockScreenStore,
+            secretKeyRepository = secretKeyRepository,
+        )
+        val sut = createDefaultLockScreenService(
+            lockScreenConfig = aLockScreenConfig(isPinMandatory = true),
+            lockScreenStore = lockScreenStore,
+            secretKeyRepository = secretKeyRepository,
+            pinCodeManager = pinCodeManager,
+        )
+        pinCodeManager.createPinCode("428913")
+
+        assertThat(sut.isSetupRequired().first()).isTrue()
+    }
+
+    @Test
+    fun `setup is finished only once both codes exist`() = runTest {
+        val lockScreenStore = InMemoryLockScreenStore()
+        val secretKeyRepository = SimpleSecretKeyRepository()
+        val pinCodeManager = createDefaultPinCodeManager(
+            lockScreenStore = lockScreenStore,
+            secretKeyRepository = secretKeyRepository,
+        )
+        val sut = createDefaultLockScreenService(
+            lockScreenConfig = aLockScreenConfig(isPinMandatory = true),
+            lockScreenStore = lockScreenStore,
+            secretKeyRepository = secretKeyRepository,
+            pinCodeManager = pinCodeManager,
+        )
+        pinCodeManager.createPinCode("428913")
+        pinCodeManager.createDuressPinCode("706254")
+
+        assertThat(sut.isSetupRequired().first()).isFalse()
+    }
+
+    @Test
+    fun `an optional pin that was never set does not demand a duress code`() = runTest {
+        // Nothing has been chosen, so nothing is owed. Getting this wrong would force a lock screen
+        // on every user who never asked for one.
+        val sut = createDefaultLockScreenService(
+            lockScreenConfig = aLockScreenConfig(isPinMandatory = false),
+        )
+
+        assertThat(sut.isSetupRequired().first()).isFalse()
     }
 
     @Test

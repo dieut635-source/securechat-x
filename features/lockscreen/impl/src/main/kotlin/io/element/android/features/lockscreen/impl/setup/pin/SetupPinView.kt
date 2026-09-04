@@ -10,6 +10,7 @@
 
 package io.element.android.features.lockscreen.impl.setup.pin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,12 +49,25 @@ fun SetupPinView(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // No way out of the duress step, by button or by gesture.
+    //
+    // It is pushed as a new root, so navigating up from here leaves the whole setup flow and lands
+    // in the app with an everyday code and no emergency one. The biometric step next door has
+    // blocked back since it was written; this step was left open by oversight.
+    //
+    // The service-level check in DefaultLockScreenService.isSetupRequired now catches that state
+    // too, so a user who escapes is asked again. This is the layer that stops them escaping at all.
+    if (state.isDuressStep) {
+        BackHandler { /* deliberately inert */ }
+    }
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    BackButton(onClick = onBackClick)
+                    if (!state.isDuressStep) {
+                        BackButton(onClick = onBackClick)
+                    }
                 },
                 title = {}
             )

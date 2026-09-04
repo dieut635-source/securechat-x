@@ -109,7 +109,21 @@ class DefaultLockScreenService(
 
     override fun isSetupRequired(): Flow<Boolean> {
         return isPinSetup().map { isPinSetup ->
-            !isPinSetup && lockScreenConfig.isPinMandatory
+            if (!isPinSetup) {
+                lockScreenConfig.isPinMandatory
+            } else {
+                // A main code without an emergency code is an UNFINISHED setup, not a finished one.
+                //
+                // This used to read `!isPinSetup && isPinMandatory`, which asked only whether an
+                // everyday code exists. Leaving the duress step - the back button was still offered
+                // there - therefore satisfied it, and the app never asked again: the handset ended
+                // up with an everyday code, no emergency code, and no way back to the step that
+                // creates one. Found on hardware on 04/09/2026.
+                //
+                // The duress code is not optional in this product. Whenever a main code exists and
+                // an emergency one does not, setup is still owed.
+                !pinCodeManager.hasDuressPinCode()
+            }
         }
     }
 
