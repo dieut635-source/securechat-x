@@ -117,9 +117,16 @@ class PreferencesRootPresenter(
             canDeactivateAccount = canDeactivateAccount,
             nbOfBlockedUsers = nbOfBlockedUsers,
             showLabsItem = showLabsItem,
-            // Server enrollment is single-use. Signing out would revoke the sole approved token
-            // and require administrator-controlled re-enrollment, so local PIN lock replaces it.
-            showSignOut = false,
+            // Có nút đăng xuất. Trước đây tắt vì "đăng ký máy chủ dùng một lần", nhưng đo lại
+            // thì cái giá không phải là mất quyền dùng: đăng nhập lại sinh device_id mới nằm
+            // ngoài danh sách duyệt, và quản trị viên duyệt nó trên dashboard — đúng quy trình
+            // đang chạy hằng ngày. Đổi lại, không có nút đăng xuất thì người dùng KHÔNG có cách
+            // nào rời tài khoản khỏi máy của chính họ, kể cả khi trả máy hay đổi người dùng.
+            //
+            // Hộp thoại xác nhận nói thẳng cái giá đó (xem securechat_strings.xml của module
+            // logout), vì nó không hiển nhiên: ở sản phẩm khác, đăng xuất rồi đăng nhập lại là
+            // việc tự làm được.
+            showSignOut = true,
             directLogoutState = directLogoutState,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,

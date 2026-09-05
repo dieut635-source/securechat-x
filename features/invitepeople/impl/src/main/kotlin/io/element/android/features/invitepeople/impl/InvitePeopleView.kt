@@ -149,7 +149,7 @@ private fun InvitePeopleContentView(
                             data = CheckableUserRowData.Resolved(
                                 avatarData = invitableUser.matrixUser.getAvatarData(AvatarSize.UserListItem),
                                 name = invitableUser.matrixUser.getBestName(),
-                                subtext = invitableUser.matrixUser.userId.value,
+                                subtext = invitableUser.matrixUser.userId.displayLabel,
                             ),
                         )
                         if (index < state.suggestions.lastIndex) {

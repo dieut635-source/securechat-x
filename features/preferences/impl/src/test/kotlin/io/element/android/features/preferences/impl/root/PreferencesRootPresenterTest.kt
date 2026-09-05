@@ -89,7 +89,10 @@ class PreferencesRootPresenterTest {
             // False even here, in a debug build. SecureChat ships without developer options in
             // every build type, so that the build being tested is the build that ships.
             assertThat(loadedState.showDeveloperSettings).isFalse()
-            assertThat(loadedState.showSignOut).isFalse()
+            // Có nút đăng xuất. Không có nó thì người dùng không có cách nào rời tài khoản
+            // khỏi máy của chính mình; cái giá là quản trị viên phải duyệt lại máy khi họ
+            // đăng nhập lần sau, và hộp thoại xác nhận nói thẳng điều đó.
+            assertThat(loadedState.showSignOut).isTrue()
             assertThat(loadedState.canDeactivateAccount).isTrue()
             assertThat(loadedState.canReportBug).isTrue()
             assertThat(loadedState.nbOfBlockedUsers).isEqualTo(0)

@@ -390,7 +390,10 @@ class MessageComposerPresenter(
                                     richTextEditorState.insertAtRoomMentionAtSuggestion()
                                 }
                                 is ResolvedSuggestion.Member -> {
-                                    val text = suggestion.roomMember.userId.value
+                                    // Nhãn HIỂN THỊ của lần nhắc tên, không phải định danh thật:
+                                    // định danh nằm trong permalink ngay dưới đây. Dùng value ở
+                                    // đây sẽ in địa chỉ máy chủ vào ô soạn tin và vào cả tin đã gửi.
+                                    val text = suggestion.roomMember.userId.displayLabel
                                     val link = permalinkBuilder.permalinkForUser(suggestion.roomMember.userId).getOrNull() ?: return@launch
                                     richTextEditorState.insertMentionAtSuggestion(text = text, link = link)
                                 }
