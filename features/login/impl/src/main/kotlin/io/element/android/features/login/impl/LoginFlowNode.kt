@@ -28,7 +28,6 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
 import io.element.android.compound.theme.ElementTheme
-import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.login.api.LoginEntryPoint
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
 import io.element.android.features.login.impl.classic.ElementClassicConnection
@@ -66,7 +65,6 @@ class LoginFlowNode(
     private val appCoroutineScope: CoroutineScope,
     private val elementClassicConnection: ElementClassicConnection,
     private val preferencesEntryPoint: PreferencesEntryPoint,
-    private val enterpriseService: EnterpriseService,
 ) : BaseFlowNode<LoginFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = NavTarget.CheckClassicFlow,
@@ -139,22 +137,24 @@ class LoginFlowNode(
             NavTarget.CheckClassicFlow -> {
                 val callback = object : ClassicFlowNode.Callback {
                     override fun navigateToOnBoarding(allowBackNavigation: Boolean) {
-                        // Máy chủ do cấu hình quản lý ấn định thì không có gì để chọn và không
-                        // có tài khoản để tạo, nên màn hình chào mừng chỉ còn đúng một nút bấm.
-                        // Vào thẳng form đăng nhập: bớt một màn hình, và bớt luôn tiêu đề in
-                        // nguyên địa chỉ máy chủ ra cho người dùng.
+                        // KHÔNG bỏ qua màn hình này.
                         //
-                        // KHÔNG đi vòng qua kiểm soát nào: LoginPasswordPresenter cũng gọi
-                        // assertIsAllowedToConnectToAccountProvider trước khi kết nối, độc lập
-                        // với màn hình chào mừng. Đã kiểm chứng trước khi bỏ màn hình đó.
-                        if (enterpriseService.homeserverAllowList().size == 1) {
-                            if (allowBackNavigation) {
-                                backstack.push(NavTarget.LoginPassword())
-                            } else {
-                                backstack.replace(NavTarget.LoginPassword())
-                            }
-                            return
-                        }
+                        // Ngày 05/09 tôi cho luồng đi thẳng vào form đăng nhập khi cấu hình quản
+                        // lý đã ấn định máy chủ, sau khi kiểm rằng LoginPasswordPresenter cũng
+                        // gọi assertIsAllowedToConnectToAccountProvider nên không mất kiểm soát
+                        // bảo mật nào. Kiểm soát thì đúng, nhưng đó không phải tất cả những gì
+                        // màn hình này làm:
+                        //
+                        //   AuthenticationException$InvalidServerName: No account provider has
+                        //   been configured
+                        //
+                        // OnBoardingPresenter còn gọi accountProviderDataSource.setUrl() và phát
+                        // LoginModeEvent.Submit — bước giải quyết máy chủ và tạo "current attempt"
+                        // trong RustMatrixAuthenticationService. Thiếu nó thì form đăng nhập hiện
+                        // ra bình thường và mọi lần bấm Continue đều hỏng.
+                        //
+                        // Muốn gộp thành một màn hình thì phải chuyển cả bước chuẩn bị đó sang,
+                        // không chỉ chuyển giao diện.
                         if (allowBackNavigation) {
                             backstack.push(NavTarget.OnBoarding(showBackButton = true))
                         } else {
