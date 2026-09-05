@@ -61,11 +61,31 @@ fun ChooseSelfVerificationModeView(
             TopAppBar(title = {})
         },
         header = {
+            // Khi không có cách nào để xác minh thì đừng hỏi người dùng chọn cách.
+            //
+            // Màn hình kế thừa hỏi "Choose how to verify" rồi hiện hai nút CÓ ĐIỀU KIỆN. Trong
+            // sản phẩm này cả hai điều kiện đều sai vĩnh viễn: chính sách một tài khoản một máy
+            // nên không có thiết bị thứ hai để xác minh chéo, và đã chốt không sao lưu khoá nên
+            // không có recovery key. Người dùng nhận được một câu hỏi không có lựa chọn nào.
+            val hasVerificationOption = (state.buttonsState as? AsyncData.Success)?.data
+                ?.let { it.canUseAnotherDevice || it.canUseRecoveryKey } == true
             IconTitleSubtitleMolecule(
                 modifier = Modifier.padding(bottom = 16.dp),
                 iconStyle = BigIcon.Style.Default(CompoundIcons.LockSolid()),
-                title = stringResource(id = R.string.screen_identity_confirmation_title),
-                subTitle = stringResource(id = R.string.screen_identity_confirmation_subtitle)
+                title = stringResource(
+                    id = if (hasVerificationOption) {
+                        R.string.screen_identity_confirmation_title
+                    } else {
+                        R.string.securechat_identity_setup_title
+                    }
+                ),
+                subTitle = stringResource(
+                    id = if (hasVerificationOption) {
+                        R.string.screen_identity_confirmation_subtitle
+                    } else {
+                        R.string.securechat_identity_setup_subtitle
+                    }
+                )
             )
         },
         footer = {
@@ -127,11 +147,26 @@ private fun ChooseSelfVerificationModeButtons(
                         onClick = onUseRecoveryKey,
                     )
                 }
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.screen_identity_confirmation_cannot_confirm),
-                    onClick = onResetKey,
-                )
+                val hasVerificationOption = state.buttonsState.data.canUseAnotherDevice ||
+                    state.buttonsState.data.canUseRecoveryKey
+                if (hasVerificationOption) {
+                    // Có cách xác minh: đặt lại khoá là phương án cuối, giữ đúng vai trò phụ.
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.screen_identity_confirmation_cannot_confirm),
+                        onClick = onResetKey,
+                    )
+                } else {
+                    // Không có cách nào khác: đây là con đường DUY NHẤT, nên nó là nút chính và
+                    // mang nhãn nói việc nó làm. Gắn nhãn "Can't confirm?" lên lối đi duy nhất
+                    // là bảo người dùng rằng họ vừa thất bại, trong khi họ chỉ đang làm đúng
+                    // việc phải làm.
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.securechat_identity_setup_action),
+                        onClick = onResetKey,
+                    )
+                }
             }
         }
     }
