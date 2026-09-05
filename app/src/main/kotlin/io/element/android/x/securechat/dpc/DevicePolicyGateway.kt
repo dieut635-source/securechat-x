@@ -9,6 +9,7 @@ package io.element.android.x.securechat.dpc
 
 import android.app.admin.DevicePolicyManager
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -111,10 +112,34 @@ class AndroidDevicePolicyGateway(
 
     override fun wipeDevice(): Result<Unit> = runCatchingExceptions {
         val dpm = manager ?: error("DevicePolicyManager unavailable")
-        // Flags 0: user data only. External storage and factory-reset protection are deliberately
-        // left alone - this app's job is to destroy its own custody of data, not to brick hardware
-        // or lock an owner out of a handset they paid for.
-        dpm.wipeData(0)
+        // wipeDevice(), NOT wipeData(). They are not synonyms and the difference is the whole
+        // feature.
+        //
+        // wipeData() means "wipe this user". Called by a device owner running as user 0 it reaches
+        // the framework as a request to remove the system user, and the framework refuses:
+        //
+        //   java.lang.IllegalStateException: User 0 is a system user and cannot be removed
+        //
+        // Nothing about that is visible from the API surface, from the docs, or from any unit test:
+        // the call compiles, the permission is held, the policy is granted, and the exception only
+        // appears on a real handset. It cost two failed wipes on hardware to find, the first of
+        // which was misread as success because the phone had merely been unplugged.
+        //
+        // wipeDevice() is the device-owner factory reset, added in Android 14. Below that, wipeData
+        // was the only option and did behave as a full reset, so the fallback is correct rather
+        // than merely tolerated.
+        //
+        // Flags stay 0: user data only. External storage and factory-reset protection are
+        // deliberately left alone - this app's job is to destroy its own custody of data, not to
+        // brick hardware or lock an owner out of a handset they paid for.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Timber.w("Wiping device via wipeDevice()")
+            dpm.wipeDevice(0)
+        } else {
+            Timber.w("Wiping device via legacy wipeData()")
+            @Suppress("DEPRECATION")
+            dpm.wipeData(0)
+        }
     }
 
     override fun relinquishDeviceOwner(): Result<Unit> = runCatchingExceptions {
