@@ -47,7 +47,6 @@ class SecureChatDeviceOwnerTest {
 
         override fun capabilities(): Map<String, String> = emptyMap()
 
-
         override fun relinquishDeviceOwner(): Result<Unit> {
             relinquishCount++
             return Result.success(Unit)

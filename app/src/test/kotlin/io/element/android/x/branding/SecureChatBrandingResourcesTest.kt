@@ -61,18 +61,13 @@ class SecureChatBrandingResourcesTest : RobolectricTest() {
             BrandingResource(R.string.screen_missing_key_backup_step_1),
             BrandingResource(R.string.screen_onboarding_welcome_title, requiredText = "SecureChat"),
             BrandingResource(R.string.screen_server_confirmation_message_login_element_dot_io),
-            BrandingResource(
-                R.string.screen_change_account_provider_matrix_org_subtitle,
-                requiredText = SECURECHAT_HOMESERVER,
-            ),
-            BrandingResource(
-                R.string.screen_change_server_textfield_footer_register,
-                requiredText = SECURECHAT_HOMESERVER,
-            ),
-            BrandingResource(
-                R.string.screen_start_chat_join_room_by_address_supporting_text,
-                requiredText = SECURECHAT_HOMESERVER,
-            ),
+            // Ba chuỗi này TỪNG đòi phải chứa tên miền máy chủ — đợt rebrand đầu hiểu
+            // "đổi thương hiệu" là "thay matrix.org bằng tên miền của mình". Nay yêu cầu
+            // ngược lại: không màn hình nào được in địa chỉ máy chủ, vì khách đọc được là
+            // vào thẳng trang web được. Phép kiểm bên dưới ghim điều đó cho MỌI chuỗi.
+            BrandingResource(R.string.screen_change_account_provider_matrix_org_subtitle, requiredText = "SecureChat"),
+            BrandingResource(R.string.screen_change_server_textfield_footer_register),
+            BrandingResource(R.string.screen_start_chat_join_room_by_address_supporting_text),
         )
 
         context.availableLocaleContexts().forEach { (localeTag, localizedContext) ->
@@ -87,6 +82,39 @@ class SecureChatBrandingResourcesTest : RobolectricTest() {
                         .that(value)
                         .contains(requiredText)
                 }
+            }
+        }
+    }
+
+    /**
+     * Không một chuỗi nào người dùng đọc được phép chứa địa chỉ máy chủ.
+     *
+     * Ben tìm ra hai chỗ lộ tên miền; rà ra thì có mười tám chỗ in định danh Matrix đầy đủ và
+     * BẢY MƯƠI BA file tài nguyên nhúng sẵn `chat.securechat.com.au` — kể cả `values-en-rUS`,
+     * là locale DUY NHẤT thật sự đóng gói vào APK. Sửa ở `app/values/` không có tác dụng vì
+     * qualifier locale trong thư viện thắng `values/` của app.
+     *
+     * Phép kiểm này quét TOÀN BỘ R.string trên MỌI locale có trong bản dựng. Nó là thứ lẽ ra
+     * phải tồn tại trước khi ai đó viết tên miền vào bảy mươi ba file.
+     *
+     * Ngoại lệ DUY NHẤT là mô tả khoá managed configuration: chuỗi đó hiện trong console MDM
+     * cho quản trị viên, không hiện trong app, và phải nêu tên máy chủ mới có nghĩa.
+     */
+    @Test
+    fun `no user-facing string exposes the homeserver address`() {
+        val allowed = setOf("mdm_homeserver_url_description")
+        val context = RuntimeEnvironment.getApplication()
+        val ids = R.string::class.java.fields.mapNotNull { field ->
+            runCatching { field.getInt(null) }.getOrNull()?.let { field.name to it }
+        }
+
+        context.availableLocaleContexts().forEach { (localeTag, localizedContext) ->
+            ids.forEach { (name, id) ->
+                if (name in allowed) return@forEach
+                val value = runCatching { localizedContext.getString(id) }.getOrNull() ?: return@forEach
+                assertWithMessage("$name in locale $localeTag")
+                    .that(value)
+                    .doesNotContain(SECURECHAT_HOMESERVER)
             }
         }
     }
