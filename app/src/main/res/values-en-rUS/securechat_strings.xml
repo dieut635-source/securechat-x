@@ -19,6 +19,6 @@
   này là đủ. Thêm ngôn ngữ mới thì phải thêm bản ghi đè tương ứng.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
-    <string name="screen_login_subtitle">"Use the username and password your administrator gave you."</string>
+    <string name="screen_login_subtitle">"Messages are end-to-end encrypted and this device is managed by your organisation. Sign in with the details your administrator gave you."</string>
     <string name="screen_server_confirmation_message_login_matrix_dot_org">"A private server."</string>
 </resources>
