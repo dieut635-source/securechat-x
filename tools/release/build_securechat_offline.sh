@@ -347,9 +347,43 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+# Bộ nhớ cho bản phát hành, tách khỏi bộ nhớ dùng hằng ngày.
+#
+# gradle.properties để -Xmx8g, đủ cho bản debug. Bản release thì KHÔNG: R8 và
+# lintVital chạy ngay trong tiến trình Gradle và cùng chết vì
+# `OutOfMemoryError: Java heap space`. Đo ngày 05/09/2026 trên Mac 16 GB:
+#
+#     -Xmx8g   -> minifyFdroidReleaseWithR8 HỎNG (OOM), lintVitalAnalyzeRelease HỎNG (OOM)
+#     -Xmx11g  -> cả hai QUA, chạy tới bước ký
+#
+# Không nâng trong gradle.properties vì con số đó áp cho mọi lần build thường
+# ngày; 11 GB trên máy 16 GB sẽ đẩy máy vào swap. Ở đây thì an toàn: script này
+# chạy --no-daemon --no-parallel, tức chỉ một tiến trình JVM duy nhất.
+#
+# Đây là chỗ đáng để lộ ra ngoài: một máy build khác có thể cần con số khác.
+release_heap="${SECURECHAT_RELEASE_HEAP:-11g}"
+release_jvmargs="-Xmx${release_heap} -Dfile.encoding=UTF-8 -XX:+UseG1GC"
+
+# Từ chối sớm nếu máy không đủ RAM, thay vì để người dùng chờ tám phút rồi mới
+# thấy OOM ở gần cuối. Chỉ kiểm trên macOS và Linux; nơi khác thì bỏ qua.
+total_ram_gb=""
+if command -v sysctl >/dev/null 2>&1 && sysctl -n hw.memsize >/dev/null 2>&1; then
+    total_ram_gb=$(( $(sysctl -n hw.memsize) / 1073741824 ))
+elif [[ -r /proc/meminfo ]]; then
+    total_ram_gb=$(( $(awk '/MemTotal/{print $2}' /proc/meminfo) / 1048576 ))
+fi
+if [[ -n "$total_ram_gb" ]]; then
+    heap_gb="${release_heap%g}"
+    if [[ "$heap_gb" =~ ^[0-9]+$ ]] && (( total_ram_gb < heap_gb + 3 )); then
+        fail "Máy chỉ có ${total_ram_gb} GB RAM, không đủ cho heap ${release_heap} cộng phần cho hệ điều hành.
+Đặt SECURECHAT_RELEASE_HEAP thấp hơn rồi chạy lại — nhưng biết trước là dưới 11g thì R8 đã từng OOM."
+    fi
+fi
+
 printf 'Running offline production gates for SecureChat %s (%s)...\n' "$version_name" "$head_commit"
 bash tools/check/check_securechat_configuration.sh
 ./gradlew \
+    -Dorg.gradle.jvmargs="$release_jvmargs" \
     test \
     verifyPaparazziDebug \
     detekt \
@@ -364,6 +398,7 @@ bash tools/check/check_securechat_configuration.sh
 # Dependency-Check aggregates configurations from every project. Gradle 9 must
 # configure and resolve that cross-project graph serially.
 ./gradlew \
+    -Dorg.gradle.jvmargs="$release_jvmargs" \
     :dependencyCheckAggregate \
     --offline \
     --no-daemon \
@@ -420,6 +455,7 @@ SECURECHAT_KEY_PASSWORD="$key_password" \
 SECURECHAT_RELEASE_CERT_SHA256="$expected_certificate_sha256" \
 SECURECHAT_OFFLINE_RELEASE_MARKER_FILE="$release_marker" \
     ./gradlew :app:assembleFdroidRelease \
+    -Dorg.gradle.jvmargs="$release_jvmargs" \
     --offline \
     --no-daemon \
     --no-configuration-cache \
