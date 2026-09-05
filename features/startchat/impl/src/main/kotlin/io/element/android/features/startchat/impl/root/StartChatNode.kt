@@ -8,7 +8,6 @@
 
 package io.element.android.features.startchat.impl.root
 
-import android.app.Activity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -58,5 +57,4 @@ class StartChatNode(
             onRoomDirectorySearchClick = navigator::onOpenRoomDirectory
         )
     }
-
 }

@@ -325,7 +325,7 @@ private fun ColumnScope.GeneralSection(
     HorizontalDivider()
     if (state.showSignOut) {
         ListItem(
-            content = { Text(stringResource(id = CommonStrings.action_signout)) },
+            content = { Text(stringResource(id = R.string.securechat_action_sign_out)) },
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Close())),
             style = ListItemStyle.Destructive,
             onClick = onSignOutClick,

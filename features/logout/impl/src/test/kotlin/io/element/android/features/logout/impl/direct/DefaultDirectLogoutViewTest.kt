@@ -17,10 +17,10 @@ import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.logout.api.direct.DirectLogoutEvent
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.logout.api.direct.aDirectLogoutState
+import io.element.android.features.logout.impl.R
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EventsRecorder
-import io.element.android.features.logout.impl.R
 import io.element.android.tests.testutils.clickOn
 import io.element.android.tests.testutils.pressBackKey
 import io.element.android.tests.testutils.robolectric.RobolectricTest

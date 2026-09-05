@@ -390,7 +390,7 @@ class PreferencesRootViewTest : RobolectricTest() {
     fun `sign out is hidden in SecureChat single-device mode`() = runAndroidComposeUiTest {
         setView(aPreferencesRootState(showSignOut = false))
 
-        val text = activity!!.getString(CommonStrings.action_signout)
+        val text = activity!!.getString(R.string.securechat_action_sign_out)
         onNodeWithText(text).assertDoesNotExist()
     }
 
@@ -405,7 +405,7 @@ class PreferencesRootViewTest : RobolectricTest() {
                 ),
                 onSignOutClick = callback,
             )
-            val text = activity!!.getString(CommonStrings.action_signout)
+            val text = activity!!.getString(R.string.securechat_action_sign_out)
             onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
         }
     }

@@ -49,6 +49,7 @@ import io.element.android.libraries.troubleshoot.api.NotificationTroubleShootEnt
 import io.element.android.libraries.troubleshoot.api.PushHistoryEntryPoint
 import io.element.android.libraries.ui.common.nodes.emptyNode
 import kotlinx.parcelize.Parcelize
+import timber.log.Timber
 
 @ContributesNode(SessionScope::class)
 @AssistedInject
@@ -181,7 +182,13 @@ class PreferencesFlowNode(
                     }
 
                     override fun startSignOutFlow() {
-                        // The sole enrolled session can only be replaced by an administrator.
+                        // Đường này KHÔNG được đi tới nữa. Nó từng rỗng và im lặng, nên khi tôi
+                        // bật lại nút đăng xuất thì nút hiện ra mà bấm không có gì xảy ra —
+                        // canDoDirectSignOut sai vì isLastDevice luôn đúng ở sản phẩm này.
+                        // Nay DirectLogoutPresenter không xét isLastDevice nữa, nên nhánh này
+                        // chỉ còn là lối chết. Kêu lên thay vì im, để lần sau không mất một
+                        // vòng thử trên máy thật mới biết.
+                        Timber.w("startSignOutFlow reached: đăng xuất phải đi qua DirectLogout")
                     }
 
                     override fun startAccountDeactivationFlow() {

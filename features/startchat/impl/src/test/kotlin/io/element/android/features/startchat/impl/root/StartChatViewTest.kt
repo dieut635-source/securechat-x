@@ -21,7 +21,6 @@ import io.element.android.features.startchat.impl.userlist.aRecentDirectRoomList
 import io.element.android.features.startchat.impl.userlist.aUserListState
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.ui.model.getBestName
-import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
 import io.element.android.tests.testutils.EnsureNeverCalledWithParam
 import io.element.android.tests.testutils.EventsRecorder
@@ -117,7 +116,6 @@ class StartChatViewTest : RobolectricTest() {
         onNodeWithText(context.getString(R.string.screen_room_directory_search_title))
             .assertDoesNotExist()
     }
-
 }
 
 private fun AndroidComposeUiTest<ComponentActivity>.setStartChatView(
