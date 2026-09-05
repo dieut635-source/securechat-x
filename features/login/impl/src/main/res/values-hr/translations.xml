@@ -9,7 +9,7 @@
   <string name="screen_account_provider_signin_title">"Prijavit ćete se na %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Ovdje će se čuvati vaši razgovori – baš kao što biste koristili davatelja usluga e-pošte za čuvanje svojih e-poruka."</string>
   <string name="screen_account_provider_signup_title">"Izradit ćete račun na %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Ostalo"</string>
   <string name="screen_change_account_provider_subtitle">"Koristite drugog davatelja računa, kao što je vlastiti privatni poslužitelj ili poslovni račun."</string>
   <string name="screen_change_account_provider_title">"Promijeni davatelja usluga računa"</string>

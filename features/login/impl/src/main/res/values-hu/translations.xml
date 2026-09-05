@@ -9,7 +9,7 @@
   <string name="screen_account_provider_signin_title">"Hamarosan bejelentkezik ide: %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Itt lesznek a beszélgetései – ahogyan egy e-mail-szolgáltatást is használna a levelei kezeléséhez."</string>
   <string name="screen_account_provider_signup_title">"Hamarosan létrehoz egy fiókot itt: %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Egyéb"</string>
   <string name="screen_change_account_provider_subtitle">"Másik fiókszolgáltató, például a saját privát kiszolgáló vagy egy munkahelyi fiók használata."</string>
   <string name="screen_change_account_provider_title">"Fiókszolgáltató módosítása"</string>

@@ -9,7 +9,7 @@
   <string name="screen_account_provider_signin_title">"دارید وارد %s می‌شوید"</string>
   <string name="screen_account_provider_signup_subtitle">"جایی که گفت‌وگوهایتان خواهند زیست — درست مثل استفاده‌تان از فراهم کنندهٔ رایانامه‌ای برای نگه داشتن رایانامه‌هایتان."</string>
   <string name="screen_account_provider_signup_title">"دارید حسابی روی %s می‌سازید"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"دیگر"</string>
   <string name="screen_change_account_provider_subtitle">"استفاده از فراهم کنندهٔ حسابی دیگر چون کارساز خصوصی خوتان یا حسابی کاری."</string>
   <string name="screen_change_account_provider_title">"تغییر فراهم کنندهٔ حساب"</string>

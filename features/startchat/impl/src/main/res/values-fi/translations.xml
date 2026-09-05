@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"Kirjoita osoite…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Täsmäävä huone löytyi"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"Huonetta ei löytynyt"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"esim. #huoneen-nimi:chat.securechat.com.au"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"esim. #huoneen-nimi:your-server"</string>
 </resources>

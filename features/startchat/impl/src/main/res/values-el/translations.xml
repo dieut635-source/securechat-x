@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"Εισαγάγετε διεύθυνση…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Βρέθηκε η αντίστοιχη αίθουσα"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"Η αίθουσα δεν βρέθηκε"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"π.χ. #όνομα-αίθουσας:chat.securechat.com.au"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"π.χ. #όνομα-αίθουσας:your-server"</string>
 </resources>

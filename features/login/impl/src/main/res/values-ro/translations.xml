@@ -9,7 +9,7 @@
   <string name="screen_account_provider_signin_title">"Sunteți pe cale să vă conectați la %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Aici vor trăi conversațiile dvs. - la fel cum ați folosi un furnizor de e-mail pentru a vă păstra e-mailurile."</string>
   <string name="screen_account_provider_signup_title">"Sunteți pe cale să creați un cont pe %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Altul"</string>
   <string name="screen_change_account_provider_subtitle">"Utilizați un alt furnizor de cont, cum ar fi propriul server privat sau un cont de serviciu."</string>
   <string name="screen_change_account_provider_title">"Schimbați furnizorul contului"</string>
@@ -29,7 +29,7 @@
   <string name="screen_change_server_navigation_title_register">"Creați un cont"</string>
   <string name="screen_change_server_subtitle">"Care este adresa serverului dumneavoastră?"</string>
   <string name="screen_change_server_textfield_footer_login">"Dacă contul este furnizat de compania dumneavoastră sau de o comunitate, schimbați furnizorul contului (exemplu: numecompanie.com)."</string>
-  <string name="screen_change_server_textfield_footer_register">"SecureChat accounts use chat.securechat.com.au. Contact your administrator if you need access."</string>
+  <string name="screen_change_server_textfield_footer_register">"Accounts are created by your administrator. Contact them if you need access."</string>
   <string name="screen_change_server_textfield_header">"Furnizor de cont"</string>
   <string name="screen_change_server_textfield_placeholder">"exemplu.ro"</string>
   <string name="screen_change_server_title">"Selectați serverul dumneavoastra"</string>

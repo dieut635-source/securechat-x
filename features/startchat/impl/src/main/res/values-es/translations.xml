@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"Introducir dirección…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Sala encontrada"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"No se encontró la sala"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"p. ej., #nombre-de-la-sala:chat.securechat.com.au"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"p. ej., #nombre-de-la-sala:your-server"</string>
 </resources>

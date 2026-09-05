@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"Skriv inn adresse…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Matchende rom funnet"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"Rom ikke funnet"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"f.eks. #rom-navn:chat.securechat.com.au"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"f.eks. #rom-navn:your-server"</string>
 </resources>

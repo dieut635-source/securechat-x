@@ -64,9 +64,9 @@
     <string name="screen_login_subtitle">"Messages are end-to-end encrypted and this device is managed by your organisation. Sign in with the details your administrator gave you."</string>
     <string name="screen_server_confirmation_message_login_matrix_dot_org">"A private server."</string>
     <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
-    <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
-    <string name="screen_change_server_textfield_footer_register">"Create a SecureChat account on chat.securechat.com.au. Contact your administrator if you need access."</string>
+    <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
+    <string name="screen_change_server_textfield_footer_register">"Accounts are created by your administrator. Contact them if you need access."</string>
 
     <!-- features/startchat/impl -->
-    <string name="screen_start_chat_join_room_by_address_supporting_text">"e.g. #room-name:chat.securechat.com.au"</string>
+    <string name="screen_start_chat_join_room_by_address_supporting_text">"e.g. #team-name:your-server"</string>
 </resources>

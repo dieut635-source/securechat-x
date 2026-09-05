@@ -9,7 +9,7 @@
   <string name="screen_account_provider_signin_title">"Olet kirjautumassa sisään %s-palvelimelle"</string>
   <string name="screen_account_provider_signup_subtitle">"Keskustelusi asuvat täällä — aivan kuten aivan kuten käyttäisit sähköpostipalveluntarjoajaa sähköpostiesi säilyttämiseen."</string>
   <string name="screen_account_provider_signup_title">"Olet luomassa tiliä %s-palvelimelle"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Muu"</string>
   <string name="screen_change_account_provider_subtitle">"Käytä toista palveluntarjoajaa, kuten omaa yksityistä palvelintasi tai työpaikkaasi."</string>
   <string name="screen_change_account_provider_title">"Vaihda palveluntarjoajaa"</string>
@@ -29,7 +29,7 @@
   <string name="screen_change_server_navigation_title_register">"Luo tili"</string>
   <string name="screen_change_server_subtitle">"Mikä on palvelimesi osoite?"</string>
   <string name="screen_change_server_textfield_footer_login">"Jos tilisi on yrityksesi tai yhteisön tarjoama, vaihda palveluntarjoaja (esimerkki: companyname.com)."</string>
-  <string name="screen_change_server_textfield_footer_register">"SecureChat accounts use chat.securechat.com.au. Contact your administrator if you need access."</string>
+  <string name="screen_change_server_textfield_footer_register">"Accounts are created by your administrator. Contact them if you need access."</string>
   <string name="screen_change_server_textfield_header">"Palveluntarjoaja"</string>
   <string name="screen_change_server_textfield_placeholder">"example.com"</string>
   <string name="screen_change_server_title">"Valitse palvelimesi"</string>
