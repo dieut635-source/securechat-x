@@ -10,7 +10,6 @@ package io.element.android.features.lockscreen.impl.unlock
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,7 +23,6 @@ import io.element.android.features.lockscreen.impl.biometric.BiometricAuthentica
 import io.element.android.features.lockscreen.impl.pin.PinCodeManager
 import io.element.android.features.lockscreen.impl.pin.model.PinEntry
 import io.element.android.features.lockscreen.impl.unlock.keypad.PinKeypadModel
-import io.element.android.features.logout.api.LogoutUseCase
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
@@ -39,7 +37,6 @@ class PinUnlockPresenter(
     @Assisted private val forDeviceUnlock: Boolean,
     private val pinCodeManager: PinCodeManager,
     private val biometricAuthenticatorManager: BiometricAuthenticatorManager,
-    private val logoutUseCase: LogoutUseCase,
     @AppCoroutineScope
     private val coroutineScope: CoroutineScope,
     private val pinUnlockHelper: PinUnlockHelper,
@@ -64,9 +61,6 @@ class PinUnlockPresenter(
         var showSignOutPrompt by rememberSaveable {
             mutableStateOf(false)
         }
-        val signOutAction = remember {
-            mutableStateOf<AsyncAction<Unit>>(AsyncAction.Uninitialized)
-        }
         var biometricUnlockResult by remember {
             mutableStateOf<BiometricAuthenticator.AuthenticationResult?>(null)
         }
@@ -78,7 +72,8 @@ class PinUnlockPresenter(
             suspend {
                 val pinCodeSize = pinCodeManager.getPinCodeSize()
                 if (pinCodeSize == null) {
-                    // No pin code set, deleted store? Force sign out
+                    // Preserve the sole enrolled Matrix session. Recovery requires an explicit
+                    // administrator-controlled re-enrollment; never turn local PIN loss into logout.
                     showSignOutPrompt = true
                     error("No pin code size found")
                 } else {
@@ -117,10 +112,9 @@ class PinUnlockPresenter(
                 PinUnlockEvent.OnForgetPin -> showSignOutPrompt = true
                 PinUnlockEvent.ClearSignOutPrompt -> showSignOutPrompt = false
                 PinUnlockEvent.SignOut -> {
-                    if (showSignOutPrompt) {
-                        showSignOutPrompt = false
-                        coroutineScope.signOut(signOutAction)
-                    }
+                    // Fail closed for stale UI/saved events from older builds. The sole enrolled
+                    // device must never be revoked by the PIN recovery screen.
+                    showSignOutPrompt = false
                 }
                 PinUnlockEvent.OnUseBiometric -> {
                     coroutineScope.launch {
@@ -141,7 +135,7 @@ class PinUnlockPresenter(
             showWrongPinTitle = showWrongPinTitle,
             remainingAttempts = remainingAttempts,
             showSignOutPrompt = showSignOutPrompt,
-            signOutAction = signOutAction.value,
+            signOutAction = AsyncAction.Uninitialized,
             showBiometricUnlock = biometricUnlock.isActive,
             biometricUnlockResult = biometricUnlockResult,
             isUnlocked = isUnlocked.value,
@@ -186,11 +180,5 @@ class PinUnlockPresenter(
             }
             else -> this
         }
-    }
-
-    private fun CoroutineScope.signOut(signOutAction: MutableState<AsyncAction<Unit>>) = launch {
-        suspend {
-            logoutUseCase.logoutAll(ignoreSdkError = true)
-        }.runCatchingUpdatingState(signOutAction)
     }
 }

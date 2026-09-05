@@ -60,7 +60,7 @@ object AppBindingContainer {
     @AppCoroutineScope
     @SingleIn(AppScope::class)
     fun providesAppCoroutineScope(): CoroutineScope {
-        return MainScope() + CoroutineName("ElementX Scope")
+        return MainScope() + CoroutineName("SecureChat Scope")
     }
 
     @Provides

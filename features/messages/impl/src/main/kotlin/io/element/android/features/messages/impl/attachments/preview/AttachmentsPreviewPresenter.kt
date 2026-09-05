@@ -11,6 +11,7 @@ package io.element.android.features.messages.impl.attachments.preview
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -42,6 +43,7 @@ import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.permalink.PermalinkBuilder
 import io.element.android.libraries.matrix.api.timeline.Timeline
+import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfig
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfigProvider
 import io.element.android.libraries.mediaupload.api.MediaSenderFactory
@@ -75,6 +77,7 @@ class AttachmentsPreviewPresenter(
     @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
     private val dispatchers: CoroutineDispatchers,
     private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
+    private val mdmService: MdmService,
 ) : Presenter<AttachmentsPreviewState> {
     @AssistedFactory
     interface Factory {
@@ -96,6 +99,7 @@ class AttachmentsPreviewPresenter(
     @Composable
     override fun present(): AttachmentsPreviewState {
         val coroutineScope = rememberCoroutineScope()
+        val mdmConfig by mdmService.config.collectAsState()
 
         val sendActionState = remember {
             mutableStateOf<SendActionState>(SendActionState.Idle)
@@ -112,6 +116,7 @@ class AttachmentsPreviewPresenter(
         )
 
         val ongoingSendAttachmentJob = remember { mutableStateOf<Job?>(null) }
+        val uploadAttachmentJob = remember { mutableStateOf<Job?>(null) }
 
         var currentIndex by remember { mutableIntStateOf(0) }
 
@@ -130,6 +135,18 @@ class AttachmentsPreviewPresenter(
         }
 
         var preprocessMediaJob by remember { mutableStateOf<Job?>(null) }
+
+        LaunchedEffect(mdmConfig.allowFileSend) {
+            if (!mdmConfig.allowFileSend) {
+                preprocessMediaJob?.cancel()
+                ongoingSendAttachmentJob.value?.cancel()
+                uploadAttachmentJob.value?.cancel()
+                sendActionState.value = SendActionState.Failure(
+                    error = IllegalStateException("Sending files is disabled by the managed configuration"),
+                    mediaInfos = sendActionState.value.mediaUploadInfoList().orEmpty(),
+                )
+            }
+        }
 
         val mediaOptimizationSelectorPresenters = remember {
             attachments
@@ -157,7 +174,9 @@ class AttachmentsPreviewPresenter(
             imageEditorState,
             isApplyingImageEdits,
             editedAttachments,
+            mdmConfig.allowFileSend,
         ) {
+            if (!mdmConfig.allowFileSend) return@LaunchedEffect
             if (mediaOptimizationSelectorStates.any { it.displayMediaSelectorViews == true } ||
                 imageEditorState != null ||
                 isApplyingImageEdits
@@ -228,6 +247,13 @@ class AttachmentsPreviewPresenter(
         fun handleEvent(event: AttachmentsPreviewEvent) {
             when (event) {
                 is AttachmentsPreviewEvent.SendAttachment -> {
+                    if (!mdmService.config.value.allowFileSend) {
+                        sendActionState.value = SendActionState.Failure(
+                            error = IllegalStateException("Sending files is disabled by the managed configuration"),
+                            mediaInfos = sendActionState.value.mediaUploadInfoList().orEmpty(),
+                        )
+                        return
+                    }
                     ongoingSendAttachmentJob.value = coroutineScope.launch {
                         if (preprocessMediaJob?.isActive != true && sendActionState.value !is SendActionState.Sending.ReadyToUpload) {
                             val configs = mediaOptimizationSelectorStates.map {
@@ -264,7 +290,7 @@ class AttachmentsPreviewPresenter(
                         editedTempFiles = emptyMap()
 
                         // Send the media using the session coroutine scope so it doesn't matter if this screen or the chat one are closed
-                        sessionCoroutineScope.launch(dispatchers.io) {
+                        uploadAttachmentJob.value = sessionCoroutineScope.launch(dispatchers.io) {
                             sendMedia(
                                 mediaUploadInfos = allMediaUploadInfos,
                                 caption = caption,
@@ -289,6 +315,7 @@ class AttachmentsPreviewPresenter(
                     // If we couldn't send the pre-processed media, remove it
                     mediaSender.cleanUp()
                     ongoingSendAttachmentJob.value?.cancel()
+                    uploadAttachmentJob.value?.cancel()
 
                     // Dismiss the screen
                     dismiss(
@@ -302,6 +329,10 @@ class AttachmentsPreviewPresenter(
                     ongoingSendAttachmentJob.value?.let {
                         it.cancel()
                         ongoingSendAttachmentJob.value = null
+                    }
+                    uploadAttachmentJob.value?.let {
+                        it.cancel()
+                        uploadAttachmentJob.value = null
                     }
 
                     val mediaUploadInfoList = sendActionState.value.mediaUploadInfoList()
@@ -529,6 +560,9 @@ class AttachmentsPreviewPresenter(
         sendActionState: MutableState<SendActionState>,
         inReplyToEventId: EventId?,
     ) = runCatchingExceptions {
+        check(mdmService.config.value.allowFileSend) {
+            "Sending files is disabled by the managed configuration"
+        }
         if (mediaUploadInfos.size == 1) {
             sendActionState.value = SendActionState.Sending.Uploading(mediaUploadInfos)
             mediaSender.sendPreProcessedMedia(

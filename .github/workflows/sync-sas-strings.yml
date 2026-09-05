@@ -10,8 +10,9 @@ permissions: {}
 jobs:
   sync-sas-strings:
     runs-on: ubuntu-latest
-    # Skip in forks
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'element-hq/element-x-android' }}
+    permissions:
+      contents: write
+      pull-requests: write
     # No concurrency required, runs every time on a schedule.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -36,5 +37,3 @@ jobs:
           branch: sync-sas-strings
           base: develop
           labels: PR-Misc
-
-

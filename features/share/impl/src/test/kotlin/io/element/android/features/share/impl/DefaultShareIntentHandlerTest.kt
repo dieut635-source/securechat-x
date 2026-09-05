@@ -7,29 +7,24 @@
 
 package io.element.android.features.share.impl
 
-import android.content.ComponentName
 import android.content.ContentProvider
 import android.content.ContentValues
-import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
-import android.content.IntentFilter
 import android.database.Cursor
 import android.net.Uri
 import androidx.core.net.toUri
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import io.element.android.features.share.api.ShareIntentData
+import io.element.android.features.share.api.UriToShare
+import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.mdm.api.MdmConfig
 import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.mdm.test.FakeMdmService
-import io.element.android.features.share.api.UriToShare
-import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
 import org.robolectric.Robolectric
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.Shadows.shadowOf
 
 class DefaultShareIntentHandlerTest : RobolectricTest() {
     @Test
@@ -224,50 +219,41 @@ class DefaultShareIntentHandlerTest : RobolectricTest() {
     }
 
     @Test
-    fun `the intent is made explicit for the application which will read the uri`() {
+    fun `the incoming intent is not mutated or redistributed`() {
         val intent = aSendIntent(type = "message/rfc822", uri = "content://sender/logs.zip".toUri())
-        givenAnApplicationHandling(intent)
         createDefaultShareIntentHandler().handleIncomingShareIntent(intent)
-        assertThat(intent.action).isNull()
-        assertThat(intent.component).isEqualTo(ComponentName(A_PACKAGE_NAME, AN_ACTIVITY_NAME))
+        assertThat(intent.action).isEqualTo(Intent.ACTION_SEND)
+        assertThat(intent.component).isNull()
     }
 
     @Test
-    fun `the intent stays implicit when the uri permission cannot be granted`() {
-        val uri = "content://sender/logs.zip".toUri()
-        val intent = aSendIntent(type = "message/rfc822", uri = uri)
-        givenAnApplicationHandling(intent)
-        val result = DefaultShareIntentHandler(
-            context = FailingGrantUriPermissionContext(RuntimeEnvironment.getApplication()),
-            mdmService = FakeMdmService(),
-        ).handleIncomingShareIntent(intent)
-        assertThat(intent.action).isEqualTo(Intent.ACTION_SEND)
-        assertThat(intent.component).isNull()
-        assertThat(result).isEqualTo(
-            ShareIntentData.Uris(
-                text = null,
-                uris = listOf(UriToShare(uri = uri, mimeType = "message/rfc822")),
-            )
+    fun `non-content uris are refused`() {
+        val result = createDefaultShareIntentHandler().handleIncomingShareIntent(
+            aSendIntent(type = "message/rfc822", uri = "file:///data/local/tmp/private.txt".toUri())
         )
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `SecureChat-owned FileProvider uris are refused before provider resolution`() {
+        val packageName = RuntimeEnvironment.getApplication().packageName
+        val authorities = listOf(
+            "$packageName.fileprovider",
+            "$packageName.notifications.fileprovider",
+        )
+
+        authorities.forEach { authority ->
+            Robolectric.setupContentProvider(FailOnTypeResolutionContentProvider::class.java, authority)
+            val result = createDefaultShareIntentHandler().handleIncomingShareIntent(
+                aSendIntent(type = MimeTypes.Any, uri = "content://$authority/private/file.txt".toUri())
+            )
+            assertThat(result).isNull()
+        }
     }
 
     private fun aSendIntent(type: String, uri: Uri) = Intent(Intent.ACTION_SEND).apply {
         this.type = type
         putExtra(Intent.EXTRA_STREAM, uri)
-    }
-
-    private fun givenAnApplicationHandling(intent: Intent) {
-        val componentName = ComponentName(A_PACKAGE_NAME, AN_ACTIVITY_NAME)
-        shadowOf(RuntimeEnvironment.getApplication().packageManager).apply {
-            addActivityIfNotPresent(componentName)
-            addIntentFilterForActivity(
-                componentName,
-                IntentFilter(intent.action).apply {
-                    addCategory(Intent.CATEGORY_DEFAULT)
-                    addDataType(intent.type)
-                }
-            )
-        }
     }
 
     @Test
@@ -294,6 +280,28 @@ class DefaultShareIntentHandlerTest : RobolectricTest() {
         assertThat(handler.handleIncomingShareIntent(intent)).isEqualTo(ShareIntentData.PlainText("a text"))
     }
 
+    @Test
+    fun `a plain text share containing a stream is refused when allow_file_send is off`() {
+        val handler = createDefaultShareIntentHandler(
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowFileSend = false)),
+        )
+        val intent = aSendIntent(type = MimeTypes.PlainText, uri = "content://sender/private.txt".toUri()).apply {
+            putExtra(Intent.EXTRA_TEXT, "a text")
+        }
+        assertThat(handler.handleIncomingShareIntent(intent)).isNull()
+    }
+
+    @Test
+    fun `more than twenty uris are refused`() {
+        val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = MimeTypes.Jpeg
+            putParcelableArrayListExtra(
+                Intent.EXTRA_STREAM,
+                ArrayList((1..21).map { "content://sender/$it.jpg".toUri() }),
+            )
+        }
+        assertThat(createDefaultShareIntentHandler().handleIncomingShareIntent(intent)).isNull()
+    }
 
     private fun createDefaultShareIntentHandler(
         mdmService: MdmService = FakeMdmService(),
@@ -301,12 +309,6 @@ class DefaultShareIntentHandlerTest : RobolectricTest() {
         context = RuntimeEnvironment.getApplication(),
         mdmService = mdmService,
     )
-
-    private class FailingGrantUriPermissionContext(context: Context) : ContextWrapper(context) {
-        override fun grantUriPermission(toPackage: String, uri: Uri, modeFlags: Int) {
-            error("Unable to grant Uri permission")
-        }
-    }
 
     private class ZipContentProvider : ContentProvider() {
         override fun onCreate() = true
@@ -328,8 +330,25 @@ class DefaultShareIntentHandlerTest : RobolectricTest() {
         override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?) = 0
     }
 
-    private companion object {
-        const val A_PACKAGE_NAME = "io.element.android.x"
-        const val AN_ACTIVITY_NAME = "io.element.android.x.MainActivity"
+    private class FailOnTypeResolutionContentProvider : ContentProvider() {
+        override fun onCreate() = true
+
+        override fun getType(uri: Uri): String {
+            error("SecureChat-owned provider must not be resolved for an incoming share")
+        }
+
+        override fun query(
+            uri: Uri,
+            projection: Array<out String>?,
+            selection: String?,
+            selectionArgs: Array<out String>?,
+            sortOrder: String?,
+        ): Cursor? = null
+
+        override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+
+        override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
+
+        override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?) = 0
     }
 }

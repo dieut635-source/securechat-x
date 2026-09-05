@@ -30,9 +30,9 @@ val LocalBuildMeta = staticCompositionLocalOf {
     BuildMeta(
         isDebuggable = true,
         buildType = BuildType.DEBUG,
-        applicationName = "MyApp",
-        productionApplicationName = "MyAppProd",
-        desktopApplicationName = "MyAppDesktop",
+        applicationName = "SecureChat",
+        productionApplicationName = "SecureChat",
+        desktopApplicationName = "SecureChat Desktop",
         applicationId = "AppId",
         isEnterpriseBuild = false,
         lowPrivacyLoggingEnabled = false,

@@ -185,7 +185,9 @@ class AdvancedSettingsPresenterTest {
 
     @Test
     fun `present - change theme`() = runTest {
-        val presenter = createAdvancedSettingsPresenter()
+        val presenter = createAdvancedSettingsPresenter(
+            appPreferencesStore = InMemoryAppPreferencesStore(theme = Theme.System.name),
+        )
         moleculeFlow(RecompositionMode.Immediate) {
             presenter.present()
         }.test {

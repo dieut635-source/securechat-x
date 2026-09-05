@@ -29,6 +29,8 @@ import org.matrix.rustcomponents.sdk.NoHandle
 import org.matrix.rustcomponents.sdk.NotificationClient
 import org.matrix.rustcomponents.sdk.NotificationProcessSetup
 import org.matrix.rustcomponents.sdk.NotificationSettings
+import org.matrix.rustcomponents.sdk.OAuthConfiguration
+import org.matrix.rustcomponents.sdk.OAuthPrompt
 import org.matrix.rustcomponents.sdk.ProfileListener
 import org.matrix.rustcomponents.sdk.PusherIdentifiers
 import org.matrix.rustcomponents.sdk.PusherKind
@@ -42,6 +44,7 @@ import org.matrix.rustcomponents.sdk.SyncServiceBuilder
 import org.matrix.rustcomponents.sdk.TaskHandle
 import org.matrix.rustcomponents.sdk.UnableToDecryptDelegate
 import org.matrix.rustcomponents.sdk.UserProfile
+import uniffi.matrix_sdk.OAuthAuthorizationData
 import uniffi.matrix_sdk_base.MediaRetentionPolicy
 
 class FakeFfiClient(
@@ -56,7 +59,7 @@ class FakeFfiClient(
     private val clearCachesResult: () -> Unit = { lambdaError() },
     private val withUtdHook: (UnableToDecryptDelegate) -> Unit = { lambdaError() },
     private val getProfileResult: (String) -> UserProfile = { aRustUserProfile() },
-    private val homeserverLoginDetailsResult: () -> HomeserverLoginDetails = { lambdaError() },
+    private val homeserverLoginDetailsResult: suspend () -> HomeserverLoginDetails = { lambdaError() },
     private val getStoreSizesResult: () -> StoreSizes = { lambdaError() },
     private val createRoomResult: (CreateRoomParameters) -> String = { lambdaError() },
     private val homeserverCapabilities: HomeserverCapabilities = FakeFfiHomeserverCapabilities(),
@@ -67,6 +70,11 @@ class FakeFfiClient(
     private val subscribeToOwnProfileResult: (ProfileListener) -> Unit = {},
     private val getUrlResult: (String) -> ByteArray = { lambdaError() },
     private val contentScannerResult: () -> ContentScanner = { FakeFfiContentScanner() },
+    private val loginResult: suspend (String, String, String?, String?) -> Unit = { _, _, _, _ -> },
+    private val loginWithOauthCallbackResult: suspend (String) -> Unit = {},
+    private val urlForOauthResult: suspend () -> OAuthAuthorizationData = { lambdaError() },
+    private val logoutResult: suspend () -> Unit = {},
+    private val restoreSessionResult: suspend (Session) -> Unit = {},
     private val closeResult: () -> Unit = {},
 ) : Client(NoHandle) {
     override fun userId(): String = userId
@@ -79,7 +87,25 @@ class FakeFfiClient(
     override fun session(): Session = session
     override fun setDelegate(delegate: ClientDelegate?): TaskHandle = FakeFfiTaskHandle()
     override suspend fun cachedAvatarUrl(): String? = null
-    override suspend fun restoreSession(session: Session) = Unit
+    override suspend fun login(username: String, password: String, initialDeviceName: String?, deviceId: String?) {
+        loginResult(username, password, initialDeviceName, deviceId)
+    }
+
+    override suspend fun loginWithOauthCallback(callbackUrl: String) {
+        loginWithOauthCallbackResult(callbackUrl)
+    }
+
+    override suspend fun urlForOauth(
+        oauthConfiguration: OAuthConfiguration,
+        prompt: OAuthPrompt?,
+        loginHint: String?,
+        deviceId: String?,
+        additionalScopes: List<String>?,
+    ): OAuthAuthorizationData = urlForOauthResult()
+
+    override suspend fun logout() = logoutResult()
+
+    override suspend fun restoreSession(session: Session) = restoreSessionResult(session)
     override fun syncService(): SyncServiceBuilder = FakeFfiSyncServiceBuilder()
     override suspend fun spaceService(): SpaceService = FakeFfiSpaceService()
     override fun roomDirectorySearch(): RoomDirectorySearch = FakeFfiRoomDirectorySearch()

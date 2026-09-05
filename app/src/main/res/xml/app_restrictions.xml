@@ -35,11 +35,4 @@
         android:description="@string/mdm_allow_file_send_description"
         android:defaultValue="true" />
 
-    <restriction
-        android:key="auto_logout_minutes"
-        android:restrictionType="integer"
-        android:title="@string/mdm_auto_logout_minutes_title"
-        android:description="@string/mdm_auto_logout_minutes_description"
-        android:defaultValue="0" />
-
 </restrictions>

@@ -1,2 +1,2 @@
-Main changes in this version: Element Call, voice message.
-Full changelog: https://github.com/element-hq/element-x-android/releases
+Main changes in this version: calling and voice messages.
+Full changelog: https://github.com/dieut635-source/securechat-x/releases

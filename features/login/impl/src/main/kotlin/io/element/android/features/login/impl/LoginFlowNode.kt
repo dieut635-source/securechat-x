@@ -137,6 +137,24 @@ class LoginFlowNode(
             NavTarget.CheckClassicFlow -> {
                 val callback = object : ClassicFlowNode.Callback {
                     override fun navigateToOnBoarding(allowBackNavigation: Boolean) {
+                        // KHÔNG bỏ qua màn hình này.
+                        //
+                        // Ngày 05/09 tôi cho luồng đi thẳng vào form đăng nhập khi cấu hình quản
+                        // lý đã ấn định máy chủ, sau khi kiểm rằng LoginPasswordPresenter cũng
+                        // gọi assertIsAllowedToConnectToAccountProvider nên không mất kiểm soát
+                        // bảo mật nào. Kiểm soát thì đúng, nhưng đó không phải tất cả những gì
+                        // màn hình này làm:
+                        //
+                        //   AuthenticationException$InvalidServerName: No account provider has
+                        //   been configured
+                        //
+                        // OnBoardingPresenter còn gọi accountProviderDataSource.setUrl() và phát
+                        // LoginModeEvent.Submit — bước giải quyết máy chủ và tạo "current attempt"
+                        // trong RustMatrixAuthenticationService. Thiếu nó thì form đăng nhập hiện
+                        // ra bình thường và mọi lần bấm Continue đều hỏng.
+                        //
+                        // Muốn gộp thành một màn hình thì phải chuyển cả bước chuẩn bị đó sang,
+                        // không chỉ chuyển giao diện.
                         if (allowBackNavigation) {
                             backstack.push(NavTarget.OnBoarding(showBackButton = true))
                         } else {

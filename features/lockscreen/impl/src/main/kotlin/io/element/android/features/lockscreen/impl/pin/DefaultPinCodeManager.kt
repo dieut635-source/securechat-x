@@ -12,6 +12,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
 import io.element.android.features.lockscreen.impl.storage.LockScreenStore
+import io.element.android.features.logout.api.SecureChatDataWiper
 import io.element.android.libraries.cryptography.api.EncryptionDecryptionService
 import io.element.android.libraries.cryptography.api.EncryptionResult
 import io.element.android.libraries.cryptography.api.SecretKeyRepository
@@ -30,6 +31,7 @@ class DefaultPinCodeManager(
     private val secretKeyRepository: SecretKeyRepository,
     private val encryptionDecryptionService: EncryptionDecryptionService,
     private val lockScreenStore: LockScreenStore,
+    private val dataWiper: SecureChatDataWiper,
 ) : PinCodeManager {
     private val callbacks = CopyOnWriteArrayList<PinCodeManager.Callback>()
 
@@ -70,24 +72,88 @@ class DefaultPinCodeManager(
         callbacks.forEach { it.onPinCodeCreated() }
     }
 
+    override suspend fun hasDuressPinCode(): Boolean = lockScreenStore.getEncryptedDuressCode() != null
+
+    override suspend fun createDuressPinCode(pinCode: String) {
+        val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+        val encrypted = encryptionDecryptionService.encrypt(secretKey, pinCode.toByteArray()).toBase64()
+        lockScreenStore.saveEncryptedDuressPinCode(encrypted)
+    }
+
+    override suspend fun countDifferencesFromPinCode(pinCode: String): Int {
+        val encryptedPinCode = lockScreenStore.getEncryptedCode() ?: return Int.MAX_VALUE
+        return try {
+            val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+            val mainPinCode = encryptionDecryptionService
+                .decrypt(secretKey, EncryptionResult.fromBase64(encryptedPinCode))
+                .toString(Charsets.UTF_8)
+            if (mainPinCode.length != pinCode.length) {
+                maxOf(mainPinCode.length, pinCode.length)
+            } else {
+                mainPinCode.indices.count { mainPinCode[it] != pinCode[it] }
+            }
+        } catch (_: Throwable) {
+            // Cannot compare, so cannot promise the codes are far enough apart. Report them as
+            // identical: the setup screen refuses, which is the safe direction.
+            0
+        }
+    }
+
     override suspend fun verifyPinCode(pinCode: String): Boolean {
         val encryptedPinCode = lockScreenStore.getEncryptedCode() ?: return false
         return try {
             val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
-            val decryptedPinCode = encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(encryptedPinCode))
             val pinCodeToCheck = pinCode.toByteArray()
-            decryptedPinCode.contentEquals(pinCodeToCheck).also { isPinCodeCorrect ->
-                if (isPinCodeCorrect) {
-                    lockScreenStore.resetCounter()
-                    callbacks.forEach { callback ->
-                        callback.onPinCodeVerified()
-                    }
-                } else {
-                    lockScreenStore.onWrongPin()
-                }
+
+            // Both codes are read and decrypted every time, before either comparison, so the work
+            // done does not depend on which code was typed. The previous version only touched the
+            // duress store after the main comparison failed, which made a duress entry measurably
+            // slower than a correct unlock.
+            val decryptedPinCode = encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(encryptedPinCode))
+            val decryptedDuressCode = lockScreenStore.getEncryptedDuressCode()?.let {
+                encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(it))
             }
+
+            val matchesMain = decryptedPinCode.contentEquals(pinCodeToCheck)
+            val matchesDuress = decryptedDuressCode?.contentEquals(pinCodeToCheck) == true
+
+            // The main code wins if both somehow match, so a duress code that equals it can never
+            // shadow it and destroy data on a normal unlock.
+            if (matchesMain) {
+                onCodeAccepted()
+                return true
+            }
+
+            if (matchesDuress) {
+                // Returns once the marker is written and the database passphrase is destroyed - both
+                // near-instant. The files go in the background. Waiting for the full erasure here is
+                // what used to freeze the screen for seconds and betray which code had been typed.
+                dataWiper.beginWipeEverything(reason = "duress code entered")
+                // Then behave exactly as if the main code had been entered. The PIN itself is left
+                // in place on purpose: removing it here would change what happens on screen at the
+                // very moment nothing may look unusual, and the mechanism is discoverable from the
+                // source anyway, so hiding the stored entry buys nothing.
+                onCodeAccepted()
+                return true
+            }
+
+            lockScreenStore.onWrongPin()
+            false
         } catch (_: Throwable) {
             false
+        }
+    }
+
+    private suspend fun isDuressCode(secretKey: javax.crypto.SecretKey, enteredCode: ByteArray): Boolean {
+        val encryptedDuressCode = lockScreenStore.getEncryptedDuressCode() ?: return false
+        val decrypted = encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(encryptedDuressCode))
+        return decrypted.contentEquals(enteredCode)
+    }
+
+    private suspend fun onCodeAccepted() {
+        lockScreenStore.resetCounter()
+        callbacks.forEach { callback ->
+            callback.onPinCodeVerified()
         }
     }
 

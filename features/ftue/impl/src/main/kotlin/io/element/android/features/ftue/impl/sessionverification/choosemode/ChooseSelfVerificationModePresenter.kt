@@ -9,13 +9,11 @@
 package io.element.android.features.ftue.impl.sessionverification.choosemode
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import dev.zacsweers.metro.Inject
-import io.element.android.features.logout.api.direct.DirectLogoutEvent
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
@@ -30,7 +28,6 @@ class ChooseSelfVerificationModePresenter(
 ) : Presenter<ChooseSelfVerificationModeState> {
     @Composable
     override fun present(): ChooseSelfVerificationModeState {
-        val hasDevicesToVerifyAgainst by encryptionService.hasDevicesToVerifyAgainst.collectAsState()
         val canUseRecoveryKey by produceState<AsyncData<Boolean>>(AsyncData.Uninitialized) {
             encryptionService.recoveryStateStateFlow
                 .mapState { recoveryState ->
@@ -48,14 +45,15 @@ class ChooseSelfVerificationModePresenter(
         }
         val buttonsState by remember {
             derivedStateOf {
-                val canUseAnotherDevice = hasDevicesToVerifyAgainst.dataOrNull()
                 val canUseRecoveryKey = canUseRecoveryKey.dataOrNull()
-                if (canUseAnotherDevice == null || canUseRecoveryKey == null) {
+                if (canUseRecoveryKey == null) {
                     AsyncData.Loading()
                 } else {
                     AsyncData.Success(
                         ChooseSelfVerificationModeState.ButtonsState(
-                            canUseAnotherDevice = canUseAnotherDevice,
+                            // A second device can never be part of SecureChat's account recovery
+                            // path. Recovery key and identity reset remain available.
+                            canUseAnotherDevice = false,
                             canUseRecoveryKey = canUseRecoveryKey,
                         )
                     )
@@ -67,7 +65,9 @@ class ChooseSelfVerificationModePresenter(
 
         fun handleEvent(event: ChooseSelfVerificationModeEvent) {
             when (event) {
-                ChooseSelfVerificationModeEvent.SignOut -> directLogoutState.eventSink(DirectLogoutEvent.Logout(ignoreSdkError = false))
+                // Kept for stale saved UI events only. Revoking the sole enrolled session would
+                // require administrator-controlled re-enrollment, so verification can never log out.
+                ChooseSelfVerificationModeEvent.SignOut -> Unit
             }
         }
 

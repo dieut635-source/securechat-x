@@ -15,5 +15,5 @@ import io.element.android.libraries.matrix.api.auth.AuthenticationException
 class LoginModeViewErrorPreviewParam : PreviewParameterProvider<Exception> {
     override val values: Sequence<Exception>
         get() = ChangeServerErrorPreviewParam().values +
-            AuthenticationException.AccountAlreadyLoggedIn("@alice:matrix.org")
+            AuthenticationException.AccountAlreadyLoggedIn("@alice:chat.securechat.com.au")
 }

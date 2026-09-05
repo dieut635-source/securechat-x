@@ -1,34 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<network-security-config xmlns:tools="http://schemas.android.com/tools">
-    <!-- Ref: https://developer.android.com/training/articles/security-config.html -->
-    <!-- By default, do not allow clearText traffic -->
+<network-security-config>
+    <!-- Production policy: TLS only, anchored exclusively in Android's system CA store. -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
-            <certificates
-                src="user"
-                tools:ignore="AcceptsUserCertificates" />
         </trust-anchors>
     </base-config>
 
-    <!-- Allow clearText traffic on some specified host -->
-    <domain-config cleartextTrafficPermitted="true">
-        <!-- Localhost -->
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">127.0.0.1</domain>
-        <!-- Localhost for Android emulator -->
-        <domain includeSubdomains="true">10.0.2.2</domain>
-        <!-- Onion services -->
-        <domain includeSubdomains="true">onion</domain>
+    <!--
+      Certificate pinning for SecureChat's own hosts.
 
-        <!-- Domains that are used for LANs -->
-        <!-- These are IANA recognized special use domain names, see https://www.iana.org/assignments/special-use-domain-names/special-use-domain-names.xhtml -->
-        <domain includeSubdomains="true">home.arpa</domain>
-        <domain includeSubdomains="true">local</domain> <!-- Note this has been reserved for use with mDNS -->
-        <domain includeSubdomains="true">test</domain>
-        <!-- These are observed in the wild either by convention or RFCs that have not been accepted, and are not currently TLDs -->
-        <domain includeSubdomains="true">home</domain>
-        <domain includeSubdomains="true">lan</domain>
-        <domain includeSubdomains="true">localdomain</domain>
+      Without it the app accepts any of the ~150 CAs Android ships with, so a single compromised or
+      mis-issuing CA is enough to intercept logins, tokens and metadata. Pinning narrows that to
+      Let's Encrypt alone.
+
+      What is pinned, and why not the server certificate: the leaf renews every 60 days and gets a
+      new key each time, and this APK is installed by hand over USB. Pinning it would take every
+      phone offline on each renewal until someone walked round with a cable. The two pins below are
+      the ISRG roots the live chain actually terminates in, both valid until September 2032, so
+      renewals do not touch them.
+
+      Computed from the real chain served by chat.securechat.com.au on 2026-09-01, not copied from
+      documentation:
+        openssl s_client -showcerts -connect chat.securechat.com.au:443 \
+          -servername chat.securechat.com.au </dev/null
+        # then for each certificate:
+        openssl x509 -noout -pubkey | openssl pkey -pubin -outform der \
+          | openssl dgst -sha256 -binary | base64
+
+      What this does NOT stop: anyone who can pass Let's Encrypt's domain validation - by taking the
+      server, the DNS, or the route - still gets a certificate this pin accepts. Closing that needs
+      pinning our own key, which brings back the renewal risk above.
+
+      expiration is a deliberate safety valve, not an oversight. After that date Android ignores
+      these pins instead of refusing to connect, so a forgotten APK update degrades to "unpinned"
+      rather than to a fleet of phones that cannot reach the server. Re-check the pins and move the
+      date forward well before it passes; see docs/TLS-PINNING.md.
+    -->
+    <domain-config>
+        <domain includeSubdomains="false">chat.securechat.com.au</domain>
+        <domain includeSubdomains="false">push.securechat.com.au</domain>
+        <pin-set expiration="2027-09-01">
+            <!-- ISRG Root X2 - the anchor of the current chain. -->
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+            <!-- ISRG Root YE - one level down, kept as the backup pin so a single change at the
+                 top of Let's Encrypt's hierarchy cannot lock the fleet out. -->
+            <pin digest="SHA-256">sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=</pin>
+        </pin-set>
     </domain-config>
 </network-security-config>

@@ -151,7 +151,7 @@ private fun ReactionSummaryViewContent(
                     SenderRow(
                         avatarData = user.getAvatarData(AvatarSize.UserListItem),
                         name = user.displayName ?: user.userId.value,
-                        userId = user.userId.value,
+                        userId = user.userId.displayLabel,
                         sentTime = sender.sentTime
                     )
                 }

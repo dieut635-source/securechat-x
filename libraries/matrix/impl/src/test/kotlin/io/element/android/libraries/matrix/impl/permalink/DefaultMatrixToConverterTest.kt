@@ -15,44 +15,50 @@ import org.junit.Test
 
 class DefaultMatrixToConverterTest : RobolectricTest() {
     @Test
-    fun `converting a matrix-to url does nothing`() {
-        val url = Uri.parse("https://matrix.to/#/#element-android:matrix.org")
+    fun `a valid matrix-to url is accepted`() {
+        val url = Uri.parse("https://matrix.to/#/#securechat:chat.securechat.com.au")
         assertThat(DefaultMatrixToConverter().convert(url)).isEqualTo(url)
     }
 
     @Test
-    fun `converting a url with a supported room path returns a matrix-to url`() {
-        val url = Uri.parse("https://riot.im/develop/#/room/#element-android:matrix.org")
-        assertThat(DefaultMatrixToConverter().convert(url)).isEqualTo(Uri.parse("https://matrix.to/#/#element-android:matrix.org"))
-    }
-
-    @Test
-    fun `converting a url with a supported user path returns a matrix-to url`() {
-        val url = Uri.parse("https://riot.im/develop/#/user/@test:matrix.org")
-        assertThat(DefaultMatrixToConverter().convert(url)).isEqualTo(Uri.parse("https://matrix.to/#/@test:matrix.org"))
-    }
-
-    @Test
-    fun `converting a url with a supported group path returns a matrix-to url`() {
-        val url = Uri.parse("https://riot.im/develop/#/group/+group:matrix.org")
-        assertThat(DefaultMatrixToConverter().convert(url)).isEqualTo(Uri.parse("https://matrix.to/#/+group:matrix.org"))
-    }
-
-    @Test
-    fun `converting an unsupported url returns null`() {
-        val url = Uri.parse("https://element.io/")
+    fun `an unrelated web origin is rejected even when its fragment looks like a room link`() {
+        val url = Uri.parse("https://example.org/#/room/#secure:chat.securechat.com.au")
         assertThat(DefaultMatrixToConverter().convert(url)).isNull()
     }
 
     @Test
-    fun `converting url coming from the matrix-to website returns a matrix-to url for room case`() {
-        val url = Uri.parse("element://room/#element-android:matrix.org")
-        assertThat(DefaultMatrixToConverter().convert(url)).isEqualTo(Uri.parse("https://matrix.to/#/#element-android:matrix.org"))
+    fun `a lookalike matrix-to host is rejected`() {
+        val url = Uri.parse("https://matrix.to.example.org/#/@alice:chat.securechat.com.au")
+        assertThat(DefaultMatrixToConverter().convert(url)).isNull()
     }
 
     @Test
-    fun `converting url coming from the matrix-to website returns a matrix-to url for user case`() {
-        val url = Uri.parse("element://user/@alice:matrix.org")
-        assertThat(DefaultMatrixToConverter().convert(url)).isEqualTo(Uri.parse("https://matrix.to/#/@alice:matrix.org"))
+    fun `an encoded matrix-to authority is rejected`() {
+        val url = Uri.parse("https://matrix%2eto/#/@alice:chat.securechat.com.au")
+        assertThat(DefaultMatrixToConverter().convert(url)).isNull()
+    }
+
+    @Test
+    fun `an insecure matrix-to url is rejected`() {
+        val url = Uri.parse("http://matrix.to/#/@alice:chat.securechat.com.au")
+        assertThat(DefaultMatrixToConverter().convert(url)).isNull()
+    }
+
+    @Test
+    fun `a matrix-to url with user info is rejected`() {
+        val url = Uri.parse("https://attacker@matrix.to/#/@alice:chat.securechat.com.au")
+        assertThat(DefaultMatrixToConverter().convert(url)).isNull()
+    }
+
+    @Test
+    fun `a matrix-to url on a non-default port is rejected`() {
+        val url = Uri.parse("https://matrix.to:8448/#/@alice:chat.securechat.com.au")
+        assertThat(DefaultMatrixToConverter().convert(url)).isNull()
+    }
+
+    @Test
+    fun `a legacy client scheme is rejected`() {
+        val url = Uri.parse("legacy-client://user/@alice:chat.securechat.com.au")
+        assertThat(DefaultMatrixToConverter().convert(url)).isNull()
     }
 }

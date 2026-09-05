@@ -25,7 +25,7 @@ open class AcceptDeclineInviteStatePreviewParam : PreviewParameterProvider<Accep
             anAcceptDeclineInviteState(
                 declineAction = ConfirmingDeclineInvite(
                     InviteData(
-                        roomId = RoomId("!room:matrix.org"),
+                        roomId = RoomId("!room:chat.securechat.com.au"),
                         isDm = true,
                         roomName = ROOM_NAME,
                     ),
@@ -35,7 +35,7 @@ open class AcceptDeclineInviteStatePreviewParam : PreviewParameterProvider<Accep
             anAcceptDeclineInviteState(
                 declineAction = ConfirmingDeclineInvite(
                     InviteData(
-                        roomId = RoomId("!room:matrix.org"),
+                        roomId = RoomId("!room:chat.securechat.com.au"),
                         isDm = true,
                         roomName = ROOM_NAME,
                     ),

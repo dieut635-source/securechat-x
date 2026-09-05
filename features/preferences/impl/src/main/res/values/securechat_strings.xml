@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 SecureChat
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  Nhãn mục đăng xuất trong Cài đặt.
+
+  CommonStrings.action_signout ở thượng nguồn là "Remove this device". App này CÓ chức năng
+  xoá máy thật (xoá từ xa, khôi phục cài đặt gốc), nên hai việc khác hẳn nhau không được dùng
+  chung một chữ. Người dùng đọc "Remove this device" trong Cài đặt hoàn toàn có thể tưởng họ
+  sắp xoá sạch máy.
+
+  Đây là chữ đứng ĐẦU TIÊN người dùng đọc, trước cả hộp thoại xác nhận — nên nó phải đúng
+  trước, chứ không phải sửa mỗi hộp thoại rồi để nhãn nói sai.
+-->
+<resources>
+    <string name="securechat_action_sign_out">"Sign out"</string>
+</resources>

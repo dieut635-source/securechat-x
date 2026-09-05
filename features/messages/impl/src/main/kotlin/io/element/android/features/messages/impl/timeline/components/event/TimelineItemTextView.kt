@@ -95,7 +95,7 @@ internal fun TimelineItemTextViewPreview(
 @Composable
 internal fun TimelineItemTextViewWithLinkifiedUrlPreview() = ElementPreview {
     val content = aTimelineItemTextContent(
-        formattedBody = LinkifyHelper.linkify("The link should end after the first '?' (url: github.com/element-hq/element-x-android/README?)?.")
+        formattedBody = LinkifyHelper.linkify("The link should end after the first '?' (url: github.com/dieut635-source/securechat-x/README?)?.")
     )
     TimelineItemTextView(
         content = content,
@@ -108,7 +108,7 @@ internal fun TimelineItemTextViewWithLinkifiedUrlPreview() = ElementPreview {
 @Composable
 internal fun TimelineItemTextViewWithLinkifiedUrlAndNestedParenthesisPreview() = ElementPreview {
     val content = aTimelineItemTextContent(
-        formattedBody = LinkifyHelper.linkify("The link should end after the '(ME)' ((url: github.com/element-hq/element-x-android/READ(ME)))!")
+        formattedBody = LinkifyHelper.linkify("The link should end after the '(ME)' ((url: github.com/dieut635-source/securechat-x/READ(ME)))!")
     )
     TimelineItemTextView(
         content = content,

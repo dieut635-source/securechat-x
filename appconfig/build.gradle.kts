@@ -22,12 +22,11 @@ android {
     defaultConfig {
         buildConfigFieldStr(
             name = "URL_POLICY",
-            // Upstream falls back to element.io here; SecureChat always uses its own URL.
             value = BuildTimeConfig.URL_POLICY ?: "",
         )
         buildConfigFieldStr(
             name = "BUG_REPORT_URL",
-            // Empty disables the bug reporter. Upstream would post logs to Element's rageshake server.
+            // Empty disables remote bug-report uploads until a SecureChat endpoint is configured.
             value = BuildTimeConfig.BUG_REPORT_URL ?: "",
         )
         buildConfigFieldStr(

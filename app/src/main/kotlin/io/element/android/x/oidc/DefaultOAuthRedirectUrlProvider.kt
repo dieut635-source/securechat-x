@@ -20,6 +20,6 @@ class DefaultOAuthRedirectUrlProvider(
 ) : OAuthRedirectUrlProvider {
     override fun provide() = buildString {
         append(stringProvider.getString(R.string.login_redirect_scheme))
-        append(":/")
+        append("://oauth/callback")
     }
 }

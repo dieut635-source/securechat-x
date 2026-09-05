@@ -59,6 +59,16 @@ class LockScreenSettingsFlowNode(
         @Parcelize
         data object SetupPin : NavTarget
 
+        /**
+         * Changing the everyday code forces the emergency one to be chosen again.
+         *
+         * Otherwise the distance rule quietly stops holding: it is checked when the emergency code
+         * is set, so a later change of the everyday code can leave the two a single digit apart,
+         * and one mistyped digit then erases everything.
+         */
+        @Parcelize
+        data object SetupDuressPin : NavTarget
+
         @Parcelize
         data object Settings : NavTarget
     }
@@ -69,7 +79,7 @@ class LockScreenSettingsFlowNode(
         }
 
         override fun onPinCodeCreated() {
-            backstack.newRoot(NavTarget.Settings)
+            backstack.newRoot(NavTarget.SetupDuressPin)
         }
     }
 
@@ -98,6 +108,17 @@ class LockScreenSettingsFlowNode(
             NavTarget.Loading -> {
                 emptyNode(buildContext)
             }
+            NavTarget.SetupDuressPin -> {
+                val duressCallback = object : SetupPinNode.Callback {
+                    override fun onDuressPinCreated() {
+                        backstack.newRoot(NavTarget.Settings)
+                    }
+                }
+                createNode<SetupPinNode>(
+                    buildContext,
+                    plugins = listOf(SetupPinNode.Inputs(isDuressStep = true), duressCallback),
+                )
+            }
             NavTarget.Unlock -> {
                 val callback = object : PinUnlockNode.Callback {
                     override fun onUnlock() {
@@ -114,7 +135,7 @@ class LockScreenSettingsFlowNode(
                 createNode<PinUnlockNode>(buildContext, plugins = listOf(callback, inputs))
             }
             NavTarget.SetupPin -> {
-                createNode<SetupPinNode>(buildContext)
+                createNode<SetupPinNode>(buildContext, plugins = listOf(SetupPinNode.Inputs(isDuressStep = false)))
             }
             NavTarget.Settings -> {
                 val callback = object : LockScreenSettingsNode.Callback {

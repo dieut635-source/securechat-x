@@ -1,3 +1,10 @@
+# SecureChat release history
+
+SecureChat release notes are maintained in GitHub Releases and
+`fastlane/metadata/android/en-US/changelogs/`. The remainder of this file is archived upstream
+history retained for attribution and dependency provenance; it does not describe SecureChat
+branding, services, or support channels.
+
 Changes in Element X v26.08.3
 =============================
 

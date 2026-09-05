@@ -8,9 +8,9 @@
 
 package io.element.android.features.login.impl.screens.onboarding
 
+import app.cash.turbine.ReceiveTurbine
 import com.google.common.truth.Truth.assertThat
 import io.element.android.appconfig.AuthenticationConfig
-import io.element.android.appconfig.OnBoardingConfig
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.api.IsEnterpriseBuild
 import io.element.android.features.enterprise.test.FakeEnterpriseService
@@ -19,10 +19,13 @@ import io.element.android.features.login.impl.accountprovider.AccountProviderDat
 import io.element.android.features.login.impl.accountprovider.SaveAccountProviderToHistory
 import io.element.android.features.login.impl.accountprovider.anAccountProviderDataSource
 import io.element.android.features.login.impl.localnetwork.LocalNetworkPermissionGate
+import io.element.android.features.login.impl.login.LoginModeEvent
 import io.element.android.features.login.impl.login.LoginModePresenter
+import io.element.android.features.login.impl.screens.createaccount.AccountCreationNotSupported
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
+import io.element.android.libraries.matrix.api.auth.MatrixHomeServerDetails
 import io.element.android.libraries.matrix.test.AN_ACCOUNT_PROVIDER
 import io.element.android.libraries.matrix.test.AN_ACCOUNT_PROVIDER_2
 import io.element.android.libraries.matrix.test.AN_ACCOUNT_PROVIDER_3
@@ -31,7 +34,10 @@ import io.element.android.libraries.matrix.test.A_HOMESERVER_URL
 import io.element.android.libraries.matrix.test.A_HOMESERVER_URL_2
 import io.element.android.libraries.matrix.test.A_LOGIN_HINT
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
+import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
 import io.element.android.libraries.matrix.test.core.aBuildMeta
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.oauth.api.OAuthActionFlow
 import io.element.android.libraries.oauth.test.FakeOAuthActionFlow
 import io.element.android.libraries.permissions.api.PermissionsPresenter
@@ -39,16 +45,17 @@ import io.element.android.libraries.permissions.api.localnetwork.LocalNetworkPer
 import io.element.android.libraries.permissions.test.FakeLocalNetworkPermissionAdvisor
 import io.element.android.libraries.permissions.test.FakePermissionsPresenterFactory
 import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
-import io.element.android.libraries.mdm.api.MdmConfig
-import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.tests.testutils.WarmUpRule
+import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.test
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -75,7 +82,7 @@ class OnBoardingPresenterTest {
     }
 
     @Test
-    fun `present - initial state`() = runTest {
+    fun `present - QR login stays hidden when arbitrary homeservers are allowed`() = runTest {
         val buildMeta = aBuildMeta(
             applicationName = "A",
             productionApplicationName = "B",
@@ -97,8 +104,8 @@ class OnBoardingPresenterTest {
             assertThat(initialState.canCreateAccount).isFalse()
             assertThat(initialState.canReportBug).isFalse()
             assertThat(initialState.isAddingAccount).isFalse()
-            val finalState = awaitItem()
-            assertThat(finalState.canLoginWithQrCode).isTrue()
+            assertThat(awaitItem().canLoginWithQrCode).isFalse()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -152,7 +159,6 @@ class OnBoardingPresenterTest {
             rageshakeFeatureAvailability = { flowOf(false) },
         )
         presenter.test {
-            skipItems(1)
             awaitItem().also { state ->
                 assertThat(state.canReportBug).isFalse()
                 repeat(7) {
@@ -193,7 +199,7 @@ class OnBoardingPresenterTest {
             ),
         )
         presenter.test {
-            skipItems(3)
+            skipItems(2)
             awaitItem().also {
                 assertThat(it.defaultAccountProvider).isEqualTo(ACCOUNT_PROVIDER_FROM_LINK)
                 assertThat(it.canLoginWithQrCode).isFalse()
@@ -219,7 +225,7 @@ class OnBoardingPresenterTest {
             skipItems(1)
             awaitItem().also {
                 assertThat(it.defaultAccountProvider).isNull()
-                assertThat(it.canLoginWithQrCode).isTrue()
+                assertThat(it.canLoginWithQrCode).isFalse()
                 assertThat(it.canCreateAccount).isFalse()
             }
         }
@@ -241,7 +247,7 @@ class OnBoardingPresenterTest {
             skipItems(1)
             awaitItem().also {
                 assertThat(it.defaultAccountProvider).isEqualTo(ACCOUNT_PROVIDER_FROM_CONFIG)
-                assertThat(it.canLoginWithQrCode).isTrue()
+                assertThat(it.canLoginWithQrCode).isFalse()
                 assertThat(it.canCreateAccount).isFalse()
             }
         }
@@ -271,7 +277,7 @@ class OnBoardingPresenterTest {
             accountProviderDataSource = accountProviderDataSource,
         )
         presenter.test {
-            skipItems(3)
+            skipItems(2)
             awaitItem().also {
                 assertThat(it.defaultAccountProvider).isEqualTo(A_HOMESERVER_URL)
                 assertThat(accountProviderDataSource.flow.first().url).isEqualTo(AuthenticationConfig.DEFAULT_HOMESERVER_URL)
@@ -301,12 +307,107 @@ class OnBoardingPresenterTest {
     }
 
     @Test
-    fun `present - create account is offered once an administrator pushes allow_registration`() = runTest {
+    fun `present - managed configuration cannot enable account creation in the closed build`() = runTest {
+        val mdmService = FakeMdmService()
         val presenter = createPresenter(
-            mdmService = FakeMdmService(MdmConfig.default.copy(allowRegistration = true)),
+            mdmService = mdmService,
         )
         presenter.test {
-            assertThat(awaitItem().canCreateAccount).isTrue()
+            assertThat(awaitState { !it.canCreateAccount }.canCreateAccount).isFalse()
+            mdmService.emit(MdmConfig.default.copy(allowRegistration = true))
+            assertThat(awaitItem().canCreateAccount).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - managed homeserver updates while onboarding is open`() = runTest {
+        var configuredHomeserver = "https://one.example.com"
+        val mdmService = FakeMdmService(MdmConfig.default.copy(homeserverUrl = configuredHomeserver))
+        val presenter = createPresenter(
+            enterpriseService = FakeEnterpriseService(
+                defaultHomeserverListResult = { listOf(configuredHomeserver) },
+            ),
+            mdmService = mdmService,
+        )
+
+        presenter.test {
+            assertThat(awaitState { it.defaultAccountProvider == "https://one.example.com" }.defaultAccountProvider)
+                .isEqualTo("https://one.example.com")
+
+            configuredHomeserver = "https://two.example.com"
+            mdmService.emit(MdmConfig.default.copy(homeserverUrl = configuredHomeserver))
+
+            assertThat(awaitState { it.defaultAccountProvider == "https://two.example.com" }.defaultAccountProvider)
+                .isEqualTo("https://two.example.com")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `present - stale sign in event cannot bypass an updated managed homeserver`() = runTest {
+        var configuredHomeserver = "https://one.example.com"
+        val mdmService = FakeMdmService(MdmConfig.default.copy(homeserverUrl = configuredHomeserver))
+        val setHomeserver = lambdaRecorder<String, Result<MatrixHomeServerDetails>> {
+            Result.success(aMatrixHomeServerDetails())
+        }
+        val presenter = createPresenter(
+            enterpriseService = FakeEnterpriseService(
+                defaultHomeserverListResult = { listOf(configuredHomeserver) },
+                isAllowedToConnectToHomeserverResult = { it == configuredHomeserver },
+                isElementProEnforcedResult = { false },
+            ),
+            loginModePresenter = createLoginModePresenter(
+                authenticationService = FakeMatrixAuthenticationService(setHomeserverResult = setHomeserver),
+            ),
+            mdmService = mdmService,
+        )
+
+        presenter.test {
+            val staleState = awaitState { it.defaultAccountProvider == "https://one.example.com" }
+            configuredHomeserver = "https://two.example.com"
+            mdmService.emit(MdmConfig.default.copy(homeserverUrl = configuredHomeserver))
+            assertThat(awaitState { it.defaultAccountProvider == configuredHomeserver }.defaultAccountProvider)
+                .isEqualTo(configuredHomeserver)
+
+            staleState.eventSink(OnBoardingEvent.OnSignIn("https://one.example.com"))
+            advanceUntilIdle()
+
+            setHomeserver.assertions().isNeverCalled()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private suspend fun ReceiveTurbine<OnBoardingState>.awaitState(
+        predicate: (OnBoardingState) -> Boolean,
+    ): OnBoardingState {
+        while (true) {
+            val state = awaitItem()
+            if (predicate(state)) return state
+        }
+    }
+
+    @Test
+    fun `login mode refuses account creation when allow_registration is off`() = runTest {
+        val presenter = createLoginModePresenter(
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowRegistration = false)),
+        )
+
+        presenter.test {
+            awaitItem().eventSink(
+                LoginModeEvent.Submit(
+                    isAccountCreation = true,
+                    homeserverUrl = MdmConfig.DEFAULT_HOMESERVER_URL,
+                    resolvedHomeserverUrl = null,
+                    loginHint = null,
+                )
+            )
+            var state = awaitItem()
+            while (state.loginMode !is AsyncData.Failure) {
+                state = awaitItem()
+            }
+            assertThat(state.loginMode.errorOrNull()).isInstanceOf(AccountCreationNotSupported::class.java)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -350,8 +451,17 @@ fun createLoginModePresenter(
         FakeLocalNetworkPermissionAdvisor(),
     permissionsPresenterFactory: PermissionsPresenter.Factory =
         FakePermissionsPresenterFactory(),
+    accountProviderDataSource: AccountProviderDataSource = anAccountProviderDataSource(),
     saveAccountProviderToHistory: SaveAccountProviderToHistory =
-        SaveAccountProviderToHistory(anAccountProviderDataSource(), InMemoryAppPreferencesStore()),
+        SaveAccountProviderToHistory(accountProviderDataSource, InMemoryAppPreferencesStore()),
+    mdmService: FakeMdmService = FakeMdmService(MdmConfig.default.copy(allowRegistration = true)),
+    accountProviderAccessControl: DefaultAccountProviderAccessControl = DefaultAccountProviderAccessControl(
+        enterpriseService = FakeEnterpriseService(
+            isAllowedToConnectToHomeserverResult = { true },
+            isElementProEnforcedResult = { false },
+        ),
+        isEnterpriseBuild = { false },
+    ),
 ): LoginModePresenter = LoginModePresenter(
     oAuthActionFlow = oAuthActionFlow,
     authenticationService = authenticationService,
@@ -360,4 +470,7 @@ fun createLoginModePresenter(
         permissionsPresenterFactory = permissionsPresenterFactory,
     ),
     saveAccountProviderToHistory = saveAccountProviderToHistory,
+    mdmService = mdmService,
+    accountProviderDataSource = accountProviderDataSource,
+    accountProviderAccessControl = accountProviderAccessControl,
 )

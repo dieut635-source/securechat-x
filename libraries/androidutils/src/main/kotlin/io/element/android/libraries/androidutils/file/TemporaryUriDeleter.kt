@@ -8,6 +8,7 @@
 
 package io.element.android.libraries.androidutils.file
 
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import dev.zacsweers.metro.AppScope
@@ -26,14 +27,25 @@ interface TemporaryUriDeleter {
 class DefaultTemporaryUriDeleter(
     @ApplicationContext private val context: Context,
 ) : TemporaryUriDeleter {
-    private val baseCacheUri = "content://${context.packageName}.fileprovider/cache"
+    private val fileProviderAuthority = "${context.packageName}.fileprovider"
 
     override fun delete(uri: Uri?) {
         uri ?: return
-        if (uri.toString().startsWith(baseCacheUri)) {
+        if (uri.isPrivateCameraCaptureUri()) {
             context.contentResolver.delete(uri, null, null)
         } else {
             Timber.d("Do not delete the uri")
         }
+    }
+
+    private fun Uri.isPrivateCameraCaptureUri(): Boolean {
+        return scheme == ContentResolver.SCHEME_CONTENT &&
+            authority == fileProviderAuthority &&
+            pathSegments.size >= 2 &&
+            pathSegments.first() == CAMERA_CAPTURE_ROOT
+    }
+
+    private companion object {
+        const val CAMERA_CAPTURE_ROOT = "camera_capture"
     }
 }

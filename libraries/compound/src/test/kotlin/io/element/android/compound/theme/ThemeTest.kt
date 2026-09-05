@@ -103,4 +103,14 @@ class ThemeTest : RobolectricTest() {
                 awaitComplete()
             }
     }
+
+    @Test
+    fun `mapToTheme defaults to dark when no preference is stored`() = runTest {
+        flowOf(null)
+            .mapToTheme(allowBlackTheme = false)
+            .test {
+                assertThat(awaitItem()).isEqualTo(Theme.Dark)
+                awaitComplete()
+            }
+    }
 }

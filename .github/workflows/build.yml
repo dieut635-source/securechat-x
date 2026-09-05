@@ -7,7 +7,8 @@ on:
   push:
     branches: [ develop ]
 
-permissions: {}
+permissions:
+  contents: read
 
 # Enrich gradle.properties for CI/CD
 env:
@@ -18,9 +19,6 @@ jobs:
   build:
     name: Build APKs
     runs-on: ubuntu-latest
-    permissions:
-      # For NejcZdovc/comment-pr
-      pull-requests: write
     strategy:
       matrix:
         variant: [debug, release, nightly]
@@ -62,60 +60,34 @@ jobs:
       - name: Assemble debug APKs
         if: ${{ matrix.variant == 'debug' }}
         env:
-          ELEMENT_ANDROID_MAPTILER_API_KEY: ${{ secrets.MAPTILER_KEY }}
-          ELEMENT_ANDROID_MAPTILER_LIGHT_MAP_ID: ${{ secrets.MAPTILER_LIGHT_MAP_ID }}
-          ELEMENT_ANDROID_MAPTILER_DARK_MAP_ID: ${{ secrets.MAPTILER_DARK_MAP_ID }}
-          ELEMENT_ANDROID_SENTRY_DSN: ${{ secrets.ELEMENT_ANDROID_SENTRY_DSN }}
-          ELEMENT_SDK_SENTRY_DSN: ${{ secrets.ELEMENT_SDK_SENTRY_DSN }}
-          ELEMENT_CALL_SENTRY_DSN: ${{ secrets.ELEMENT_CALL_SENTRY_DSN }}
-          ELEMENT_CALL_POSTHOG_API_HOST: ${{ secrets.ELEMENT_CALL_POSTHOG_API_HOST }}
-          ELEMENT_CALL_POSTHOG_API_KEY: ${{ secrets.ELEMENT_CALL_POSTHOG_API_KEY }}
-          ELEMENT_CALL_RAGESHAKE_URL: ${{ secrets.ELEMENT_CALL_RAGESHAKE_URL }}
-        run: ./gradlew :app:assembleGplayDebug app:assembleFDroidDebug -PallWarningsAsErrors=true $CI_GRADLE_ARG_PROPERTIES
+          SECURECHAT_MAPTILER_API_KEY: ${{ secrets.SECURECHAT_MAPTILER_API_KEY }}
+          SECURECHAT_MAPTILER_LIGHT_MAP_ID: ${{ secrets.SECURECHAT_MAPTILER_LIGHT_MAP_ID }}
+          SECURECHAT_MAPTILER_DARK_MAP_ID: ${{ secrets.SECURECHAT_MAPTILER_DARK_MAP_ID }}
+          SECURECHAT_CALL_SENTRY_DSN: ${{ secrets.SECURECHAT_CALL_SENTRY_DSN }}
+          SECURECHAT_CALL_POSTHOG_API_HOST: ${{ secrets.SECURECHAT_CALL_POSTHOG_API_HOST }}
+          SECURECHAT_CALL_POSTHOG_API_KEY: ${{ secrets.SECURECHAT_CALL_POSTHOG_API_KEY }}
+          SECURECHAT_CALL_RAGESHAKE_URL: ${{ secrets.SECURECHAT_CALL_RAGESHAKE_URL }}
+        run: ./gradlew :app:assembleFdroidDebug -PallWarningsAsErrors=true $CI_GRADLE_ARG_PROPERTIES
       - name: Upload debug APKs
         if: ${{ matrix.variant == 'debug' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: elementx-debug
+          name: securechat-debug
           path: |
-            app/build/outputs/apk/gplay/debug/*-universal-debug.apk
             app/build/outputs/apk/fdroid/debug/*-universal-debug.apk
-      - uses: rnkdsh/action-upload-diawi@76778fcd1f9f589efaaa62f63d5f03430bbb1306 # v1.5.13
-        id: diawi
-        # Do not fail the whole build if Diawi upload fails
-        continue-on-error: true
-        env:
-          token: ${{ secrets.DIAWI_TOKEN }}
-        if: ${{ matrix.variant == 'debug' && github.event_name == 'pull_request' && env.token != '' }}
-        with:
-          token: ${{ env.token }}
-          file: app/build/outputs/apk/gplay/debug/app-gplay-arm64-v8a-debug.apk
-      - name: Add or update PR comment with QR Code to download APK.
-        if: ${{ matrix.variant == 'debug' && github.event_name == 'pull_request' && steps.diawi.conclusion == 'success' }}
-        uses: NejcZdovc/comment-pr@a423635d183a8259308e80593c96fecf31539c26 # v2.1.0
-        with:
-          message: |
-            :iphone: Scan the QR code below to install the build (arm64 only) for this PR.
-            ![QR code](${{ steps.diawi.outputs['qrcode'] }})
-            If you can't scan the QR code you can install the build via this link: ${{ steps.diawi.outputs['url'] }}
-          # Enables to identify and update existing Ad-hoc release message on new commit in the PR
-          identifier: "GITHUB_COMMENT_QR_CODE"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Compile release sources
+      # Cloud CI must never receive the production key or emit a production-looking APK/AAB.
+      # Packaging is reserved for tools/release/build_securechat_offline.sh.
+      - name: Compile release sources without packaging
+        if: ${{ matrix.variant == 'release' }}
+        run: ./gradlew :app:compileFdroidReleaseSources -PallWarningsAsErrors=true $CI_GRADLE_ARG_PROPERTIES
+      - name: Assert that CI produced no release artifact
         if: ${{ matrix.variant == 'release' }}
         run: |
-          ./gradlew assembleGplayRelease -PallWarningsAsErrors=true $CI_GRADLE_ARG_PROPERTIES
-          ./gradlew bundleGplayRelease -PallWarningsAsErrors=true $CI_GRADLE_ARG_PROPERTIES
-      - name: Run aapt dump
-        if: ${{ matrix.variant == 'release' }}
-        run: |
-          $ANDROID_HOME/build-tools/37.0.0/aapt dump badging \
-            ./app/build/outputs/apk/gplay/release/app-gplay-universal-release.apk \
-            > /tmp/currentAaptDump.txt
-      - name: Check manifest has not changed
-        if: ${{ matrix.variant == 'release' }}
-        run: diff /tmp/currentAaptDump.txt ./tools/manifest/gplay/release/aaptDump.txt
+          RELEASE_ARTIFACT=$(find app/build -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' \) -print -quit 2>/dev/null || true)
+          if [ -n "$RELEASE_ARTIFACT" ]; then
+            echo "::error::Cloud CI unexpectedly produced a release artifact: $RELEASE_ARTIFACT"
+            exit 1
+          fi
       - name: Compile nightly sources
         if: ${{ matrix.variant == 'nightly' }}
-        run: ./gradlew compileGplayNightlySources -PallWarningsAsErrors=true $CI_GRADLE_ARG_PROPERTIES
+        run: ./gradlew compileFdroidNightlySources -PallWarningsAsErrors=true $CI_GRADLE_ARG_PROPERTIES

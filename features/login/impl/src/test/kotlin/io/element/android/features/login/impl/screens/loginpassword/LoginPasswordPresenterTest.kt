@@ -10,9 +10,12 @@ package io.element.android.features.login.impl.screens.loginpassword
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.appconfig.AuthenticationConfig
+import io.element.android.features.enterprise.test.FakeEnterpriseService
+import io.element.android.features.login.impl.accesscontrol.DefaultAccountProviderAccessControl
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
 import io.element.android.features.login.impl.accountprovider.SaveAccountProviderToHistory
 import io.element.android.features.login.impl.accountprovider.anAccountProviderDataSource
+import io.element.android.features.login.impl.changeserver.AccountProviderAccessException
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.test.AN_EXCEPTION
@@ -22,6 +25,8 @@ import io.element.android.libraries.matrix.test.A_USER_NAME
 import io.element.android.libraries.matrix.test.A_USER_NAME_2
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
 import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
 import io.element.android.tests.testutils.WarmUpRule
@@ -184,15 +189,59 @@ class LoginPasswordPresenterTest {
         }
     }
 
+    @Test
+    fun `present - submit rechecks a managed homeserver changed after the screen opened`() = runTest {
+        val originalHomeserver = "https://one.example.com"
+        val replacementHomeserver = "https://two.example.com"
+        val mdmService = FakeMdmService(MdmConfig.default.copy(homeserverUrl = originalHomeserver))
+        val enterpriseService = FakeEnterpriseService(
+            defaultHomeserverListResult = { listOf(mdmService.config.value.homeserverUrl) },
+            isAllowedToConnectToHomeserverResult = { it == mdmService.config.value.homeserverUrl },
+            isElementProEnforcedResult = { false },
+        )
+        val accountProviderDataSource = anAccountProviderDataSource()
+        accountProviderDataSource.setUrl(originalHomeserver)
+        val presenter = createLoginPasswordPresenter(
+            accountProviderDataSource = accountProviderDataSource,
+            accountProviderAccessControl = DefaultAccountProviderAccessControl(
+                isEnterpriseBuild = { false },
+                enterpriseService = enterpriseService,
+            ),
+        )
+
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(LoginPasswordEvent.SetLogin(A_USER_NAME))
+            initialState.eventSink(LoginPasswordEvent.SetPassword(A_PASSWORD))
+            skipItems(1)
+            val readyState = awaitItem()
+
+            mdmService.emit(MdmConfig.default.copy(homeserverUrl = replacementHomeserver))
+            readyState.eventSink(LoginPasswordEvent.Submit)
+
+            assertThat(awaitItem().loginAction).isInstanceOf(AsyncData.Loading::class.java)
+            val failure = awaitItem().loginAction as AsyncData.Failure<*>
+            assertThat(failure.error).isInstanceOf(AccountProviderAccessException.UnauthorizedAccountProviderException::class.java)
+        }
+    }
+
     private fun createLoginPasswordPresenter(
         initialLogin: String = "",
         authenticationService: FakeMatrixAuthenticationService = FakeMatrixAuthenticationService(),
         accountProviderDataSource: AccountProviderDataSource = anAccountProviderDataSource(),
         appPreferencesStore: AppPreferencesStore = InMemoryAppPreferencesStore(),
+        accountProviderAccessControl: DefaultAccountProviderAccessControl = DefaultAccountProviderAccessControl(
+            isEnterpriseBuild = { false },
+            enterpriseService = FakeEnterpriseService(
+                isAllowedToConnectToHomeserverResult = { true },
+                isElementProEnforcedResult = { false },
+            ),
+        ),
     ): LoginPasswordPresenter = LoginPasswordPresenter(
         initialLogin = initialLogin,
         authenticationService = authenticationService,
         accountProviderDataSource = accountProviderDataSource,
         saveAccountProviderToHistory = SaveAccountProviderToHistory(accountProviderDataSource, appPreferencesStore),
+        accountProviderAccessControl = accountProviderAccessControl,
     )
 }

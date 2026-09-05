@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"اختر طريقة استقبال الإشعارات"</string>
   <string name="screen_advanced_settings_developer_mode">"وضع المطوّر"</string>
   <string name="screen_advanced_settings_developer_mode_description">"فعّله للوصول إلى الميزات والوظائف الخاصة بالمطورين."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"عنوان URL الأساسي المخصص لـ Element Call"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"عيّن عنوان URL أساسيًا مخصصًا لـ Element Call."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"عنوان URL الأساسي المخصص لـ SecureChat Calls"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"عيّن عنوان URL أساسيًا مخصصًا لـ SecureChat Calls."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"عنوان URL غير صالح، يُرجى التأكد من تضمين البروتوكول (http/https) والعنوان الصحيح."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"إخفاء الصور الرمزية في طلبات الدعوة إلى الغرف"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"إخفاء معاينات الوسائط في المخطط الزمني"</string>
@@ -92,8 +92,8 @@
   <string name="screen_notification_settings_sound_custom_fallback">"مخصص"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"صوت مخصص…"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"خطأ في حذف الملف"</string>
-  <string name="screen_notification_settings_sound_element_default">"افتراضي Element"</string>
-  <string name="screen_notification_settings_sound_element_fade">"Element Fade"</string>
+  <string name="screen_notification_settings_sound_element_default">"افتراضي SecureChat"</string>
+  <string name="screen_notification_settings_sound_element_fade">"SecureChat Fade"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"خطأ في استيراد الملف"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"مشكلة في معاينة صوت التنبيه"</string>
   <string name="screen_notification_settings_sound_section_title">"الصوت"</string>

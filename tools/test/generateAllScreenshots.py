@@ -10,7 +10,6 @@
 import os
 import re
 import sys
-import time
 
 from util import compare
 
@@ -130,57 +129,6 @@ def checkForScreenshotNameDuplication():
         print("Warning: %d duplicated screenshot name(s) found" % error)
 
 
-def generateJavascriptFile():
-    __doc__ = "Generate a javascript file to load the screenshots"
-    print("Generating javascript file...")
-    languages = detectRecordedLanguages()
-    # First item is the list of languages, adding "en" and "en-dark" at the beginning
-    data = [["en", "en-dark"] + languages]
-    files = sorted(
-        os.listdir("tests/uitests/src/test/snapshots/images/"),
-        key=lambda file: file[file.find("_", 1):],
-    )
-    for file in files:
-        # Continue if file contains "_Night", keep only light screenshots
-        if "_Night" in file:
-            continue
-        dataForFile = [file[:-4]]
-        darkFile = computeDarkFileName(file)
-        if os.path.exists("./tests/uitests/src/test/snapshots/images/" + darkFile):
-            dataForFile.append(darkFile[:-4])
-        else:
-            dataForFile.append("")
-        for l in languages:
-            simpleFile = file[:-6] + l
-            translatedFile = "./screenshots/" + l + "/" + simpleFile + ".png"
-            if os.path.exists(translatedFile):
-                # Get the last modified date of the file in seconds and round to days
-                date = os.popen("git log -1 --format=%ct -- \"" + translatedFile + "\"").read().strip()
-                # if date is empty, use today's date
-                if date == "":
-                    date = time.time()
-                dateDay = int(date) // 86400
-                dataForFile.append(dateDay)
-            else:
-                dataForFile.append(0)
-        data.append(dataForFile)
-
-    with open("screenshots/html/data.js", "w") as f:
-        f.write("// Generated file, do not edit\n")
-        f.write("export const buildDate = %d;\n" % int(time.time()))
-        f.write("export const screenshots = [\n")
-        for line in data:
-            f.write("[")
-            for item in line:
-                # If item is a string, add quotes
-                if isinstance(item, str):
-                    f.write("\"" + item + "\",")
-                else:
-                    f.write(str(item) + ",")
-            f.write("],\n")
-        f.write("];\n")
-
-
 def main():
     checkForScreenshotNameDuplication()
     generateAllScreenshots(readArguments())
@@ -188,7 +136,6 @@ def main():
     for l in lang:
         deleteDuplicatedScreenshots(l)
         moveScreenshots(l)
-    generateJavascriptFile()
 
 
 main()

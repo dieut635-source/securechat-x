@@ -14,7 +14,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
-import io.element.android.appconfig.AuthenticationConfig
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.login.impl.accountprovider.AccountProvider
 import io.element.android.features.login.impl.login.LoginModeEvent
@@ -66,8 +65,8 @@ class ChooseAccountProviderPresenter(
                     AccountProvider(
                         url = url,
                         subtitle = null,
-                        isPublic = url == AuthenticationConfig.MATRIX_ORG_URL,
-                        isMatrixOrg = url == AuthenticationConfig.MATRIX_ORG_URL,
+                        isPublic = false,
+                        isMatrixOrg = false,
                     )
                 }
                 .toImmutableList()

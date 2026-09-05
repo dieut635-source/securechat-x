@@ -70,7 +70,7 @@ class ConfirmAccountProviderPresenter(
         }
 
         // Editable input, seeded from the current (history-defaulted) account provider until the user edits it.
-        // Displayed without the scheme, so the field shows e.g. "matrix.org" rather than "https://matrix.org".
+        // Displayed without the scheme, so the field shows e.g. "example.org" rather than "https://example.org".
         var userInput by rememberSaveable { mutableStateOf<String?>(null) }
         val accountProviderInput = userInput ?: accountProvider.url.withoutScheme()
 
@@ -130,7 +130,7 @@ class ConfirmAccountProviderPresenter(
                     // For a user ID the homeserver is the domain part (after the ':'), keeping any port.
                     val host = if (isUserId) accountProvider.substringAfter(":") else accountProvider
                     submittedLoginHint = "mxid:$accountProvider".takeIf { isUserId && !params.isAccountCreation }
-                    // Default the scheme to https:// so entering a bare host (e.g. "matrix.org") works.
+                    // Default the scheme to https:// so entering a bare host (e.g. "example.org") works.
                     val accountProviderUrl = host.ensureProtocol()
                     submittedAccountProvider = accountProviderUrl
                     changeServerState.eventSink(
@@ -157,6 +157,6 @@ class ConfirmAccountProviderPresenter(
 
 /**
  * The host part of an account provider URL, i.e. the value with any `https://` / `http://` scheme removed.
- * Returns the input unchanged when it has no scheme (e.g. `matrix.org`).
+ * Returns the input unchanged when it has no scheme (e.g. `example.org`).
  */
 private fun String.withoutScheme(): String = substringAfter("://")

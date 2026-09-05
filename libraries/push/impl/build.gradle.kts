@@ -24,7 +24,7 @@ android {
     }
 
     buildTypes {
-        val defaultPusherAppId = "im.vector.app.android"
+        val defaultPusherAppId = "com.securechat.app.android"
         getByName("release") {
             buildConfigFieldStr(
                 name = "PUSHER_APP_ID",

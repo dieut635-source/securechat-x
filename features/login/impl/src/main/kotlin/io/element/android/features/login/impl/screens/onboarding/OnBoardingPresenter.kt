@@ -25,12 +25,12 @@ import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.api.canConnectToAnyHomeserver
 import io.element.android.features.login.impl.accesscontrol.DefaultAccountProviderAccessControl
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
+import io.element.android.features.login.impl.changeserver.AccountProviderAccessException
 import io.element.android.features.login.impl.login.LoginModeEvent
 import io.element.android.features.login.impl.login.LoginModeState
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
-import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.ui.utils.MultipleTapToUnlock
@@ -61,18 +61,19 @@ class OnBoardingPresenter(
     @Composable
     override fun present(): OnBoardingState {
         val localCoroutineScope = rememberCoroutineScope()
-        val forcedAccountProvider = remember {
+        val mdmConfig by mdmService.config.collectAsState()
+        val forcedAccountProvider = remember(mdmConfig.homeserverUrl) {
             // If homeserverAllowList() returns a singleton list, this is the default account provider.
             // In this case, the user can sign in using this homeserver, or use QrCode login
             enterpriseService.homeserverAllowList().singleOrNull()
         }
-        val canConnectToAnyHomeserver = remember {
+        val canConnectToAnyHomeserver = remember(mdmConfig.homeserverUrl) {
             enterpriseService.canConnectToAnyHomeserver()
         }
-        val mustChooseAccountProvider = remember {
+        val mustChooseAccountProvider = remember(mdmConfig.homeserverUrl) {
             !canConnectToAnyHomeserver && enterpriseService.homeserverAllowList().size > 1
         }
-        val linkAccountProvider by produceState<String?>(initialValue = null) {
+        val linkAccountProvider by produceState<String?>(initialValue = null, mdmConfig.homeserverUrl) {
             // Account provider from the link, if allowed by the enterprise service
             value = params.accountProvider?.takeIf {
                 try {
@@ -83,13 +84,10 @@ class OnBoardingPresenter(
                 }
             }
         }
-        val defaultAccountProvider = remember(linkAccountProvider) {
+        val defaultAccountProvider = remember(forcedAccountProvider, linkAccountProvider) {
             // If there is a forced account provider, this is the default account provider
             // Else use the account provider passed in the params if any and if allowed
             forcedAccountProvider ?: linkAccountProvider
-        }
-        val canLoginWithQrCode by produceState(initialValue = false, linkAccountProvider) {
-            value = linkAccountProvider == null
         }
         val canReportBug by remember { rageshakeFeatureAvailability.isAvailable() }.collectAsState(false)
         var showReportBug by rememberSaveable { mutableStateOf(false) }
@@ -106,6 +104,16 @@ class OnBoardingPresenter(
         fun handleEvent(event: OnBoardingEvent) {
             when (event) {
                 is OnBoardingEvent.OnSignIn -> localCoroutineScope.launch {
+                    // Re-check at click time: an old Composable/event sink can briefly outlive a
+                    // homeserver policy update while the new onboarding state is being rendered.
+                    try {
+                        defaultAccountProviderAccessControl.assertIsAllowedToConnectToAccountProvider(
+                            title = event.defaultAccountProvider,
+                            accountProviderUrl = event.defaultAccountProvider,
+                        )
+                    } catch (_: AccountProviderAccessException) {
+                        return@launch
+                    }
                     // Ensure that the current account provider is set
                     accountProviderDataSource.setUrl(event.defaultAccountProvider)
                     loginModeState.eventSink(
@@ -128,16 +136,18 @@ class OnBoardingPresenter(
             }
         }
 
-        val mdmConfig by mdmService.config.collectAsState()
-
         return OnBoardingState(
             isAddingAccount = isAddingAccount,
             showBackButton = params.showBackButton,
-            showDeveloperSettings = buildMeta.buildType != BuildType.RELEASE,
+            // Never, in any build type. See ShowDeveloperSettingsProvider for why this is not
+            // gated on the build type: the build being tested has to be the build that ships.
+            showDeveloperSettings = false,
             productionApplicationName = buildMeta.productionApplicationName,
             defaultAccountProvider = defaultAccountProvider,
             mustChooseAccountProvider = mustChooseAccountProvider,
-            canLoginWithQrCode = canLoginWithQrCode,
+            // SecureChat is password-only. Keep QR login hidden independently of homeserver and
+            // feature-flag configuration; the Matrix authentication boundary rejects it as well.
+            canLoginWithQrCode = false,
             // SecureChat pins the app to one homeserver, so `canConnectToAnyHomeserver` is false and the
             // upstream condition would always hide "Create account". Whether it is offered is an
             // administrator's decision instead, pushed as the `allow_registration` managed configuration.

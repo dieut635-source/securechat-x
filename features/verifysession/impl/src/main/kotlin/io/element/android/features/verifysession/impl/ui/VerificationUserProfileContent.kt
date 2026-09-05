@@ -70,7 +70,7 @@ fun VerificationUserProfileContent(
 
             if (user.displayName.isNullOrEmpty().not()) {
                 Text(
-                    text = user.userId.value,
+                    text = user.userId.displayLabel,
                     style = ElementTheme.typography.fontBodyMdRegular,
                     color = ElementTheme.colors.textSecondary,
                 )

@@ -93,14 +93,9 @@ fun LoginWithClassicView(
                         .background(ElementTheme.colors.bgCanvasDefault, shape = RoundedCornerShape(15.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    val resId = if (state.isElementPro) {
-                        R.drawable.element_pro_logo
-                    } else {
-                        R.drawable.element_foss_logo
-                    }
                     Image(
                         modifier = Modifier.size(37.5.dp),
-                        painter = painterResource(id = resId),
+                        painter = painterResource(id = R.drawable.securechat_login_logo),
                         contentDescription = null,
                     )
                 }
@@ -151,7 +146,7 @@ fun LoginWithClassicView(
                 }
                 // UserId
                 Text(
-                    text = state.userId.value,
+                    text = state.userId.displayLabel,
                     style = if (state.displayName == null) ElementTheme.typography.fontHeadingLgBold else ElementTheme.typography.fontBodyLgRegular,
                     color = ElementTheme.colors.textPrimary,
                     textAlign = TextAlign.Center,

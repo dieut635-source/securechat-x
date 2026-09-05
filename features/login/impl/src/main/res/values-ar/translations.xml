@@ -9,13 +9,13 @@
   <string name="screen_account_provider_signin_title">"أنت على وشك تسجيل الدخول إلى %s"</string>
   <string name="screen_account_provider_signup_subtitle">"هذا المكان الذي تقطن فيه رسائلك — تماماً كاستخدامك مزوّد بريد إلكتروني للاحتفاظ برسائل البريد خاصّتك فيه."</string>
   <string name="screen_account_provider_signup_title">"أنت على وشك إنشاء حساب في %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"إن Matrix.org سيرفر ضخم ومجاني في شبكة Matrix العامّة وُجِد من أجل مراسلات آمنة ولا مركزية، يُدار من قِبل مؤسسة Matrix.org."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"غير ذلك"</string>
   <string name="screen_change_account_provider_subtitle">"استخدم مزوّد حسابات آخر كسيرفرك الخاص أو حساب عمل."</string>
   <string name="screen_change_account_provider_title">"تغيير مزوّد الحسابات"</string>
   <string name="screen_change_server_error_element_pro_required_action_android">"Google Play"</string>
-  <string name="screen_change_server_error_element_pro_required_message">"تطبيق Element Pro مطلوب على %1$s. يرجى تنزيله من المتجر."</string>
-  <string name="screen_change_server_error_element_pro_required_title">"Element Pro مطلوب"</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
   <string name="screen_change_server_error_invalid_homeserver">"لم نستطع الوصول لهذا السيرفر. رجاءً تحقق إذا ما كنت أدخلت عنوان الـURL بشكل صحيح. إذا كان الـURL صحيحاً فراسل إدارة السيرفر خاصتك لمزيد من المساعدة."</string>
   <string name="screen_change_server_error_invalid_well_known">"الخادم غير متاح بسبب مشكلة في ملف .well-known:
 %1$s"</string>
@@ -37,8 +37,8 @@
   <string name="screen_login_subtitle">"Matrix عبارة عن شبكة مفتوحة للاتصالات الآمنة واللا مركزية."</string>
   <string name="screen_login_title">"أهلاً بعودتك!"</string>
   <string name="screen_login_title_with_homeserver">"تسجيل الدخول إلى %1$s"</string>
-  <string name="screen_missing_key_backup_open_element_classic">"فتح Element Classic"</string>
-  <string name="screen_missing_key_backup_step_1">"افتح Element Classic على جهازك"</string>
+  <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
+  <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
   <string name="screen_missing_key_backup_step_2_android">"انتقل إلى الإعدادات &gt; الأمان والخصوصية"</string>
   <string name="screen_missing_key_backup_step_3_android">"في إدارة مفاتيح التشفير، اختر استرداد الرسائل المشفّرة"</string>
   <string name="screen_missing_key_backup_step_4">"اتبع التعليمات لتفعيل تخزين مفاتيحك"</string>
@@ -53,7 +53,7 @@
   <string name="screen_onboarding_welcome_back">"مرحبًا بعودتك"</string>
   <string name="screen_onboarding_welcome_message">"مرحباً بك في أسرع %1$s على الإطلاق. مزوَّد من أجل سرعةٍ وبساطة."</string>
   <string name="screen_onboarding_welcome_subtitle">"مرحباً بك في %1$s. المعزَّز، من أجل سرعةٍ وبساطة."</string>
-  <string name="screen_onboarding_welcome_title">"Be in your element"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"جارٍ إنشاء اتصال آمن"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"تعذّر إنشاء اتصال آمن بالجهاز الجديد. لا تزال أجهزتك الحالية آمنة ولا داعي للقلق بشأنها."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"ماذا الآن؟"</string>
@@ -100,7 +100,7 @@
   <string name="screen_qr_code_login_verify_code_subtitle">"قد يطلب موفّر حسابك الرمز التالي للتحقق من تسجيل الدخول."</string>
   <string name="screen_qr_code_login_verify_code_title">"رمز التحقق الخاص بك"</string>
   <string name="screen_server_confirmation_change_server">"تغيير مزوّد الحسابات"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"سيرفر خاص بموظّفي Element."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix عبارة عن شبكة مفتوحة للاتصالات الآمنة واللا مركزية."</string>
   <string name="screen_server_confirmation_message_register">"هذا المكان الذي تقطن فيه رسائلك — تماماً كاستخدامك مزوّد بريد إلكتروني للاحتفاظ برسائل البريد خاصّتك فيه."</string>
   <string name="screen_server_confirmation_title_login">"أنت على وشك تسجيل الدخول إلى %1$s"</string>

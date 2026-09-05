@@ -315,9 +315,18 @@ class DefaultNotificationCreator(
         fallbackNotifiableEvents: List<FallbackNotifiableEvent>,
     ): Notification {
         val fallbackNotifiableEvent = fallbackNotifiableEvents.first()
+        // SecureChat: đánh thức được người dùng, nhưng không lộ gì.
+        //
+        // Thông báo dự phòng này được dùng cho MỌI tin nhắn khi tài khoản có mã PIN
+        // (xem DefaultNotificationDrawerManager: isPinSetup -> ẩn nội dung và người gửi).
+        // Bản gốc để nó im lặng, nên với SecureChat — nơi PIN là bắt buộc — người dùng
+        // không bao giờ biết có tin và tính năng thông báo coi như không tồn tại.
+        //
+        // Dùng kênh có âm báo. Nội dung KHÔNG đổi: vẫn chỉ là tên ứng dụng và số tin
+        // chưa đọc, không tên người gửi, không nội dung tin. Kêu để biết, không để lộ.
         val channelId = notificationChannels.getChannelIdForMessage(
             sessionId = fallbackNotifiableEvent.sessionId,
-            noisy = false,
+            noisy = true,
         )
         val existingCounter = existingNotification
             ?.extras
@@ -325,7 +334,9 @@ class DefaultNotificationCreator(
             ?: 0
         val counter = existingCounter + fallbackNotifiableEvents.size
         return NotificationCompat.Builder(context, channelId)
-            .setOnlyAlertOnce(true)
+            // false: mỗi tin mới phải báo lại. Để true thì chỉ tin ĐẦU TIÊN kêu, các tin
+            // sau chỉ lặng lẽ tăng bộ đếm — người dùng bỏ lỡ toàn bộ phần còn lại.
+            .setOnlyAlertOnce(false)
             .setContentTitle(buildMeta.applicationName.annotateForDebug(7))
             .setContentText(
                 stringProvider.getQuantityString(R.plurals.notification_fallback_n_content, counter, counter)
@@ -340,7 +351,9 @@ class DefaultNotificationCreator(
             .setAutoCancel(true)
             .setWhen(fallbackNotifiableEvent.timestamp)
             .setContentIntent(pendingIntentFactory.createOpenSessionPendingIntent(fallbackNotifiableEvent.sessionId))
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            // PRIORITY_LOW ép thông báo xuống im lặng trên Android 7 trở xuống, nơi
+            // priority còn quyết định thay cho importance của kênh.
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
     }
 

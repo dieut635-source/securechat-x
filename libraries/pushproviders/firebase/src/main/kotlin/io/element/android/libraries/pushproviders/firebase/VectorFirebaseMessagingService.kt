@@ -21,7 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-private val loggerTag = LoggerTag("VectorFirebaseMessagingService", LoggerTag.PushLoggerTag)
+private val loggerTag = LoggerTag("SecureChatFirebaseMessagingService", LoggerTag.PushLoggerTag)
 
 class VectorFirebaseMessagingService : FirebaseMessagingService() {
     @Inject lateinit var firebaseNewInstallationIdHandler: FirebaseNewInstallationIdHandler

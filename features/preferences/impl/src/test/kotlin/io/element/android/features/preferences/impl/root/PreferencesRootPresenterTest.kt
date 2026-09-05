@@ -12,13 +12,10 @@ package io.element.android.features.preferences.impl.root
 
 import app.cash.turbine.ReceiveTurbine
 import com.google.common.truth.Truth.assertThat
-import io.element.android.features.enterprise.api.SessionEnterpriseService
-import io.element.android.features.enterprise.test.FakeSessionEnterpriseService
 import io.element.android.features.logout.api.direct.aDirectLogoutState
 import io.element.android.features.preferences.impl.userstatus.aUserStatusState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
-import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
@@ -35,15 +32,10 @@ import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.A_USER_ID_2
 import io.element.android.libraries.matrix.test.A_USER_NAME
 import io.element.android.libraries.matrix.test.FakeMatrixClient
-import io.element.android.libraries.matrix.test.core.aBuildMeta
 import io.element.android.libraries.matrix.test.verification.FakeSessionVerificationService
-import io.element.android.libraries.sessionstorage.api.SessionStore
-import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
-import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.services.analytics.test.FakeAnalyticsService
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.lambda.lambdaRecorder
-import io.element.android.tests.testutils.lambda.value
 import io.element.android.tests.testutils.test
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -68,9 +60,6 @@ class PreferencesRootPresenterTest {
         )
         createPresenter(
             matrixClient = matrixClient,
-            sessionEnterpriseService = FakeSessionEnterpriseService(
-                tweakMasUrlResult = { "tweaked $it" },
-            ),
         ).test {
             val initialState = awaitItem()
             assertThat(initialState.myUser).isEqualTo(
@@ -97,16 +86,19 @@ class PreferencesRootPresenterTest {
             assertThat(loadedState.accountManagementUrl).isNull()
             assertThat(loadedState.showAnalyticsSettings).isFalse()
             assertThat(loadedState.showLinkNewDevice).isFalse()
-            assertThat(loadedState.showDeveloperSettings).isTrue()
+            // False even here, in a debug build. SecureChat ships without developer options in
+            // every build type, so that the build being tested is the build that ships.
+            assertThat(loadedState.showDeveloperSettings).isFalse()
+            // Có nút đăng xuất. Không có nó thì người dùng không có cách nào rời tài khoản
+            // khỏi máy của chính mình; cái giá là quản trị viên phải duyệt lại máy khi họ
+            // đăng nhập lần sau, và hộp thoại xác nhận nói thẳng điều đó.
+            assertThat(loadedState.showSignOut).isTrue()
             assertThat(loadedState.canDeactivateAccount).isTrue()
             assertThat(loadedState.canReportBug).isTrue()
             assertThat(loadedState.nbOfBlockedUsers).isEqualTo(0)
             assertThat(loadedState.directLogoutState).isEqualTo(aDirectLogoutState())
             assertThat(loadedState.snackbarMessage).isNull()
-            val finalState = awaitItem()
-            accountManagementUrlResult.assertions().isCalledOnce()
-                .with(value(null))
-            assertThat(finalState.accountManagementUrl).isEqualTo("tweaked null url")
+            accountManagementUrlResult.assertions().isNeverCalled()
         }
     }
 
@@ -177,13 +169,13 @@ class PreferencesRootPresenterTest {
     }
 
     @Test
-    fun `present - developer settings is hidden by default in release builds`() = runTest {
+    fun `present - developer settings is hidden in every build type`() = runTest {
         createPresenter(
             matrixClient = FakeMatrixClient(
                 canDeactivateAccountResult = { true },
                 accountManagementUrlResult = { Result.success(null) },
             ),
-            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE))
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider()
         ).test {
             val loadedState = awaitFirstItem()
             assertThat(loadedState.showDeveloperSettings).isFalse()
@@ -191,44 +183,35 @@ class PreferencesRootPresenterTest {
     }
 
     @Test
-    fun `present - developer settings can be enabled in release builds`() = runTest {
+    fun `present - the seven-tap gesture cannot enable developer settings in any build type`() = runTest {
         createPresenter(
             matrixClient = FakeMatrixClient(
                 canDeactivateAccountResult = { true },
                 accountManagementUrlResult = { Result.success(null) },
             ),
-            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE))
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider()
         ).test {
             val loadedState = awaitFirstItem()
             repeat(times = ShowDeveloperSettingsProvider.DEVELOPER_SETTINGS_COUNTER) {
                 assertThat(loadedState.showDeveloperSettings).isFalse()
                 loadedState.eventSink(PreferencesRootEvent.OnVersionInfoClick)
             }
-            assertThat(awaitItem().showDeveloperSettings).isTrue()
+            expectNoEvents()
+            assertThat(loadedState.showDeveloperSettings).isFalse()
         }
     }
 
     @Test
-    fun `present - switch session invoke method on the session store`() = runTest {
-        val setLatestSessionResult = lambdaRecorder<String, Unit> { }
-        val sessionStore = InMemorySessionStore(
-            initialList = listOf(
-                aSessionData(sessionId = A_SESSION_ID.value),
-                aSessionData(sessionId = A_SESSION_ID_2.value),
-            ),
-            setLatestSessionResult = setLatestSessionResult,
-        )
+    fun `present - stale switch session event is ignored`() = runTest {
         createPresenter(
             matrixClient = FakeMatrixClient(
                 canDeactivateAccountResult = { true },
                 accountManagementUrlResult = { Result.success(null) },
             ),
-            sessionStore = sessionStore,
         ).test {
             val loadedState = awaitFirstItem()
             loadedState.eventSink(PreferencesRootEvent.SwitchToSession(A_SESSION_ID_2))
-            setLatestSessionResult.assertions().isCalledOnce()
-                .with(value(A_SESSION_ID_2.value))
+            expectNoEvents()
         }
     }
 
@@ -277,7 +260,7 @@ class PreferencesRootPresenterTest {
     }
 
     @Test
-    fun `present - multiple accounts`() = runTest {
+    fun `present - multi account feature flag cannot expose another local session`() = runTest {
         createPresenter(
             matrixClient = FakeMatrixClient(
                 sessionId = A_SESSION_ID,
@@ -286,26 +269,15 @@ class PreferencesRootPresenterTest {
             featureFlagService = FakeFeatureFlagService(
                 initialState = mapOf(FeatureFlags.MultiAccount.key to true)
             ),
-            sessionStore = InMemorySessionStore(
-                initialList = listOf(
-                    aSessionData(sessionId = A_SESSION_ID.value),
-                    aSessionData(
-                        sessionId = A_SESSION_ID_2.value,
-                        userDisplayName = "Bob",
-                        userAvatarUrl = "avatarUrl",
-                    ),
-                )
-            )
         ).test {
             val state = awaitFirstItem()
-            assertThat(state.isMultiAccountEnabled).isTrue()
-            assertThat(state.otherSessions).hasSize(1)
-            assertThat(state.otherSessions[0]).isEqualTo(MatrixUser(userId = A_SESSION_ID_2, displayName = "Bob", avatarUrl = "avatarUrl"))
+            assertThat(state.isMultiAccountEnabled).isFalse()
+            assertThat(state.otherSessions).isEmpty()
         }
     }
 
     @Test
-    fun `present - link new device`() = runTest {
+    fun `present - QR feature flag cannot expose link new device`() = runTest {
         createPresenter(
             matrixClient = FakeMatrixClient(
                 sessionId = A_SESSION_ID,
@@ -316,7 +288,8 @@ class PreferencesRootPresenterTest {
             ),
         ).test {
             val state = awaitFirstItem()
-            assertThat(state.showLinkNewDevice).isTrue()
+            assertThat(state.showLinkNewDevice).isFalse()
+            assertThat(state.accountManagementUrl).isNull()
         }
     }
 
@@ -328,12 +301,10 @@ class PreferencesRootPresenterTest {
     private fun createPresenter(
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
         sessionVerificationService: FakeSessionVerificationService = FakeSessionVerificationService(),
-        showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.DEBUG)),
+        showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(),
         rageshakeFeatureAvailability: RageshakeFeatureAvailability = RageshakeFeatureAvailability { flowOf(true) },
         indicatorService: IndicatorService = FakeIndicatorService(),
         featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
-        sessionStore: SessionStore = InMemorySessionStore(),
-        sessionEnterpriseService: SessionEnterpriseService = FakeSessionEnterpriseService(),
     ) = PreferencesRootPresenter(
         matrixClient = matrixClient,
         sessionVerificationService = sessionVerificationService,
@@ -345,8 +316,6 @@ class PreferencesRootPresenterTest {
         showDeveloperSettingsProvider = showDeveloperSettingsProvider,
         rageshakeFeatureAvailability = rageshakeFeatureAvailability,
         featureFlagService = featureFlagService,
-        sessionStore = sessionStore,
-        sessionEnterpriseService = sessionEnterpriseService,
         userStatusPresenter = { aUserStatusState() },
     )
 }

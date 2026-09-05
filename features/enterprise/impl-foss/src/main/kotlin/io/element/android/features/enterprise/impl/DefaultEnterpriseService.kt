@@ -16,30 +16,26 @@ import io.element.android.features.enterprise.api.BugReportUrl
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.libraries.matrix.api.ClientUrlContentFetcher
 import io.element.android.libraries.matrix.api.core.SessionId
-import io.element.android.libraries.mdm.api.MdmService
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.api.areHomeserverUrlsEquivalent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 @ContributesBinding(AppScope::class)
-class DefaultEnterpriseService(
-    private val mdmService: MdmService,
-) : EnterpriseService {
+class DefaultEnterpriseService : EnterpriseService {
     override suspend fun isEnterpriseUser(sessionId: SessionId) = false
     override suspend fun tweakMasUrl(url: String, urlContentFetcher: ClientUrlContentFetcher) = url
 
     /**
-     * SecureChat always pins sign-in to a single homeserver: the one an administrator pushed with the
-     * `homeserver_url` managed configuration, or chat.securechat.com.au on an unmanaged device.
-     * Returning a non-empty list without the "*" wildcard is what makes the app hide the
-     * "change server" affordance, so this is also what locks the login screen down.
+     * SecureChat always pins sign-in to its production homeserver. Managed configuration cannot
+     * weaken this rule. Returning a singleton without the "*" wildcard also hides the inherited
+     * "change server" affordance.
      */
-    override fun homeserverAllowList(): List<String> = listOf(mdmService.config.value.homeserverUrl)
+    override fun homeserverAllowList(): List<String> = listOf(MdmConfig.DEFAULT_HOMESERVER_URL)
 
     override suspend fun isAllowedToConnectToHomeserver(homeserverUrl: String): Boolean {
-        return homeserverUrl.normalisedForComparison() == mdmService.config.value.homeserverUrl.normalisedForComparison()
+        return areHomeserverUrlsEquivalent(homeserverUrl, MdmConfig.DEFAULT_HOMESERVER_URL)
     }
-
-    private fun String.normalisedForComparison(): String = trim().trimEnd('/').lowercase()
 
     override suspend fun isElementProEnforced(serverName: String): Boolean = false
 
@@ -57,8 +53,8 @@ class DefaultEnterpriseService(
     override fun unifiedPushDefaultPushGateway(): String? = null
 
     override fun bugReportUrlFlow(sessionId: SessionId?): Flow<BugReportUrl> {
-        // UseDefault would post logs to Element's rageshake server (rageshakes.element.io).
-        // SecureChat has no bug-report endpoint of its own yet, so the feature stays off.
+        // The inherited default points at an upstream service. SecureChat has no bug-report
+        // endpoint of its own yet, so the feature stays off.
         return flowOf(BugReportUrl.Disabled)
     }
 

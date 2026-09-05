@@ -231,6 +231,7 @@ class DatabaseSessionStoreTest {
             lastUsageIndex = 0,
             userDisplayName = "userDisplayName",
             userAvatarUrl = "userAvatarUrl",
+            accountProvider = "accountProvider",
         )
         val secondSessionData = SessionData(
             userId = "userId",
@@ -249,6 +250,7 @@ class DatabaseSessionStoreTest {
             lastUsageIndex = 1,
             userDisplayName = "userDisplayNameAltered",
             userAvatarUrl = "userAvatarUrlAltered",
+            accountProvider = null,
         )
         assertThat(firstSessionData.userId).isEqualTo(secondSessionData.userId)
         assertThat(firstSessionData.loginTimestamp).isNotEqualTo(secondSessionData.loginTimestamp)
@@ -273,6 +275,7 @@ class DatabaseSessionStoreTest {
         assertThat(alteredSession.lastUsageIndex).isEqualTo(firstSessionData.lastUsageIndex)
         assertThat(alteredSession.userDisplayName).isEqualTo(firstSessionData.userDisplayName)
         assertThat(alteredSession.userAvatarUrl).isEqualTo(firstSessionData.userAvatarUrl)
+        assertThat(alteredSession.accountProvider).isEqualTo(firstSessionData.accountProvider)
     }
 
     @Test
@@ -294,6 +297,7 @@ class DatabaseSessionStoreTest {
             lastUsageIndex = 0,
             userDisplayName = "userDisplayName",
             userAvatarUrl = "userAvatarUrl",
+            accountProvider = "accountProvider",
         )
         val secondSessionData = SessionData(
             userId = "userIdUnknown",
@@ -312,6 +316,7 @@ class DatabaseSessionStoreTest {
             lastUsageIndex = 1,
             userDisplayName = "userDisplayNameAltered",
             userAvatarUrl = "userAvatarUrlAltered",
+            accountProvider = "accountProviderAltered",
         )
         assertThat(firstSessionData.userId).isNotEqualTo(secondSessionData.userId)
 

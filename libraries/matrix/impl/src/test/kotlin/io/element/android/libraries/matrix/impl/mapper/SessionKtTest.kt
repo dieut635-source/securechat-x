@@ -29,6 +29,7 @@ class SessionKtTest {
             loginType = LoginType.PASSWORD,
             passphrase = A_SECRET,
             sessionPaths = SessionPaths(File("/a/file"), File("/a/cache")),
+            accountProvider = A_HOMESERVER_URL_2,
         )
         assertThat(result.userId).isEqualTo(A_USER_ID.value)
         assertThat(result.deviceId).isEqualTo(A_DEVICE_ID.value)
@@ -42,6 +43,7 @@ class SessionKtTest {
         assertThat(result.passphrase).isEqualTo(A_SECRET)
         assertThat(result.sessionPath).isEqualTo("/a/file")
         assertThat(result.cachePath).isEqualTo("/a/cache")
+        assertThat(result.accountProvider).isEqualTo(A_HOMESERVER_URL_2)
     }
 
     @Test
@@ -75,6 +77,7 @@ class SessionKtTest {
             loginType = LoginType.PASSWORD,
             passphrase = A_SECRET,
             sessionPaths = SessionPaths(File("/a/file"), File("/a/cache")),
+            accountProvider = A_HOMESERVER_URL_2,
         )
         assertThat(result.userId).isEqualTo(A_USER_ID.value)
         assertThat(result.deviceId).isEqualTo(A_DEVICE_ID.value)
@@ -88,6 +91,7 @@ class SessionKtTest {
         assertThat(result.passphrase).isEqualTo(A_SECRET)
         assertThat(result.sessionPath).isEqualTo("/a/file")
         assertThat(result.cachePath).isEqualTo("/a/cache")
+        assertThat(result.accountProvider).isEqualTo(A_HOMESERVER_URL_2)
     }
 
     @Test

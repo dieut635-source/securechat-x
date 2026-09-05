@@ -14,7 +14,6 @@ import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ExternalModuleDependency
-import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.kotlin.dsl.DependencyHandlerScope
 import org.gradle.kotlin.dsl.closureOf
 import org.gradle.kotlin.dsl.project
@@ -22,8 +21,6 @@ import org.gradle.kotlin.dsl.project
 private fun DependencyHandlerScope.implementation(dependency: Any) = dependencies.add("implementation", dependency)
 private fun DependencyHandlerScope.testImplementation(dependency: Any) = dependencies.add("testImplementation", dependency)
 private fun DependencyHandlerScope.testReleaseImplementation(dependency: Any) = dependencies.add("testReleaseImplementation", dependency)
-internal fun DependencyHandler.implementation(dependency: Any) = add("implementation", dependency)
-
 // Implementation + config block
 private fun DependencyHandlerScope.implementation(
     dependency: Any,
@@ -53,7 +50,7 @@ fun DependencyHandlerScope.testCommonDependencies(
     testImplementation(libs.test.robolectric)
     testImplementation(libs.test.truth)
     testImplementation(libs.test.turbine)
-    testImplementation(project(":tests:testutils"))
+    testImplementation(dependencies.project(":tests:testutils"))
     if (includeTestComposeView) {
         testImplementation(libs.androidx.compose.ui.test.junit)
         testReleaseImplementation(libs.androidx.compose.ui.test.manifest)
@@ -85,68 +82,68 @@ fun DependencyHandlerScope.composeDependencies(libs: LibrariesForLibs) {
 }
 
 fun DependencyHandlerScope.allLibrariesImpl() {
-    implementation(project(":libraries:androidutils"))
-    implementation(project(":libraries:deeplink:impl"))
-    implementation(project(":libraries:designsystem"))
-    implementation(project(":libraries:matrix:impl"))
-    implementation(project(":libraries:mdm:impl"))
-    implementation(project(":libraries:matrixui"))
-    implementation(project(":libraries:matrixmedia:impl"))
-    implementation(project(":libraries:network"))
-    implementation(project(":libraries:core"))
-    implementation(project(":libraries:eventformatter:impl"))
-    implementation(project(":libraries:indicator:impl"))
-    implementation(project(":libraries:permissions:impl"))
-    implementation(project(":libraries:audio:impl"))
-    implementation(project(":libraries:push:impl"))
-    implementation(project(":libraries:featureflag:impl"))
-    implementation(project(":libraries:pushstore:impl"))
-    implementation(project(":libraries:preferences:impl"))
-    implementation(project(":libraries:architecture"))
-    implementation(project(":libraries:dateformatter:impl"))
-    implementation(project(":libraries:di"))
-    implementation(project(":libraries:cachestore:impl"))
-    implementation(project(":libraries:session-storage:impl"))
-    implementation(project(":libraries:mediapickers:impl"))
-    implementation(project(":libraries:mediaupload:impl"))
-    implementation(project(":libraries:slashcommands:impl"))
-    implementation(project(":libraries:usersearch:impl"))
-    implementation(project(":libraries:textcomposer:impl"))
-    implementation(project(":libraries:accountselect:impl"))
-    implementation(project(":libraries:roomselect:impl"))
-    implementation(project(":libraries:cryptography:impl"))
-    implementation(project(":libraries:voiceplayer:impl"))
-    implementation(project(":libraries:voicerecorder:impl"))
-    implementation(project(":libraries:mediaplayer:impl"))
-    implementation(project(":libraries:mediaviewer:impl"))
-    implementation(project(":libraries:troubleshoot:impl"))
-    implementation(project(":libraries:fullscreenintent:impl"))
-    implementation(project(":libraries:wellknown:impl"))
-    implementation(project(":libraries:oauth:impl"))
-    implementation(project(":libraries:workmanager:impl"))
-    implementation(project(":libraries:emoji:impl"))
+    implementation(dependencies.project(":libraries:androidutils"))
+    implementation(dependencies.project(":libraries:deeplink:impl"))
+    implementation(dependencies.project(":libraries:designsystem"))
+    implementation(dependencies.project(":libraries:matrix:impl"))
+    implementation(dependencies.project(":libraries:mdm:impl"))
+    implementation(dependencies.project(":libraries:matrixui"))
+    implementation(dependencies.project(":libraries:matrixmedia:impl"))
+    implementation(dependencies.project(":libraries:network"))
+    implementation(dependencies.project(":libraries:core"))
+    implementation(dependencies.project(":libraries:eventformatter:impl"))
+    implementation(dependencies.project(":libraries:indicator:impl"))
+    implementation(dependencies.project(":libraries:permissions:impl"))
+    implementation(dependencies.project(":libraries:audio:impl"))
+    implementation(dependencies.project(":libraries:push:impl"))
+    implementation(dependencies.project(":libraries:featureflag:impl"))
+    implementation(dependencies.project(":libraries:pushstore:impl"))
+    implementation(dependencies.project(":libraries:preferences:impl"))
+    implementation(dependencies.project(":libraries:architecture"))
+    implementation(dependencies.project(":libraries:dateformatter:impl"))
+    implementation(dependencies.project(":libraries:di"))
+    implementation(dependencies.project(":libraries:cachestore:impl"))
+    implementation(dependencies.project(":libraries:session-storage:impl"))
+    implementation(dependencies.project(":libraries:mediapickers:impl"))
+    implementation(dependencies.project(":libraries:mediaupload:impl"))
+    implementation(dependencies.project(":libraries:slashcommands:impl"))
+    implementation(dependencies.project(":libraries:usersearch:impl"))
+    implementation(dependencies.project(":libraries:textcomposer:impl"))
+    implementation(dependencies.project(":libraries:accountselect:impl"))
+    implementation(dependencies.project(":libraries:roomselect:impl"))
+    implementation(dependencies.project(":libraries:cryptography:impl"))
+    implementation(dependencies.project(":libraries:voiceplayer:impl"))
+    implementation(dependencies.project(":libraries:voicerecorder:impl"))
+    implementation(dependencies.project(":libraries:mediaplayer:impl"))
+    implementation(dependencies.project(":libraries:mediaviewer:impl"))
+    implementation(dependencies.project(":libraries:troubleshoot:impl"))
+    implementation(dependencies.project(":libraries:fullscreenintent:impl"))
+    implementation(dependencies.project(":libraries:wellknown:impl"))
+    implementation(dependencies.project(":libraries:oauth:impl"))
+    implementation(dependencies.project(":libraries:workmanager:impl"))
+    implementation(dependencies.project(":libraries:emoji:impl"))
 }
 
 fun DependencyHandlerScope.allServicesImpl() {
-    implementation(project(":services:analytics:compose"))
+    implementation(dependencies.project(":services:analytics:compose"))
     when (ModulesConfig.analyticsConfig) {
         AnalyticsConfig.Disabled -> {
-            implementation(project(":services:analytics:noop"))
+            implementation(dependencies.project(":services:analytics:noop"))
         }
         is AnalyticsConfig.Enabled -> {
-            implementation(project(":services:analytics:impl"))
+            implementation(dependencies.project(":services:analytics:impl"))
             if (ModulesConfig.analyticsConfig.withPosthog) {
-                implementation(project(":services:analyticsproviders:posthog"))
+                implementation(dependencies.project(":services:analyticsproviders:posthog"))
             }
             if (ModulesConfig.analyticsConfig.withSentry) {
-                implementation(project(":services:analyticsproviders:sentry"))
+                implementation(dependencies.project(":services:analyticsproviders:sentry"))
             }
         }
     }
 
-    implementation(project(":services:apperror:impl"))
-    implementation(project(":services:appnavstate:impl"))
-    implementation(project(":services:toolbox:impl"))
+    implementation(dependencies.project(":services:apperror:impl"))
+    implementation(dependencies.project(":services:appnavstate:impl"))
+    implementation(dependencies.project(":services:toolbox:impl"))
 }
 
 fun DependencyHandlerScope.allEnterpriseImpl(project: Project) = addAll(
@@ -174,6 +171,9 @@ private fun DependencyHandlerScope.addAll(
 ) {
     val subProjects = project.rootProject.subprojects.filter { it.path.startsWith(modulePrefix) && it.path.endsWith(moduleSuffix) }
     for (p in subProjects) {
-        add("implementation", p)
+        // Passing a Project instance as dependency notation is removed in Gradle 10.
+        // Resolve it explicitly as a project dependency so the production build does not
+        // silently depend on deprecated coercion behaviour.
+        implementation(dependencies.project(p.path))
     }
 }

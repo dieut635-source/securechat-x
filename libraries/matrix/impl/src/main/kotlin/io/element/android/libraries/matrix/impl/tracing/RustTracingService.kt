@@ -13,6 +13,7 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.core.data.ByteUnit
 import io.element.android.libraries.core.data.megaBytes
 import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.matrix.api.tracing.LogLevel
 import io.element.android.libraries.matrix.api.tracing.TracingConfiguration
 import io.element.android.libraries.matrix.api.tracing.TracingService
@@ -29,6 +30,9 @@ class RustTracingService(private val buildMeta: BuildMeta) : TracingService {
     }
 
     override fun updateWriteToFilesConfiguration(config: WriteToFilesConfiguration) {
+        // A later session change must not re-enable file logging after the release
+        // initializer deliberately disabled it.
+        if (buildMeta.buildType == BuildType.RELEASE) return
         config.toTracingFileConfiguration()?.let {
             reloadTracingFileWriter(it)
         }

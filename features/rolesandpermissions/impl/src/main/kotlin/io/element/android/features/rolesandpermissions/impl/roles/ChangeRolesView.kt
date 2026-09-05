@@ -323,7 +323,7 @@ private fun ListMemberItem(
             modifier = Modifier.clickable(enabled = canToggle, onClick = { onToggleSelection(roomMember) }),
             avatarData = roomMember.getAvatarData(size = AvatarSize.UserListItem),
             name = roomMember.getBestName(),
-            userId = roomMember.userId.value.takeIf { roomMember.displayName?.isNotBlank() == true },
+            userId = roomMember.userId.displayLabel.takeIf { roomMember.displayName?.isNotBlank() == true },
             isPending = roomMember.membership == RoomMembershipState.INVITE,
             trailingContent = trailingContent,
         )
@@ -410,7 +410,7 @@ internal fun PendingMemberRowWithLongNamePreview() {
         MemberRow(
             avatarData = AvatarData("userId", "A very long name that should be truncated", "https://example.com/avatar.png", AvatarSize.UserListItem),
             name = "A very long name that should be truncated",
-            userId = "@alice:matrix.org",
+            userId = "@alice:chat.securechat.com.au",
             isPending = true,
             trailingContent = {
                 Checkbox(

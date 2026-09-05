@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import io.element.android.appconfig.StartChatConfig
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.startchat.api.ConfirmingStartDmWithMatrixUser
@@ -60,7 +61,6 @@ fun StartChatView(
     onCloseClick: () -> Unit,
     onNewRoomClick: () -> Unit,
     onOpenDM: (RoomId) -> Unit,
-    onInviteFriendsClick: () -> Unit,
     onJoinByAddressClick: () -> Unit,
     onRoomDirectorySearchClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -104,7 +104,6 @@ fun StartChatView(
                 CreateRoomActionButtonsList(
                     state = state,
                     onNewRoomClick = onNewRoomClick,
-                    onInvitePeopleClick = onInviteFriendsClick,
                     onJoinByAddressClick = onJoinByAddressClick,
                     onRoomDirectorySearchClick = onRoomDirectorySearchClick,
                     onDmClick = onOpenDM,
@@ -166,7 +165,6 @@ private fun CreateRoomRootViewTopBar(
 private fun CreateRoomActionButtonsList(
     state: StartChatState,
     onNewRoomClick: () -> Unit,
-    onInvitePeopleClick: () -> Unit,
     onJoinByAddressClick: () -> Unit,
     onRoomDirectorySearchClick: () -> Unit,
     onDmClick: (RoomId) -> Unit,
@@ -181,26 +179,26 @@ private fun CreateRoomActionButtonsList(
                 onClick = onNewRoomClick,
             )
         }
-        item {
-            CreateRoomActionButton(
-                iconRes = CompoundDrawables.ic_compound_list_bulleted,
-                text = stringResource(id = R.string.screen_room_directory_search_title),
-                onClick = onRoomDirectorySearchClick,
-            )
+        // Ba lối vào phòng bị giấu ở đây — xem StartChatConfig để biết lý do từng cái.
+        // Quy tắc: chỉ quản trị viên tạo phòng và gửi lời mời, có lời mời thì mới vào được.
+        // "Tạo phòng" ở trên vẫn giữ: quản trị viên dùng chính app này để tạo phòng.
+        if (StartChatConfig.CAN_SEARCH_ROOM_DIRECTORY) {
+            item {
+                CreateRoomActionButton(
+                    iconRes = CompoundDrawables.ic_compound_list_bulleted,
+                    text = stringResource(id = R.string.screen_room_directory_search_title),
+                    onClick = onRoomDirectorySearchClick,
+                )
+            }
         }
-        item {
-            CreateRoomActionButton(
-                iconRes = CompoundDrawables.ic_compound_share_android,
-                text = stringResource(id = CommonStrings.action_invite_friends_to_app, state.applicationName),
-                onClick = onInvitePeopleClick,
-            )
-        }
-        item {
-            CreateRoomActionButton(
-                iconRes = CompoundDrawables.ic_compound_room,
-                text = stringResource(R.string.screen_start_chat_join_room_by_address_action),
-                onClick = onJoinByAddressClick,
-            )
+        if (StartChatConfig.CAN_JOIN_ROOM_BY_ADDRESS) {
+            item {
+                CreateRoomActionButton(
+                    iconRes = CompoundDrawables.ic_compound_room,
+                    text = stringResource(R.string.screen_start_chat_join_room_by_address_action),
+                    onClick = onJoinByAddressClick,
+                )
+            }
         }
         if (state.userListState.recentDirectRooms.isNotEmpty()) {
             item {
@@ -263,7 +261,6 @@ internal fun StartChatViewPreview(@PreviewParameter(StartChatStatePreviewParam::
             onNewRoomClick = {},
             onOpenDM = {},
             onJoinByAddressClick = {},
-            onInviteFriendsClick = {},
             onRoomDirectorySearchClick = {},
         )
     }

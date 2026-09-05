@@ -7,5 +7,5 @@
   <string name="screen_start_chat_join_room_by_address_invalid_address">"Geçerli bir adres değil"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Eşleşen oda bulundu"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"Oda bulunamadı"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"örn. #room-isim:matrix.org"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"örn. #room-isim:your-server"</string>
 </resources>

@@ -12,6 +12,8 @@ import android.util.Log
 import android.webkit.ConsoleMessage
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.BuildType
 import timber.log.Timber
 
 interface ConsoleMessageLogger {
@@ -22,11 +24,17 @@ interface ConsoleMessageLogger {
 }
 
 @ContributesBinding(AppScope::class)
-class DefaultConsoleMessageLogger : ConsoleMessageLogger {
+class DefaultConsoleMessageLogger(
+    private val buildMeta: BuildMeta,
+) : ConsoleMessageLogger {
     override fun log(
         tag: String,
         consoleMessage: ConsoleMessage,
     ) {
+        // Web content can put credentials and widget payloads in console messages. Keep
+        // console forwarding available for developer builds only.
+        if (buildMeta.buildType == BuildType.RELEASE) return
+
         val priority = when (consoleMessage.messageLevel()) {
             ConsoleMessage.MessageLevel.ERROR -> Log.ERROR
             ConsoleMessage.MessageLevel.WARNING -> Log.WARN

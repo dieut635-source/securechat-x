@@ -176,7 +176,7 @@ class ChangeServerPresenterTest {
             ).isEqualTo(anAccountProvider.title)
             assertThat(
                 (failureState.changeServerAction.errorOrNull() as ChangeServerError.NeedElementPro).applicationId
-            ).isEqualTo("io.element.enterprise")
+            ).isEqualTo("com.securechat.enterprise")
             isEnterpriseBuildLambda.assertions().isCalledOnce()
         }
     }

@@ -380,7 +380,7 @@ class WebViewAudioManager(
      */
     private fun setAudioEnabled(enabled: Boolean) {
         coroutineScope.launch(Dispatchers.Main) {
-            Timber.d("Setting audio enabled in Element Call: $enabled")
+            Timber.d("Setting audio enabled in SecureChat Call: $enabled")
             if (isWebViewAudioEnabled.getAndSet(enabled) != enabled) {
                 webView.evaluateJavascript("controls.setAudioEnabled($enabled);", null)
             }

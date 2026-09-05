@@ -13,6 +13,7 @@ package io.element.android.features.ftue.impl.sessionverification.choosemode
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.ftue.impl.R
 import io.element.android.libraries.architecture.AsyncData
@@ -70,6 +71,30 @@ class ChooseSessionVerificationModeViewTest : RobolectricTest() {
                 onResetKey = callback,
             )
             clickOn(R.string.screen_identity_confirmation_cannot_confirm)
+        }
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `with no way to verify, resetting is offered as the action rather than as a failure`() = runAndroidComposeUiTest {
+        // Đây là trạng thái THƯỜNG TRỰC của sản phẩm này, không phải ca hiếm: chính sách một
+        // tài khoản một máy nên không bao giờ có thiết bị thứ hai để xác minh chéo, và đã chốt
+        // không sao lưu khoá nên không bao giờ có recovery key.
+        //
+        // Màn hình kế thừa vẫn hỏi "Choose how to verify" rồi không hiện lựa chọn nào, và gắn
+        // nhãn "Can't confirm?" lên lối đi DUY NHẤT — bảo người dùng rằng họ vừa thất bại trong
+        // khi họ đang làm đúng việc phải làm.
+        ensureCalledOnce { callback ->
+            setChooseSelfVerificationModeView(
+                aChooseSelfVerificationModeState(
+                    AsyncData.Success(aButtonsState(canUseAnotherDevice = false, canUseRecoveryKey = false)),
+                ),
+                onResetKey = callback,
+            )
+            val activity = requireNotNull(this.activity)
+            onNode(hasText(activity.getString(R.string.screen_identity_confirmation_cannot_confirm)))
+                .assertDoesNotExist()
+            clickOn(R.string.securechat_identity_setup_action)
         }
     }
 

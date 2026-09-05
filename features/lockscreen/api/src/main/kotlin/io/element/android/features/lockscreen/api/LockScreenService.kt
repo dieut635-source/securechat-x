@@ -11,11 +11,8 @@ package io.element.android.features.lockscreen.api
 import android.os.Build
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 
 /**
  * Exposes the app lock state: whether a PIN or biometric lock is set up, whether it is mandatory, and whether the app is locked right now.
@@ -37,27 +34,31 @@ interface LockScreenService {
      * @return true if the pin is setup, false otherwise.
      */
     fun isPinSetup(): Flow<Boolean>
+
+    /**
+     * Immediately moves the app to the locked state when a PIN is configured.
+     *
+     * This is intended for security boundaries which can be entered from outside the normal
+     * foreground lifecycle (for example, an incoming-call pending intent). It deliberately
+     * ignores the configured background grace period.
+     *
+     * @return true when a PIN exists and the app was locked, false when no PIN is configured.
+     */
+    suspend fun lockIfPinSetup(): Boolean
 }
 
 /**
- * Makes sure the secure flag is set on the activity if the pin is setup.
+ * Prevents app content from appearing in screenshots, recordings, or recents previews.
  * @param activity the activity to set the flag on.
  */
 fun LockScreenService.handleSecureFlag(activity: ComponentActivity) {
-    isPinSetup()
-        .onEach { isPinSetup ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                activity.setRecentsScreenshotEnabled(!isPinSetup)
-            } else {
-                if (isPinSetup) {
-                    activity.window.setFlags(
-                        WindowManager.LayoutParams.FLAG_SECURE,
-                        WindowManager.LayoutParams.FLAG_SECURE
-                    )
-                } else {
-                    activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                }
-            }
-        }
-        .launchIn(activity.lifecycleScope)
+    // SecureChat is closed-distribution software: capture protection is an application
+    // invariant, not an optional side effect of whether the user has completed PIN setup.
+    activity.window.setFlags(
+        WindowManager.LayoutParams.FLAG_SECURE,
+        WindowManager.LayoutParams.FLAG_SECURE,
+    )
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        activity.setRecentsScreenshotEnabled(false)
+    }
 }

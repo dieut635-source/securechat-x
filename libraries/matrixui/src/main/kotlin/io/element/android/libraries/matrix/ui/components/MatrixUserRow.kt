@@ -38,7 +38,7 @@ fun MatrixUserRow(
             style = ElementTheme.typography.fontBodyLgRegular,
         )
     },
-    subtext = if (matrixUser.displayName.isNullOrEmpty()) null else matrixUser.userId.value,
+    subtext = if (matrixUser.displayName.isNullOrEmpty()) null else matrixUser.userId.displayLabel,
     modifier = modifier,
     verticalSpaceWidth = verticalSpaceWidth,
     trailingContent = trailingContent,

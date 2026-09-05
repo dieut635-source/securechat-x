@@ -26,7 +26,7 @@ import org.unifiedpush.android.connector.data.PushEndpoint
 import org.unifiedpush.android.connector.data.PushMessage
 import timber.log.Timber
 
-private val loggerTag = LoggerTag("VectorUnifiedPushMessagingReceiver", LoggerTag.PushLoggerTag)
+private val loggerTag = LoggerTag("SecureChatUnifiedPushReceiver", LoggerTag.PushLoggerTag)
 
 class VectorUnifiedPushMessagingReceiver : MessagingReceiver() {
     @Inject lateinit var pushParser: UnifiedPushParser

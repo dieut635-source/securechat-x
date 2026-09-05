@@ -13,6 +13,7 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
 import io.element.android.features.enterprise.api.ClientEnterpriseHook
 import io.element.android.features.enterprise.api.EnterpriseService
+import io.element.android.features.enterprise.api.canConnectToAnyHomeserver
 import io.element.android.libraries.androidutils.crypto.ClientSecret
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.extensions.mapFailure
@@ -32,9 +33,11 @@ import io.element.android.libraries.matrix.api.auth.qrlogin.MatrixQrCodeLoginDat
 import io.element.android.libraries.matrix.api.auth.qrlogin.QrCodeLoginStep
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.core.UserId
+import io.element.android.libraries.matrix.api.exception.ClientException
 import io.element.android.libraries.matrix.api.paths.SessionPaths
 import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import io.element.android.libraries.matrix.impl.ClientBuilderSlidingSync
+import io.element.android.libraries.matrix.impl.RustMatrixClient
 import io.element.android.libraries.matrix.impl.RustMatrixClientFactory
 import io.element.android.libraries.matrix.impl.RustTemporaryMatrixClient
 import io.element.android.libraries.matrix.impl.auth.qrlogin.QrErrorMapper
@@ -45,10 +48,16 @@ import io.element.android.libraries.matrix.impl.keys.SecretGenerator
 import io.element.android.libraries.matrix.impl.mapper.toSessionData
 import io.element.android.libraries.matrix.impl.paths.SessionPathsFactory
 import io.element.android.libraries.matrix.impl.toSession
+import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.sessionstorage.api.LoginType
+import io.element.android.libraries.sessionstorage.api.SessionData
+import io.element.android.libraries.sessionstorage.api.SessionSecurityCoordinator
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.matrix.rustcomponents.sdk.Client
@@ -61,10 +70,16 @@ import org.matrix.rustcomponents.sdk.QrLoginProgressListener
 import org.matrix.rustcomponents.sdk.SecretsBundleWithUserId
 import timber.log.Timber
 import uniffi.matrix_sdk.OAuthAuthorizationData
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
 
 @ContributesBinding(AppScope::class)
 @SingleIn(AppScope::class)
+// NỢ KỸ THUẬT, không phải đã sửa. Lớp này vượt ngưỡng LargeClass của detekt sau khi
+// thêm phần khoá thiết bị và cứng hoá đăng nhập. Tách nhỏ là việc thật, nhưng đây là mã
+// xác thực nên phải làm riêng, có test đi kèm, không gộp vào một đợt audit. Tạm chặn cảnh
+// báo để cổng lint còn bắt được lỗi MỚI, chứ không phải để coi như đã xong.
+@Suppress("LargeClass")
 class RustMatrixAuthenticationService(
     private val sessionPathsFactory: SessionPathsFactory,
     private val coroutineDispatchers: CoroutineDispatchers,
@@ -75,48 +90,93 @@ class RustMatrixAuthenticationService(
     private val enterpriseService: EnterpriseService,
     private val featureFlagService: FeatureFlagService,
     private val clientEnterpriseHook: ClientEnterpriseHook,
+    private val mdmService: MdmService,
+    private val sessionSecurityCoordinator: SessionSecurityCoordinator,
+    private val secureChatDeviceIdProvider: SecureChatDeviceIdProvider,
 ) : MatrixAuthenticationService {
-    // Any existing Element Classic session that we want to try to import secrets from during login.
-    private var elementClassicSession: ElementClassicSession? = null
-
     // Passphrase which will be used for new sessions. Existing sessions will use the passphrase
     // stored in the SessionData.
     private val pendingKey by lazy { getDatabaseKey() }
 
-    // Need to keep a copy of the current session path to eventually delete it.
-    // Ideally it would be possible to get the sessionPath from the Client to avoid doing this.
-    private var sessionPaths: SessionPaths? = null
-    private var currentClient: Client? = null
+    @Volatile
+    private var currentAttempt: AuthenticationAttempt? = null
+
+    // Serializes the complete password-authentication lifecycle with homeserver replacement. This
+    // mutex is deliberately held across network login and publication: allowing replacement or a
+    // second login to touch the same SDK client in that window can orphan a bearer token or destroy
+    // a session that has just been published.
+    private val authenticationLifecycleMutex = Mutex()
+    private val replaceAttemptMutex = Mutex()
+
+    // Keep the legacy interface surface for now, but fail closed at every non-password API boundary.
+    private val passwordOnlyAuthenticationEnabled: Boolean
+        get() = true
+
+    @Volatile
+    private var pendingOAuth: PendingOAuth? = null
 
     private val newMatrixClientObservers = mutableListOf<(MatrixClient) -> Unit>()
     override fun listenToNewMatrixClients(lambda: (MatrixClient) -> Unit) {
         newMatrixClientObservers.add(lambda)
     }
 
-    private fun rotateSessionPath(): SessionPaths {
-        sessionPaths?.deleteRecursively()
-        return sessionPathsFactory.create()
-            .also { sessionPaths = it }
-    }
+    private data class AuthenticationAttempt(
+        val client: Client,
+        val sessionPaths: SessionPaths,
+        val accountProvider: String?,
+        val connectionHomeserver: String?,
+        val securityToken: Long,
+        val authenticatedCleanupStarted: AtomicBoolean = AtomicBoolean(false),
+    )
+
+    private data class PendingOAuth(
+        val authorizationData: OAuthAuthorizationData,
+        val attempt: AuthenticationAttempt,
+        val prompt: OAuthPrompt,
+    )
 
     override suspend fun restoreSession(sessionId: SessionId): Result<MatrixClient> = withContext(coroutineDispatchers.io) {
         runCatchingExceptions {
-            val sessionData = sessionStore.getSession(sessionId.value)
-            if (sessionData != null) {
-                if (sessionData.isTokenValid) {
-                    // Use the sessionData.passphrase, which can be null for a previously created session
-                    if (sessionData.passphrase == null) {
-                        Timber.w("Restoring a session without a passphrase")
-                    } else {
-                        Timber.w("Restoring a session with a passphrase")
-                    }
-                    rustMatrixClientFactory.create(sessionData)
-                } else {
-                    throw SessionRestorationException.InvalidToken()
-                }
-            } else {
-                throw SessionRestorationException.MissingSession(sessionId)
+            val sessionData = requireOnlyStoredSession(sessionId)
+            if (!sessionData.isTokenValid) {
+                throw SessionRestorationException.InvalidToken()
             }
+            if (!isStoredSessionEndpointAllowed(sessionData)) {
+                // Preserve the only local copy of the token so an administrator can revoke it.
+                // Contacting a now-disallowed endpoint or deleting the evidence would both violate
+                // the SecureChat recovery policy.
+                throw AuthenticationException.InvalidServerName(
+                    "The stored session is quarantined by managed configuration"
+                )
+            }
+            val expectedDeviceId = resolveExpectedDeviceIdForRestore(sessionData)
+            assertPasswordSessionBelongsToThisInstallation(sessionData, expectedDeviceId)
+            // Use the sessionData.passphrase, which can be null for a previously created session
+            if (sessionData.passphrase == null) {
+                Timber.w("Restoring a session without a passphrase")
+            } else {
+                Timber.w("Restoring a session with a passphrase")
+            }
+            val matrixClient = rustMatrixClientFactory.create(sessionData)
+            try {
+                val currentSessionData = requireOnlyStoredSession(sessionId)
+                if (!isStoredSessionEndpointAllowed(currentSessionData)) {
+                    throw AuthenticationException.InvalidServerName(
+                        "The stored session is quarantined by managed configuration"
+                    )
+                }
+                assertPasswordSessionBelongsToThisInstallation(currentSessionData, expectedDeviceId)
+            } catch (failure: Exception) {
+                closeQuarantinedRestoredClient(matrixClient, failure)
+                throw failure
+            }
+            if (sessionData.loginType != LoginType.PASSWORD) {
+                revokeLegacyStoredSession(matrixClient)
+                throw AuthenticationException.InvalidServerName(
+                    "The legacy session was revoked; administrator enrollment is required"
+                )
+            }
+            matrixClient
         }.mapFailure { failure ->
             failure.mapClientException()
         }
@@ -127,91 +187,122 @@ class RustMatrixAuthenticationService(
         return secretGenerator.generateKey()
     }
 
-    override suspend fun setHomeserver(homeserver: String): Result<MatrixHomeServerDetails> =
+    override suspend fun setHomeserver(
+        homeserver: String,
+        accountProvider: String,
+    ): Result<MatrixHomeServerDetails> =
         withContext(coroutineDispatchers.io) {
-            val emptySessionPath = rotateSessionPath()
-            runCatchingExceptions {
-                val client = makeClient(sessionPaths = emptySessionPath) {
-                    serverNameOrHomeserverUrl(homeserver)
+            authenticationLifecycleMutex.withLock {
+                val securityToken = sessionSecurityCoordinator.beginAuthentication()
+                replaceAttemptMutex.withLock {
+                    discardCurrentAttempt()
+                    val emptySessionPath = sessionPathsFactory.create()
+                    var attempt: AuthenticationAttempt? = null
+                    try {
+                        runCatchingExceptions {
+                            assertNoExistingLocalSession()
+                            assertAccountProviderAllowed(accountProvider)
+                            // This is the endpoint that receives the password. Checking only the
+                            // user-facing account provider would allow a delegated or caller-supplied URL
+                            // outside policy to capture credentials before restoration rejects it.
+                            assertAccountProviderAllowed(homeserver)
+                            val client = makeClient(sessionPaths = emptySessionPath) {
+                                serverNameOrHomeserverUrl(homeserver)
+                            }
+                            attempt = AuthenticationAttempt(
+                                client = client,
+                                sessionPaths = emptySessionPath,
+                                accountProvider = accountProvider,
+                                connectionHomeserver = homeserver,
+                                securityToken = securityToken,
+                            ).also { currentAttempt = it }
+
+                            client.homeserverLoginDetails().map().copy(supportsOAuthLogin = false).also {
+                                // Re-check after discovery: policy or the active attempt may have changed
+                                // during the network request.
+                                assertAuthenticationAttemptAllowed(attempt)
+                            }
+                        }.onFailure {
+                            attempt?.let { clearAttempt(it, destroyClient = true, deleteSessionPaths = true) }
+                                ?: emptySessionPath.deleteRecursively()
+                        }.mapFailure { failure ->
+                            Timber.e(failure, "Failed to set homeserver to $homeserver")
+                            failure.mapAuthenticationException()
+                        }
+                    } catch (failure: CancellationException) {
+                        // runCatchingExceptions deliberately rethrows cancellation. Do not leave
+                        // the unpublished client/currentAttempt/session directory behind.
+                        attempt?.let { clearAttempt(it, destroyClient = true, deleteSessionPaths = true) }
+                            ?: emptySessionPath.deleteRecursively()
+                        throw failure
+                    }
                 }
-
-                currentClient = client
-
-                client.homeserverLoginDetails().map()
-            }.onFailure {
-                clear(destroyClient = true)
-            }.mapFailure { failure ->
-                Timber.e(failure, "Failed to set homeserver to $homeserver")
-                failure.mapAuthenticationException()
             }
         }
 
     override suspend fun login(username: String, password: String): Result<SessionId> =
         withContext(coroutineDispatchers.io) {
-            runCatchingExceptions {
-                val client = currentClient ?: error("You need to call `setHomeserver()` first")
-                val currentSessionPaths = sessionPaths ?: error("You need to call `setHomeserver()` first")
-                client.login(
-                    username = username,
-                    password = password,
-                    initialDeviceName = "Element X Android",
-                    deviceId = null,
-                )
-                // Ensure that the user is not already logged in with the same account
-                ensureNotAlreadyLoggedIn(client)
-                tryToImportSecretForElementClassicSession(client)
-                val sessionData = client.session()
-                    .toSessionData(
-                        isTokenValid = true,
-                        loginType = LoginType.PASSWORD,
-                        passphrase = pendingKey.formattedAsString(),
-                        sessionPaths = currentSessionPaths,
-                    )
-                val matrixClient = rustMatrixClientFactory.create(client, sessionData, isMessageSearchAvailable())
-
-                // Apply enterprise hooks to the newly created client as soon as possible
-                clientEnterpriseHook(matrixClient)
-
-                newMatrixClientObservers.forEach { it.invoke(matrixClient) }
-                sessionStore.addSession(sessionData)
-
-                // Clean up the strong reference held here since it's no longer necessary
-                clear(destroyClient = false)
-
-                SessionId(sessionData.userId)
-            }.mapFailure { failure ->
-                Timber.e(failure, "Failed to login")
-                failure.mapAuthenticationException()
-            }
-        }
-
-    private suspend fun tryToImportSecretForElementClassicSession(client: Client) {
-        elementClassicSession
-            ?.takeIf {
-                // Note: the SDK will also do this check
-                it.userId.value == client.userId()
-            }
-            ?.let {
-                val secrets = it.secrets
-                val roomKeysVersion = it.roomKeysVersion
-                if (secrets == null || roomKeysVersion == null) {
-                    Timber.d("No secrets or roomKeysVersion found for Element Classic session ${it.userId}, skipping import")
-                } else {
-                    Timber.d("Trying to import secrets for Element Classic session ${it.userId}")
-                    runCatchingExceptions {
-                        SecretsBundleWithUserId.fromStr(
-                            userId = it.userId.value,
-                            bundle = secrets,
-                            backupInfo = roomKeysVersion,
-                        ).use { secretsBundle ->
-                            client.encryption().importSecretsBundle(secretsBundle)
+            authenticationLifecycleMutex.withLock {
+                runCatchingExceptions {
+                    val attempt = requireCurrentAttempt()
+                    assertAuthenticationAttemptAllowed(attempt)
+                    val client = attempt.client
+                    val secureChatDeviceId = secureChatDeviceIdProvider.getOrCreate()
+                    try {
+                        client.login(
+                            username = username,
+                            password = password,
+                            initialDeviceName = "SecureChat Android",
+                            deviceId = secureChatDeviceId,
+                        )
+                    } catch (failure: Exception) {
+                        // A structured Matrix error is a completed rejection and cannot contain a
+                        // successful login token, so keep this controlled attempt alive to correct a
+                        // password. Cancellation, response loss and local failures are ambiguous and
+                        // must invalidate any possibly committed token before a retry can begin.
+                        if (!failure.isDefinitiveMatrixLoginRejection()) {
+                            cleanupAuthenticatedAttempt(attempt, failure)
                         }
-                    }.onFailure { failure ->
-                        Timber.e(failure, "Failed to import secrets for Element Classic session ${it.userId}")
+                        throw failure
                     }
+                    finishAuthenticatedAttempt(attempt) {
+                        assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
+                        // Ensure that the user is not already logged in with the same account.
+                        ensureNotAlreadyLoggedIn(client)
+                        val sessionData = client.session()
+                            .toSessionData(
+                                isTokenValid = true,
+                                loginType = LoginType.PASSWORD,
+                                passphrase = pendingKey.formattedAsString(),
+                                sessionPaths = attempt.sessionPaths,
+                                accountProvider = attempt.accountProvider,
+                            )
+                        assertStoredSessionBelongsToThisInstallation(sessionData, secureChatDeviceId)
+                        assertAuthenticatedSessionAllowed(attempt, sessionData.homeserverUrl)
+                        val matrixClient = rustMatrixClientFactory.create(client, sessionData, isMessageSearchAvailable())
+
+                        // Apply enterprise hooks to the newly created client as soon as possible.
+                        clientEnterpriseHook(matrixClient)
+
+                        assertAuthenticatedSessionAllowed(attempt, sessionData.homeserverUrl)
+                        commitAuthenticatedSession(
+                            attempt = attempt,
+                            matrixClient = matrixClient,
+                            sessionData = sessionData,
+                            policyCheck = {
+                                assertAuthenticationAttemptAllowed(attempt)
+                                assertAccountProviderAllowed(sessionData.homeserverUrl)
+                            },
+                        )
+
+                        SessionId(sessionData.userId)
+                    }
+                }.mapFailure { failure ->
+                    Timber.e(failure, "Failed to login")
+                    failure.mapAuthenticationException()
                 }
             }
-    }
+        }
 
     override fun doSecretsContainBackupKey(
         userId: UserId,
@@ -227,25 +318,31 @@ class RustMatrixAuthenticationService(
                 secretsBundle.containsBackupKey()
             }
         } catch (failure: Exception) {
-            Timber.e(failure, "Failed to parse secrets for Element Classic session $userId")
+            Timber.e(failure, "Failed to parse secrets for previous Matrix app session $userId")
             false
         }
     }
 
     override suspend fun importCreatedSession(externalSession: ExternalSession): Result<SessionId> =
         withContext(coroutineDispatchers.io) {
+            if (passwordOnlyAuthenticationEnabled) {
+                return@withContext disabledAuthenticationMethod()
+            }
             runCatchingExceptions {
-                val client = currentClient ?: error("You need to call `setHomeserver()` first")
-                val currentSessionPaths = sessionPaths ?: error("You need to call `setHomeserver()` first")
+                val attempt = requireCurrentAttempt()
+                assertAuthenticationAttemptAllowed(attempt)
+                val client = attempt.client
                 val sessionData = externalSession.toSessionData(
                     isTokenValid = true,
                     loginType = LoginType.PASSWORD,
                     passphrase = pendingKey.formattedAsString(),
-                    sessionPaths = currentSessionPaths,
+                    sessionPaths = attempt.sessionPaths,
+                    accountProvider = attempt.accountProvider,
                 )
 
                 // We restore the client using the just retrieved session data
                 client.restoreSession(sessionData.toSession())
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
                 val matrixClient = rustMatrixClientFactory.create(client, sessionData, isMessageSearchAvailable())
 
                 // Apply enterprise hooks to the newly created client as soon as possible
@@ -255,25 +352,25 @@ class RustMatrixAuthenticationService(
                 matrixClient.waitForKnownVerificationState()
 
                 // And once it's ready we share it and save the actual session data
-                newMatrixClientObservers.forEach { it.invoke(matrixClient) }
-                sessionStore.addSession(sessionData)
-
-                // Clean up the strong reference held here since it's no longer necessary
-                clear(destroyClient = false)
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
+                commitAuthenticatedSession(attempt, matrixClient, sessionData)
 
                 SessionId(sessionData.userId)
             }
         }
-
-    private var pendingOAuthAuthorizationData: OAuthAuthorizationData? = null
 
     override suspend fun getOAuthUrl(
         prompt: OAuthPrompt,
         loginHint: String?,
     ): Result<OAuthDetails> {
         return withContext(coroutineDispatchers.io) {
+            if (passwordOnlyAuthenticationEnabled) {
+                return@withContext disabledAuthenticationMethod()
+            }
             runCatchingExceptions {
-                val client = currentClient ?: error("You need to call `setHomeserver()` first")
+                val attempt = requireCurrentAttempt()
+                assertAuthenticationAttemptAllowed(attempt)
+                val client = attempt.client
                 val oAuthAuthorizationData = client.urlForOauth(
                     oauthConfiguration = oAuthConfigurationProvider.get(),
                     prompt = prompt.toRustPrompt(),
@@ -282,7 +379,9 @@ class RustMatrixAuthenticationService(
                     deviceId = null,
                     additionalScopes = emptyList(),
                 )
-                val getUrlResolver = RustTemporaryMatrixClient(client, sessionPaths)
+                // Policy may change while MAS metadata is being resolved.
+                assertAuthenticationAttemptAllowed(attempt)
+                val getUrlResolver = RustTemporaryMatrixClient(client, attempt.sessionPaths)
                 val url = oAuthAuthorizationData.loginUrl()
                     .let {
                         enterpriseService.tweakMasUrl(
@@ -290,7 +389,13 @@ class RustMatrixAuthenticationService(
                             urlContentFetcher = getUrlResolver,
                         )
                     }
-                pendingOAuthAuthorizationData = oAuthAuthorizationData
+                assertAuthenticationAttemptAllowed(attempt)
+                pendingOAuth?.authorizationData?.close()
+                pendingOAuth = PendingOAuth(
+                    authorizationData = oAuthAuthorizationData,
+                    attempt = attempt,
+                    prompt = prompt,
+                )
                 OAuthDetails(url)
             }.mapFailure { failure ->
                 Timber.e(failure, "Failed to get OAuth URL")
@@ -302,10 +407,11 @@ class RustMatrixAuthenticationService(
     override suspend fun cancelOAuthLogin(): Result<Unit> {
         return withContext(coroutineDispatchers.io) {
             runCatchingExceptions {
-                pendingOAuthAuthorizationData?.use {
-                    currentClient?.abortOauthAuth(it)
+                pendingOAuth?.let { pending ->
+                    pending.attempt.client.abortOauthAuth(pending.authorizationData)
+                    pending.authorizationData.close()
                 }
-                pendingOAuthAuthorizationData = null
+                pendingOAuth = null
             }.mapFailure { failure ->
                 Timber.e(failure, "Failed to cancel OAuth login")
                 failure.mapAuthenticationException()
@@ -313,32 +419,38 @@ class RustMatrixAuthenticationService(
         }
     }
 
-    override fun setElementClassicSession(session: ElementClassicSession?) {
-        elementClassicSession = session
-    }
+    // Kept for source/API compatibility with the upstream login feature. SecureChat deliberately
+    // does not retain the supplied session or import its secrets into a password-authenticated client.
+    override fun setElementClassicSession(session: ElementClassicSession?) = Unit
 
     /**
      * callbackUrl should be the `url` from `OAuthAction` (with all the parameters).
      */
     override suspend fun loginWithOAuth(callbackUrl: String): Result<SessionId> {
         return withContext(coroutineDispatchers.io) {
+            if (passwordOnlyAuthenticationEnabled) {
+                return@withContext disabledAuthenticationMethod()
+            }
             runCatchingExceptions {
-                val client = currentClient ?: error("You need to call `setHomeserver()` first")
-                val currentSessionPaths = sessionPaths ?: error("You need to call `setHomeserver()` first")
+                val pending = pendingOAuth ?: error("You need to call `getOAuthUrl()` first")
+                val attempt = pending.attempt
+                assertAuthenticationAttemptAllowed(attempt)
+                val client = attempt.client
                 client.loginWithOauthCallback(
                     callbackUrl = callbackUrl,
                 )
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
                 // Free the pending data since we won't use it to abort the flow anymore
-                pendingOAuthAuthorizationData?.close()
-                pendingOAuthAuthorizationData = null
+                pending.authorizationData.close()
+                if (pendingOAuth === pending) pendingOAuth = null
                 // Ensure that the user is not already logged in with the same account
                 ensureNotAlreadyLoggedIn(client)
-                tryToImportSecretForElementClassicSession(client)
                 val sessionData = client.session().toSessionData(
                     isTokenValid = true,
                     loginType = LoginType.OIDC,
                     passphrase = pendingKey.formattedAsString(),
-                    sessionPaths = currentSessionPaths,
+                    sessionPaths = attempt.sessionPaths,
+                    accountProvider = attempt.accountProvider,
                 )
                 val matrixClient = rustMatrixClientFactory.create(client, sessionData, isMessageSearchAvailable())
 
@@ -347,11 +459,15 @@ class RustMatrixAuthenticationService(
 
                 matrixClient.waitForKnownVerificationState()
 
-                newMatrixClientObservers.forEach { it.invoke(matrixClient) }
-                sessionStore.addSession(sessionData)
-
-                // Clean up the strong reference held here since it's no longer necessary
-                clear(destroyClient = false)
+                assertAuthenticationAttemptAllowedAfterAuthentication(attempt)
+                commitAuthenticatedSession(attempt, matrixClient, sessionData) {
+                    assertAuthenticationAttemptAllowed(attempt)
+                    if (pending.prompt == OAuthPrompt.Create && !mdmService.config.value.allowRegistration) {
+                        throw AuthenticationException.InvalidServerName(
+                            "Account registration is blocked by managed configuration"
+                        )
+                    }
+                }
 
                 SessionId(sessionData.userId)
             }.mapFailure { failure ->
@@ -364,22 +480,20 @@ class RustMatrixAuthenticationService(
     @Throws(AuthenticationException.AccountAlreadyLoggedIn::class)
     private suspend fun ensureNotAlreadyLoggedIn(client: Client) {
         val newUserId = client.userId()
-        val accountAlreadyLoggedIn = sessionStore.getAllSessions().any {
-            it.userId == newUserId
-        }
-        if (accountAlreadyLoggedIn) {
-            // Sign out the client, ignoring any error
-            runCatchingExceptions {
-                client.logout()
-            }
+        if (sessionStore.numberOfSessions() > 0) {
+            // The enclosing authenticated-attempt boundary owns remote logout, client close and
+            // temporary-path deletion. Keeping cleanup in one place prevents partial/double cleanup.
             throw AuthenticationException.AccountAlreadyLoggedIn(newUserId)
         }
     }
 
     override suspend fun loginWithQrCode(qrCodeData: MatrixQrCodeLoginData, progress: (QrCodeLoginStep) -> Unit) =
         withContext(coroutineDispatchers.io) {
+            if (passwordOnlyAuthenticationEnabled) {
+                return@withContext disabledAuthenticationMethod()
+            }
             val sdkQrCodeLoginData = (qrCodeData as SdkQrCodeLoginData).rustQrCodeData
-            val emptySessionPaths = rotateSessionPath()
+            val securityToken = sessionSecurityCoordinator.beginAuthentication()
             val oAuthConfiguration = oAuthConfigurationProvider.get()
             val progressListener = object : QrLoginProgressListener {
                 override fun onUpdate(state: QrLoginProgress) {
@@ -388,10 +502,28 @@ class RustMatrixAuthenticationService(
                 }
             }
             runCatchingExceptions {
-                val client = makeQrCodeLoginClient(
-                    sessionPaths = emptySessionPaths,
-                    qrCodeData = sdkQrCodeLoginData,
-                )
+                assertQrCodeAccountProviderAllowed(qrCodeData)
+                val attempt = replaceAttemptMutex.withLock {
+                    discardCurrentAttempt()
+                    val emptySessionPaths = sessionPathsFactory.create()
+                    val client = try {
+                        makeQrCodeLoginClient(
+                            sessionPaths = emptySessionPaths,
+                            qrCodeData = sdkQrCodeLoginData,
+                        )
+                    } catch (failure: Exception) {
+                        emptySessionPaths.deleteRecursively()
+                        throw failure
+                    }
+                    AuthenticationAttempt(
+                        client = client,
+                        sessionPaths = emptySessionPaths,
+                        accountProvider = qrCodeData.serverName(),
+                        connectionHomeserver = qrCodeData.serverName(),
+                        securityToken = securityToken,
+                    ).also { currentAttempt = it }
+                }
+                val client = attempt.client
                 client.newLoginWithQrCodeHandler(
                     oauthConfiguration = oAuthConfiguration,
                 ).use {
@@ -400,6 +532,7 @@ class RustMatrixAuthenticationService(
                         progressListener = progressListener,
                     )
                 }
+                assertQrCodeAccountProviderAllowedAfterAuthentication(qrCodeData, attempt)
                 // Ensure that the user is not already logged in with the same account
                 ensureNotAlreadyLoggedIn(client)
                 val sessionData = client.session()
@@ -407,18 +540,18 @@ class RustMatrixAuthenticationService(
                         isTokenValid = true,
                         loginType = LoginType.QR,
                         passphrase = pendingKey.formattedAsString(),
-                        sessionPaths = emptySessionPaths,
+                        sessionPaths = attempt.sessionPaths,
+                        accountProvider = attempt.accountProvider,
                     )
                 val matrixClient = rustMatrixClientFactory.create(client, sessionData, isMessageSearchAvailable())
 
                 // Apply enterprise hooks to the newly created client as soon as possible
                 clientEnterpriseHook(matrixClient)
 
-                newMatrixClientObservers.forEach { it.invoke(matrixClient) }
-                sessionStore.addSession(sessionData)
-
-                // Clean up the strong reference held here since it's no longer necessary
-                clear(destroyClient = false)
+                assertQrCodeAccountProviderAllowedAfterAuthentication(qrCodeData, attempt)
+                commitAuthenticatedSession(attempt, matrixClient, sessionData) {
+                    assertQrCodeAccountProviderAllowed(qrCodeData)
+                }
 
                 SessionId(sessionData.userId)
             }.mapFailure {
@@ -484,11 +617,276 @@ class RustMatrixAuthenticationService(
             .build()
     }
 
-    private fun clear(destroyClient: Boolean) {
-        if (destroyClient) {
-            currentClient?.close()
+    private fun requireCurrentAttempt(): AuthenticationAttempt = currentAttempt
+        ?: throw AuthenticationException.InvalidServerName("No account provider has been configured")
+
+    private suspend fun discardCurrentAttempt() {
+        val attempt = currentAttempt ?: return
+        pendingOAuth?.takeIf { it.attempt === attempt }?.let {
+            runCatchingExceptions { it.authorizationData.close() }
+            pendingOAuth = null
         }
-        currentClient = null
+        // Replacement can race with the instant at which the remote server creates a token. Always
+        // attempt remote invalidation before closing/deleting the temporary client; closing first
+        // could leave an untracked bearer token alive when the login response arrives concurrently.
+        cleanupAuthenticatedAttempt(
+            attempt,
+            AuthenticationException.InvalidServerName("The authentication attempt was superseded"),
+        )
+    }
+
+    private fun clearAttempt(
+        attempt: AuthenticationAttempt,
+        destroyClient: Boolean,
+        deleteSessionPaths: Boolean,
+    ) {
+        if (currentAttempt === attempt) currentAttempt = null
+        if (destroyClient) {
+            try {
+                attempt.client.close()
+            } catch (failure: Exception) {
+                Timber.e(failure, "Failed to close an authentication client")
+            }
+        }
+        if (deleteSessionPaths) attempt.sessionPaths.deleteRecursively()
+    }
+
+    private suspend fun assertAuthenticationAttemptAllowed(attempt: AuthenticationAttempt) {
+        if (currentAttempt !== attempt) {
+            throw AuthenticationException.InvalidServerName("The authentication attempt was superseded")
+        }
+        val accountProvider = attempt.accountProvider
+            ?: throw AuthenticationException.InvalidServerName("No account provider has been configured")
+        assertAccountProviderAllowed(accountProvider)
+        val connectionHomeserver = attempt.connectionHomeserver
+            ?: throw AuthenticationException.InvalidServerName("No homeserver connection has been configured")
+        assertAccountProviderAllowed(connectionHomeserver)
+    }
+
+    private suspend fun assertAuthenticationAttemptAllowedAfterAuthentication(attempt: AuthenticationAttempt) {
+        abortAuthenticatedClientIfBlocked(attempt) {
+            assertAuthenticationAttemptAllowed(attempt)
+        }
+    }
+
+    private suspend fun assertAuthenticatedSessionAllowed(
+        attempt: AuthenticationAttempt,
+        homeserverUrl: String,
+    ) {
+        abortAuthenticatedClientIfBlocked(attempt) {
+            assertAuthenticationAttemptAllowed(attempt)
+            assertAccountProviderAllowed(homeserverUrl)
+        }
+    }
+
+    private suspend fun assertAccountProviderAllowed(accountProvider: String) {
+        if (!enterpriseService.isAllowedToConnectToHomeserver(accountProvider)) {
+            throw AuthenticationException.InvalidServerName("The account provider is blocked by managed configuration")
+        }
+    }
+
+    private suspend fun assertQrCodeAccountProviderAllowed(qrCodeData: MatrixQrCodeLoginData) {
+        // QR login data can carry a server name and a separate connection base URL. A finite
+        // homeserver allowlist cannot safely prove that both values resolve to the same controlled
+        // deployment before the SDK starts the transfer, so keep the API boundary aligned with the
+        // onboarding UI and disable QR login for every locked-down build.
+        if (!enterpriseService.canConnectToAnyHomeserver()) {
+            throw AuthenticationException.InvalidServerName(
+                "QR login is disabled while the homeserver is restricted by policy"
+            )
+        }
+        val accountProvider = qrCodeData.serverName()
+        if (accountProvider != null) {
+            assertAccountProviderAllowed(accountProvider)
+        }
+    }
+
+    private suspend fun assertQrCodeAccountProviderAllowedAfterAuthentication(
+        qrCodeData: MatrixQrCodeLoginData,
+        attempt: AuthenticationAttempt,
+    ) {
+        abortAuthenticatedClientIfBlocked(attempt) {
+            if (currentAttempt !== attempt) {
+                throw AuthenticationException.InvalidServerName("The QR authentication attempt was superseded")
+            }
+            assertQrCodeAccountProviderAllowed(qrCodeData)
+        }
+    }
+
+    private suspend fun commitAuthenticatedSession(
+        attempt: AuthenticationAttempt,
+        matrixClient: MatrixClient,
+        sessionData: SessionData,
+        policyCheck: suspend () -> Unit = { assertAuthenticationAttemptAllowed(attempt) },
+    ) {
+        // A replacement and a publication transfer ownership of the same temporary client. Keep
+        // both operations under one mutex so replacement cannot destroy a client after it has been
+        // persisted but before the successful attempt releases its strong reference.
+        replaceAttemptMutex.withLock {
+            var sessionWasAdded = false
+            try {
+                sessionSecurityCoordinator.commitAuthentication(attempt.securityToken) {
+                    sessionSecurityCoordinator.serializeSessionPublication {
+                        if (currentAttempt !== attempt) {
+                            throw AuthenticationException.InvalidServerName("The authentication attempt was superseded")
+                        }
+                        policyCheck()
+                        if (sessionStore.numberOfSessions() > 0) {
+                            throw AuthenticationException.AccountAlreadyLoggedIn(sessionData.userId)
+                        }
+                        sessionStore.addSession(sessionData)
+                        sessionWasAdded = true
+                        newMatrixClientObservers.forEach { it.invoke(matrixClient) }
+                        clearAttempt(attempt, destroyClient = false, deleteSessionPaths = false)
+                    }
+                }
+            } catch (failure: Exception) {
+                if (sessionWasAdded) {
+                    withContext(NonCancellable) {
+                        try {
+                            sessionStore.removeSession(sessionData.userId)
+                        } catch (rollbackFailure: Exception) {
+                            failure.addSuppressed(rollbackFailure)
+                            Timber.e(rollbackFailure, "Failed to roll back a session after publication failed")
+                        }
+                    }
+                }
+                abortAuthenticatedClientIfBlocked(attempt) { throw failure }
+            }
+        }
+    }
+
+    private suspend fun assertNoExistingLocalSession() {
+        sessionStore.getAllSessions().firstOrNull()?.let { existingSession ->
+            throw AuthenticationException.AccountAlreadyLoggedIn(existingSession.userId)
+        }
+    }
+
+    private fun <T> disabledAuthenticationMethod(): Result<T> {
+        return Result.failure(
+            AuthenticationException.Generic("SecureChat supports password authentication only")
+        )
+    }
+
+    private fun Exception.isDefinitiveMatrixLoginRejection(): Boolean {
+        return this is ClientException.MatrixApi || mapClientException() is ClientException.MatrixApi
+    }
+
+    private suspend fun isStoredSessionEndpointAllowed(sessionData: SessionData): Boolean {
+        val accountProvider = sessionData.accountProvider ?: sessionData.homeserverUrl
+        return enterpriseService.isAllowedToConnectToHomeserver(accountProvider) &&
+            enterpriseService.isAllowedToConnectToHomeserver(sessionData.homeserverUrl)
+    }
+
+    private fun assertStoredSessionBelongsToThisInstallation(
+        sessionData: SessionData,
+        expectedDeviceId: String,
+    ) {
+        if (sessionData.loginType != LoginType.PASSWORD) return
+        if (sessionData.deviceId != expectedDeviceId) {
+            throw AuthenticationException.InvalidServerName(
+                "The stored session belongs to a different SecureChat installation and is quarantined"
+            )
+        }
+    }
+
+    private fun assertPasswordSessionBelongsToThisInstallation(
+        sessionData: SessionData,
+        expectedDeviceId: String,
+    ) = assertStoredSessionBelongsToThisInstallation(sessionData, expectedDeviceId)
+
+    private suspend fun resolveExpectedDeviceIdForRestore(sessionData: SessionData): String {
+        if (sessionData.loginType == LoginType.PASSWORD) {
+            secureChatDeviceIdProvider.seedDeviceIdFromLegacySessionIfNeeded(sessionData.deviceId)
+        }
+        return secureChatDeviceIdProvider.getOrCreate()
+    }
+
+    private suspend fun requireOnlyStoredSession(sessionId: SessionId): SessionData {
+        val sessions = sessionStore.getAllSessions()
+        if (sessions.size > 1) {
+            throw AuthenticationException.AccountAlreadyLoggedIn(sessionId.value)
+        }
+        return sessions.singleOrNull()
+            ?.takeIf { it.userId == sessionId.value }
+            ?: throw SessionRestorationException.MissingSession(sessionId)
+    }
+
+    private suspend fun <T> finishAuthenticatedAttempt(
+        attempt: AuthenticationAttempt,
+        block: suspend () -> T,
+    ): T {
+        return try {
+            block()
+        } catch (failure: Exception) {
+            cleanupAuthenticatedAttempt(attempt, failure)
+            throw failure
+        }
+    }
+
+    private suspend fun cleanupAuthenticatedAttempt(
+        attempt: AuthenticationAttempt,
+        primaryFailure: Exception,
+    ) = withContext(NonCancellable) {
+        if (!attempt.authenticatedCleanupStarted.compareAndSet(false, true)) return@withContext
+        try {
+            attempt.client.logout()
+        } catch (logoutFailure: Exception) {
+            primaryFailure.addSuppressed(logoutFailure)
+            Timber.e(logoutFailure, "Failed to invalidate an uncommitted SecureChat login")
+        }
+        try {
+            attempt.client.close()
+        } catch (closeFailure: Exception) {
+            primaryFailure.addSuppressed(closeFailure)
+            Timber.e(closeFailure, "Failed to close an uncommitted SecureChat login client")
+        } finally {
+            clearAttempt(attempt, destroyClient = false, deleteSessionPaths = true)
+        }
+    }
+
+    private suspend fun closeQuarantinedRestoredClient(
+        matrixClient: RustMatrixClient,
+        primaryFailure: Exception,
+    ) = withContext(NonCancellable) {
+        try {
+            // Close the in-memory SDK client without contacting the blocked endpoint, deleting its
+            // encrypted local files, or discarding the token required for administrator revocation.
+            matrixClient.destroy()
+        } catch (closeFailure: Exception) {
+            primaryFailure.addSuppressed(closeFailure)
+            Timber.e(closeFailure, "Failed to close a quarantined restored client")
+        }
+    }
+
+    private suspend fun revokeLegacyStoredSession(matrixClient: RustMatrixClient) {
+        try {
+            // This path is reached only after both the account provider and the actual endpoint
+            // pass the allowlist. Local state is removed only when remote token revocation succeeds.
+            matrixClient.logout(userInitiated = true, ignoreSdkError = false)
+        } catch (failure: Exception) {
+            closeQuarantinedRestoredClient(matrixClient, failure)
+            throw failure
+        }
+    }
+
+    /**
+     * Authentication can complete while device policy changes in another process callback. Fail
+     * closed before observers see the client or the session is persisted, and discard the
+     * authenticated temporary client so it cannot be retried under the new policy.
+     */
+    private suspend fun abortAuthenticatedClientIfBlocked(
+        attempt: AuthenticationAttempt,
+        policyCheck: suspend () -> Unit,
+    ) {
+        try {
+            policyCheck()
+        } catch (failure: Exception) {
+            // Cancellation must not interrupt token invalidation/local cleanup at this security
+            // boundary. Always preserve and rethrow the original policy/epoch failure.
+            cleanupAuthenticatedAttempt(attempt, failure)
+            throw failure
+        }
     }
 
     private suspend fun isMessageSearchAvailable(): Boolean =

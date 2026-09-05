@@ -2,5 +2,5 @@
 <paths>
     <cache-path
         name="downloads"
-        path="/" />
+        path="temp/notif/" />
 </paths>

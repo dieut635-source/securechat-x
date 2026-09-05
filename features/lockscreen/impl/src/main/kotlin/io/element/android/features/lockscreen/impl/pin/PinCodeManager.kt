@@ -62,9 +62,37 @@ interface PinCodeManager {
     suspend fun createPinCode(pinCode: String)
 
     /**
-     * @return true if the pin code is correct.
+     * Verifies the code that was entered.
+     *
+     * @return true if the code is correct.
+     *
+     * Returns true for the main code and, indistinguishably, for the duress code — entering the
+     * duress code erases every account first and then reports success. From the outside the two are
+     * identical: no error, no warning, no different screen. Anything that betrayed the difference
+     * would tell whoever is standing over the phone to keep pressing.
      */
     suspend fun verifyPinCode(pinCode: String): Boolean
+
+    /** True once a duress code has been set. */
+    suspend fun hasDuressPinCode(): Boolean
+
+    /**
+     * Stores the duress code. The caller is responsible for refusing one that is too close to the
+     * main code; see PinValidator.
+     */
+    suspend fun createDuressPinCode(pinCode: String)
+
+    /**
+     * How many digit positions [pinCode] differs from the main code in.
+     *
+     * The setup screen needs to know whether a proposed duress code is dangerously close to the
+     * real one, but it must never hold the real one to find out — a PIN in a Compose state, or
+     * worse in a Parcelize'd nav target, is a PIN written to disk. So the comparison happens in
+     * here, where the code is already decrypted, and only a number comes out.
+     *
+     * Returns [Int.MAX_VALUE] when there is no main code to compare against.
+     */
+    suspend fun countDifferencesFromPinCode(pinCode: String): Int
 
     /**
      * Deletes the previously created pin code.

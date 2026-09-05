@@ -10,6 +10,7 @@
 
 package io.element.android.features.lockscreen.impl.setup.pin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,12 +49,25 @@ fun SetupPinView(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // No way out of the duress step, by button or by gesture.
+    //
+    // It is pushed as a new root, so navigating up from here leaves the whole setup flow and lands
+    // in the app with an everyday code and no emergency one. The biometric step next door has
+    // blocked back since it was written; this step was left open by oversight.
+    //
+    // The service-level check in DefaultLockScreenService.isSetupRequired now catches that state
+    // too, so a user who escapes is asked again. This is the layer that stops them escaping at all.
+    if (state.isDuressStep) {
+        BackHandler { /* deliberately inert */ }
+    }
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    BackButton(onClick = onBackClick)
+                    if (!state.isDuressStep) {
+                        BackButton(onClick = onBackClick)
+                    }
                 },
                 title = {}
             )
@@ -68,7 +82,7 @@ fun SetupPinView(
                     .verticalScroll(state = scrollState)
                     .padding(vertical = 16.dp, horizontal = 20.dp),
             ) {
-                SetupPinHeader(state.isConfirmationStep, state.appName)
+                SetupPinHeader(state.isConfirmationStep, state.isDuressStep, state.appName)
                 SetupPinContent(state)
             }
         }
@@ -78,18 +92,26 @@ fun SetupPinView(
 @Composable
 private fun SetupPinHeader(
     isValidationStep: Boolean,
+    isDuressStep: Boolean,
     appName: String,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         IconTitleSubtitleMolecule(
-            title = if (isValidationStep) {
-                stringResource(id = R.string.screen_app_lock_setup_confirm_pin)
-            } else {
-                stringResource(id = R.string.screen_app_lock_setup_choose_pin)
+            title = when {
+                isDuressStep && isValidationStep -> stringResource(id = R.string.securechat_setup_duress_pin_confirm_title)
+                isDuressStep -> stringResource(id = R.string.securechat_setup_duress_pin_title)
+                isValidationStep -> stringResource(id = R.string.screen_app_lock_setup_confirm_pin)
+                else -> stringResource(id = R.string.screen_app_lock_setup_choose_pin)
             },
-            subTitle = stringResource(id = R.string.screen_app_lock_setup_pin_context, appName),
+            subTitle = if (isDuressStep) {
+                // Spelled out here because this is the only place the user is told what the second
+                // code does. It is never explained anywhere the app can be read over a shoulder.
+                stringResource(id = R.string.securechat_setup_duress_pin_subtitle)
+            } else {
+                stringResource(id = R.string.screen_app_lock_setup_pin_context, appName)
+            },
             iconStyle = BigIcon.Style.Default(CompoundIcons.LockSolid()),
         )
     }
@@ -131,6 +153,7 @@ private fun SetupPinFailure.content(): String {
     return when (this) {
         SetupPinFailure.ForbiddenPin -> stringResource(id = R.string.screen_app_lock_setup_pin_forbidden_dialog_content)
         SetupPinFailure.PinsDoNotMatch -> stringResource(id = R.string.screen_app_lock_setup_pin_mismatch_dialog_content)
+        SetupPinFailure.DuressPinTooSimilar -> stringResource(id = R.string.securechat_setup_duress_pin_too_similar_dialog_content)
     }
 }
 
@@ -140,6 +163,7 @@ private fun SetupPinFailure.title(): String {
     return when (this) {
         SetupPinFailure.ForbiddenPin -> stringResource(id = R.string.screen_app_lock_setup_pin_forbidden_dialog_title)
         SetupPinFailure.PinsDoNotMatch -> stringResource(id = R.string.screen_app_lock_setup_pin_mismatch_dialog_title)
+        SetupPinFailure.DuressPinTooSimilar -> stringResource(id = R.string.securechat_setup_duress_pin_too_similar_dialog_title)
     }
 }
 

@@ -16,6 +16,7 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.browser.customtabs.CustomTabsSession
 import androidx.core.net.toUri
+import io.element.android.libraries.androidutils.system.isAllowedExternalUrl
 import io.element.android.libraries.androidutils.system.openUrlInExternalApp
 import java.util.Locale
 
@@ -29,6 +30,7 @@ fun Activity.openUrlInChromeCustomTab(
     darkTheme: Boolean,
     url: String
 ) {
+    if (!isAllowedExternalUrl(url)) return
     try {
         CustomTabsIntent.Builder()
             .setDefaultColorSchemeParams(

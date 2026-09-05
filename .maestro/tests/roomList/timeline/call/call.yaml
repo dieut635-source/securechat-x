@@ -3,7 +3,7 @@ appId: ${MAESTRO_APP_ID}
 - tapOn: "Start a call"
 - takeScreenshot: build/maestro/700-Call
 - extendedWaitUntil:
-    visible: "maestroelement"
+    visible: "maestrosecurechat"
     timeout: 10000
 - takeScreenshot: build/maestro/710-Call
 # Hangup

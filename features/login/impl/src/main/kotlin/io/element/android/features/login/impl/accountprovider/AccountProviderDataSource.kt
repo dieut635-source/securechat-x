@@ -15,31 +15,27 @@ import io.element.android.appconfig.AuthenticationConfig
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.api.canConnectToAnyHomeserver
 import io.element.android.libraries.di.annotations.AppCoroutineScope
+import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @SingleIn(AppScope::class)
 @Inject
 class AccountProviderDataSource(
     private val enterpriseService: EnterpriseService,
+    private val mdmService: MdmService,
     private val appPreferencesStore: AppPreferencesStore,
     @AppCoroutineScope private val coroutineScope: CoroutineScope,
 ) {
     // The provider used when the user has not selected one: an enterprise/MDM-configured provider,
     // else the SecureChat homeserver. The most recently used provider (from history) can override it, see init.
-    private val configuredAccountProvider = createAccountProvider(
-        url = enterpriseService.homeserverAllowList()
-            .firstOrNull { it != EnterpriseService.ANY_ACCOUNT_PROVIDER }
-            ?: AuthenticationConfig.DEFAULT_HOMESERVER_URL
-    )
-
-    private val accountProvider: MutableStateFlow<AccountProvider> = MutableStateFlow(configuredAccountProvider)
+    private val accountProvider: MutableStateFlow<AccountProvider> = MutableStateFlow(configuredAccountProvider())
 
     val flow: StateFlow<AccountProvider> = accountProvider.asStateFlow()
 
@@ -52,8 +48,20 @@ class AccountProviderDataSource(
     init {
         // Seed the default from the last used provider, unless the user has already selected one.
         coroutineScope.launch {
+            val configuredAccountProvider = configuredAccountProvider()
             val default = defaultAccountProvider()
-            accountProvider.update { current -> if (current == configuredAccountProvider) default else current }
+            if (accountProvider.value == configuredAccountProvider) {
+                accountProvider.value = default
+            }
+        }
+        // Restrictions can be updated while the login screen is open. Re-read the enterprise service
+        // after every MDM update instead of retaining the homeserver captured in this singleton's constructor.
+        coroutineScope.launch {
+            mdmService.config.collectLatest {
+                if (!enterpriseService.canConnectToAnyHomeserver()) {
+                    accountProvider.emit(configuredAccountProvider())
+                }
+            }
         }
     }
 
@@ -67,11 +75,17 @@ class AccountProviderDataSource(
      */
     private suspend fun defaultAccountProvider(): AccountProvider {
         if (!enterpriseService.canConnectToAnyHomeserver()) {
-            return configuredAccountProvider
+            return configuredAccountProvider()
         }
         val lastUsedProvider = appPreferencesStore.getHomeserverHistoryFlow().first().firstOrNull()
-        return lastUsedProvider?.let { createAccountProvider(it) } ?: configuredAccountProvider
+        return lastUsedProvider?.let { createAccountProvider(it) } ?: configuredAccountProvider()
     }
+
+    private fun configuredAccountProvider(): AccountProvider = createAccountProvider(
+        url = enterpriseService.homeserverAllowList()
+            .firstOrNull { it != EnterpriseService.ANY_ACCOUNT_PROVIDER }
+            ?: AuthenticationConfig.DEFAULT_HOMESERVER_URL
+    )
 
     suspend fun setUrl(url: String) {
         setAccountProvider(createAccountProvider(url))
@@ -86,8 +100,8 @@ class AccountProviderDataSource(
         return AccountProvider(
             url = url,
             subtitle = null,
-            isPublic = url == AuthenticationConfig.MATRIX_ORG_URL,
-            isMatrixOrg = url == AuthenticationConfig.MATRIX_ORG_URL,
+            isPublic = false,
+            isMatrixOrg = false,
         )
     }
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SecureChat strings for the duress code. Kept in their own file so a Localazy sync of
+  translations.xml never overwrites them.
+
+  Deliberately plain wording. This screen is shown during setup, where the user is calm and needs to
+  understand the rule; the code itself is never described anywhere the app can be seen by someone
+  else.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="securechat_setup_duress_pin_title">Set an emergency PIN</string>
+    <string name="securechat_setup_duress_pin_subtitle">Choose a second PIN. Entering it unlocks the app as usual, but erases all messages and files on this phone first. Use it if you are ever forced to unlock the app.</string>
+    <string name="securechat_setup_duress_pin_confirm_title">Confirm your emergency PIN</string>
+    <string name="securechat_setup_duress_pin_too_similar_dialog_title">Too close to your normal PIN</string>
+    <string name="securechat_setup_duress_pin_too_similar_dialog_content">The emergency PIN must differ from your normal PIN in at least two digits. Otherwise a single mistyped digit would erase everything.</string>
+</resources>

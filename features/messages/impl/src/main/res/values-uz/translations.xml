@@ -26,7 +26,7 @@
   <string name="screen_media_upload_preview_error_failed_sending">"Media yuklanmadi, qayta urinib ko‘ring."</string>
   <string name="screen_media_upload_preview_error_too_large_message">"Ruxsat etilgan maksimal fayl hajmi %1$s ."</string>
   <string name="screen_media_upload_preview_error_too_large_title">"Fayl yuklash uchun juda katta"</string>
-  <string name="screen_media_upload_preview_item_count">"Element%1$d ning %2$d"</string>
+  <string name="screen_media_upload_preview_item_count">"%2$d tadan %1$d"</string>
   <string name="screen_media_upload_preview_optimize_image_quality_title">"Tasvir sifatini optimallashtirish"</string>
   <string name="screen_media_upload_preview_processing">"Qayta ishlanmoqda…"</string>
   <string name="screen_media_upload_preview_title">"Media qoʻshish"</string>
@@ -53,7 +53,7 @@
   <string name="screen_room_timeline_add_reaction">"Emoji qo\'shmoq"</string>
   <string name="screen_room_timeline_beginning_of_room">"Bu %1$sni boshlanishi"</string>
   <string name="screen_room_timeline_beginning_of_room_no_name">"Bu suhbatning boshlanishi."</string>
-  <string name="screen_room_timeline_legacy_call">"Chaqiruv qabul qilinmaydi. Chaqiruvchidan yangi Element X ilovasidan foydalanishi mumkinligini so‘rang."</string>
+  <string name="screen_room_timeline_legacy_call">"Chaqiruv qabul qilinmaydi. Chaqiruvchidan yangi SecureChat ilovasidan foydalanishi mumkinligini so‘rang."</string>
   <string name="screen_room_timeline_less_reactions">"Kamroq ko\'rsatish"</string>
   <string name="screen_room_timeline_message_copied">"Xabar nusxalandi"</string>
   <string name="screen_room_timeline_no_permission_to_post">"Sizda bu xonaga post yozishga ruxsat yo‘q"</string>

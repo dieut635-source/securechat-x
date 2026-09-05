@@ -19,6 +19,9 @@ jobs:
   sonar:
     name: Sonar Quality Checks
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      ORG_GRADLE_PROJECT_SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
     # Allow all jobs on main and develop. Just one per PR.
     concurrency:
       group: ${{ format('sonar-{0}', github.ref) }}
@@ -56,8 +59,5 @@ jobs:
       - name: Build debug code and test fixtures
         run: ./gradlew assembleGplayDebug createFullJarDebugTestFixtures :app:createFullJarGplayDebugTestFixtures $CI_GRADLE_ARG_PROPERTIES
       - name: 🔊 Publish results to Sonar
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          ORG_GRADLE_PROJECT_SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
         if: ${{ always() && env.SONAR_TOKEN != '' && env.ORG_GRADLE_PROJECT_SONAR_LOGIN != '' }}
         run: ./gradlew sonar $CI_GRADLE_ARG_PROPERTIES

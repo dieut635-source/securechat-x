@@ -8,7 +8,6 @@
 
 package io.element.android.features.startchat.impl.root
 
-import android.app.Activity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,7 +21,6 @@ import dev.zacsweers.metro.AssistedInject
 import im.vector.app.features.analytics.plan.MobileScreen
 import io.element.android.annotations.ContributesNode
 import io.element.android.features.startchat.StartChatNavigator
-import io.element.android.libraries.deeplink.api.usecase.InviteFriendsUseCase
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.core.toRoomIdOrAlias
 import io.element.android.services.analytics.api.AnalyticsService
@@ -34,7 +32,6 @@ class StartChatNode(
     @Assisted plugins: List<Plugin>,
     private val presenter: StartChatPresenter,
     private val analyticsService: AnalyticsService,
-    private val inviteFriendsUseCase: InviteFriendsUseCase,
 ) : Node(buildContext, plugins = plugins) {
     private val navigator = plugins<StartChatNavigator>().first()
 
@@ -57,12 +54,7 @@ class StartChatNode(
                 navigator.onRoomCreated(roomIdOrAlias = it.toRoomIdOrAlias(), serverNames = emptyList())
             },
             onJoinByAddressClick = navigator::onShowJoinRoomByAddress,
-            onInviteFriendsClick = { invitePeople(activity) },
             onRoomDirectorySearchClick = navigator::onOpenRoomDirectory
         )
-    }
-
-    private fun invitePeople(activity: Activity) {
-        inviteFriendsUseCase.execute(activity)
     }
 }

@@ -9,13 +9,13 @@
   <string name="screen_account_provider_signin_title">"Siz %sga kirmoqchisiz"</string>
   <string name="screen_account_provider_signup_subtitle">"Bu sizning suhbatlaringiz yashaydigan joy - xuddi siz elektron pochta xabarlaringizni saqlash uchun elektron pochta provayderidan foydalanganingiz kabi."</string>
   <string name="screen_account_provider_signup_title">"Siz %sda hisob yaratmoqchisiz"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org - bu Matrix.org Jamg\'armasi tomonidan boshqariladigan xavfsiz, markazlashtirilmagan aloqa uchun ommaviy Matrix tarmog\'idagi katta, bepul server."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Boshqa"</string>
   <string name="screen_change_account_provider_subtitle">"Shaxsiy serveringiz yoki ishchi hisob qaydnomangiz kabi boshqa hisob provayderidan foydalaning."</string>
   <string name="screen_change_account_provider_title">"Hisob provayderini o\'zgartiring"</string>
   <string name="screen_change_server_error_element_pro_required_action_android">"Google Play"</string>
-  <string name="screen_change_server_error_element_pro_required_message">"%1$s da Element Pro ilovasi talab qilinadi. Iltimos, do‘kondan yuklab oling."</string>
-  <string name="screen_change_server_error_element_pro_required_title">"Element Pro talab qilinadi"</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
   <string name="screen_change_server_error_invalid_homeserver">"Bu uy serveriga kira olmadik. Iltimos, uy serverining URL manzilini to\'ri kiritganingizni tekshiring. Agar URL toʻgʻri boʻlsa, qoʻshimcha yordam olish uchun uy serveri administratoriga murojaat qiling."</string>
   <string name="screen_change_server_error_invalid_well_known">".well-known faylidagi muammo tufayli server mavjud emas: %1$s"</string>
   <string name="screen_change_server_error_no_sliding_sync_message">"Tanlangan hisob provayderi siljitish sinxronizatsiyasini qo‘llab-quvvatlamaydi. %1$s ishlatish uchun serverni yangilash zarur."</string>
@@ -36,8 +36,8 @@
   <string name="screen_login_subtitle">"Matrix xavfsiz, markazlashmagan aloqa uchun ochiq tarmoqdir."</string>
   <string name="screen_login_title">"Qaytib kelganingizdan xursandmiz!"</string>
   <string name="screen_login_title_with_homeserver">"Kirish%1$s"</string>
-  <string name="screen_missing_key_backup_open_element_classic">"Element Classic ilovasini ochish"</string>
-  <string name="screen_missing_key_backup_step_1">"Element Classic ilovasini qurilmada oching"</string>
+  <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
+  <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
   <string name="screen_missing_key_backup_step_2_android">"Sozlamalar &gt; Xavfsizlik va maxfiylik bo‘limiga kiring"</string>
   <string name="screen_missing_key_backup_step_3_android">"Kriptografiya kalitlarini boshqarishda Shifrlangan xabarlarni tiklash bandini tanlang"</string>
   <string name="screen_missing_key_backup_step_4">"Kalit xotirasini yoqish uchun ko‘rsatmalarga amal qiling"</string>
@@ -52,7 +52,7 @@
   <string name="screen_onboarding_welcome_back">"Xush kelibsiz."</string>
   <string name="screen_onboarding_welcome_message">"Eng tezkor %1$sga xush kelibsiz. Tezlik va oddiylik uchun super zaryadlangan."</string>
   <string name="screen_onboarding_welcome_subtitle">"%1$sga Xush kelibsiz. Tezlik va oddiylik uchun o\'ta zaryadlangan."</string>
-  <string name="screen_onboarding_welcome_title">"Elementingizda bo\'ling"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Xavfsiz aloqa oʻrnatish"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"Yangi qurilmaga xavfsiz ulanish amalga oshirilmadi. Mavjud qurilmalaringiz hali ham xavfsiz va ular haqida qaygʻurishingiz shart emas."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"Endi nima?"</string>
@@ -99,7 +99,7 @@ Oddiy usulda kiring yoki boshqa qurilma bilan QR kodni skanerlang."</string>
   <string name="screen_qr_code_login_verify_code_subtitle">"Hisob provayderingiz hisobga kirishni tasdiqlash uchun quyidagi kodni soʻrashi mumkin."</string>
   <string name="screen_qr_code_login_verify_code_title">"Tasdiqlash kodingiz"</string>
   <string name="screen_server_confirmation_change_server">"Hisob provayderini o\'zgartiring"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Element xodimlari uchun shaxsiy server."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix xavfsiz, markazlashmagan aloqa uchun ochiq tarmoqdir."</string>
   <string name="screen_server_confirmation_message_register">"Bu sizning suhbatlaringiz yashaydigan joy - xuddi siz elektron pochta xabarlaringizni saqlash uchun elektron pochta provayderidan foydalanganingiz kabi."</string>
   <string name="screen_server_confirmation_title_login">"%1$s hisobiga kirmoqchisiz"</string>

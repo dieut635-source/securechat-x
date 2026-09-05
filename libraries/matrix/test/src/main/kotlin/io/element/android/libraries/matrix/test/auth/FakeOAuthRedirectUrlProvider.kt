@@ -10,7 +10,7 @@ package io.element.android.libraries.matrix.test.auth
 
 import io.element.android.libraries.matrix.api.auth.OAuthRedirectUrlProvider
 
-const val FAKE_REDIRECT_URL = "io.element.android:/"
+const val FAKE_REDIRECT_URL = "com.example.app://oauth/callback"
 
 class FakeOAuthRedirectUrlProvider(
     private val provideResult: String = FAKE_REDIRECT_URL,

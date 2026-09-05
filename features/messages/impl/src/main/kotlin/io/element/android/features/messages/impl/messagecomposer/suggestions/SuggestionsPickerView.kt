@@ -201,7 +201,7 @@ internal fun SuggestionsPickerViewPreview() {
         )
         val anAlias = remember { RoomAlias("#room:domain.org") }
         SuggestionsPickerView(
-            roomId = RoomId("!room:matrix.org"),
+            roomId = RoomId("!room:chat.securechat.com.au"),
             roomName = "Room",
             roomAvatarData = anAvatarData(),
             suggestions = persistentListOf(
@@ -210,7 +210,7 @@ internal fun SuggestionsPickerViewPreview() {
                 ResolvedSuggestion.Member(roomMember.copy(userId = UserId("@bob:server.org"), displayName = USER_NAME_BOB)),
                 ResolvedSuggestion.Alias(
                     roomAlias = anAlias,
-                    roomId = RoomId("!room:matrix.org"),
+                    roomId = RoomId("!room:chat.securechat.com.au"),
                     roomName = "My room",
                     roomAvatarUrl = null,
                 ),

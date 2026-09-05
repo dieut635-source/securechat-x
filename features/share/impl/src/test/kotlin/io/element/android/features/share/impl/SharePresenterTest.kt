@@ -21,9 +21,13 @@ import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.test.A_MESSAGE
 import io.element.android.libraries.matrix.test.A_ROOM_ID
+import io.element.android.libraries.matrix.test.A_ROOM_ID_2
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.libraries.matrix.test.timeline.FakeTimeline
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.api.MdmService
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfigProvider
 import io.element.android.libraries.mediaupload.api.MediaSenderRoomFactory
 import io.element.android.libraries.mediaupload.test.FakeMediaOptimizationConfigProvider
@@ -162,6 +166,93 @@ class SharePresenterTest : RobolectricTest() {
             sendMediaResult.assertions().isCalledOnce()
         }
     }
+
+    @Test
+    fun `present - allow_file_send off refuses media at the final share boundary`() = runTest {
+        val sendMediaResult = lambdaRecorder<Result<Unit>> { Result.success(Unit) }
+        val matrixClient = FakeMatrixClient().apply {
+            givenGetRoomResult(A_ROOM_ID, FakeJoinedRoom(liveTimeline = FakeTimeline()))
+        }
+        val presenter = createSharePresenter(
+            matrixClient = matrixClient,
+            shareIntentData = ShareIntentData.Uris(
+                text = null,
+                uris = listOf(UriToShare(Uri.parse("content://image.jpg"), MimeTypes.Jpeg)),
+            ),
+            mediaSenderRoomFactory = MediaSenderRoomFactory { FakeMediaSender(sendMediaResult = sendMediaResult) },
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowFileSend = false)),
+        )
+
+        moleculeFlow(RecompositionMode.Immediate) { presenter.present() }.test {
+            assertThat(awaitItem().shareAction.isUninitialized()).isTrue()
+            presenter.onRoomSelected(listOf(A_ROOM_ID))
+            assertThat(awaitItem().shareAction.isLoading()).isTrue()
+            assertThat(awaitItem().shareAction.isFailure()).isTrue()
+            sendMediaResult.assertions().isNeverCalled()
+        }
+    }
+
+    @Test
+    fun `present - disabling file send during a room stops its remaining files`() = runTest {
+        val mdmService = FakeMdmService()
+        val sendMediaResult = lambdaRecorder<Result<Unit>> {
+            mdmService.emit(MdmConfig.default.copy(allowFileSend = false))
+            Result.success(Unit)
+        }
+        val matrixClient = FakeMatrixClient().apply {
+            givenGetRoomResult(A_ROOM_ID, FakeJoinedRoom(liveTimeline = FakeTimeline()))
+        }
+        val presenter = createSharePresenter(
+            matrixClient = matrixClient,
+            shareIntentData = ShareIntentData.Uris(
+                text = null,
+                uris = listOf(
+                    UriToShare(Uri.parse("content://first.jpg"), MimeTypes.Jpeg),
+                    UriToShare(Uri.parse("content://second.jpg"), MimeTypes.Jpeg),
+                ),
+            ),
+            mediaSenderRoomFactory = MediaSenderRoomFactory { FakeMediaSender(sendMediaResult = sendMediaResult) },
+            mdmService = mdmService,
+        )
+
+        moleculeFlow(RecompositionMode.Immediate) { presenter.present() }.test {
+            assertThat(awaitItem().shareAction.isUninitialized()).isTrue()
+            presenter.onRoomSelected(listOf(A_ROOM_ID))
+            assertThat(awaitItem().shareAction.isLoading()).isTrue()
+            assertThat(awaitItem().shareAction.isFailure()).isTrue()
+            sendMediaResult.assertions().isCalledOnce()
+        }
+    }
+
+    @Test
+    fun `present - disabling file send after one room stops the remaining rooms`() = runTest {
+        val mdmService = FakeMdmService()
+        val sendMediaResult = lambdaRecorder<Result<Unit>> {
+            mdmService.emit(MdmConfig.default.copy(allowFileSend = false))
+            Result.success(Unit)
+        }
+        val matrixClient = FakeMatrixClient().apply {
+            givenGetRoomResult(A_ROOM_ID, FakeJoinedRoom(liveTimeline = FakeTimeline()))
+            givenGetRoomResult(A_ROOM_ID_2, FakeJoinedRoom(liveTimeline = FakeTimeline()))
+        }
+        val presenter = createSharePresenter(
+            matrixClient = matrixClient,
+            shareIntentData = ShareIntentData.Uris(
+                text = null,
+                uris = listOf(UriToShare(Uri.parse("content://image.jpg"), MimeTypes.Jpeg)),
+            ),
+            mediaSenderRoomFactory = MediaSenderRoomFactory { FakeMediaSender(sendMediaResult = sendMediaResult) },
+            mdmService = mdmService,
+        )
+
+        moleculeFlow(RecompositionMode.Immediate) { presenter.present() }.test {
+            assertThat(awaitItem().shareAction.isUninitialized()).isTrue()
+            presenter.onRoomSelected(listOf(A_ROOM_ID, A_ROOM_ID_2))
+            assertThat(awaitItem().shareAction.isLoading()).isTrue()
+            assertThat(awaitItem().shareAction.isFailure()).isTrue()
+            sendMediaResult.assertions().isCalledOnce()
+        }
+    }
 }
 
 internal fun TestScope.createSharePresenter(
@@ -171,6 +262,7 @@ internal fun TestScope.createSharePresenter(
     mediaSenderRoomFactory: MediaSenderRoomFactory = MediaSenderRoomFactory { FakeMediaSender() },
     mediaOptimizationConfigProvider: MediaOptimizationConfigProvider = FakeMediaOptimizationConfigProvider(),
     onSharedData: OnSharedData = OnSharedData {},
+    mdmService: MdmService = FakeMdmService(),
 ): SharePresenter {
     return SharePresenter(
         shareIntentData = shareIntentData,
@@ -180,5 +272,6 @@ internal fun TestScope.createSharePresenter(
         mediaSenderRoomFactory = mediaSenderRoomFactory,
         mediaOptimizationConfigProvider = mediaOptimizationConfigProvider,
         onSharedData = onSharedData,
+        mdmService = mdmService,
     )
 }

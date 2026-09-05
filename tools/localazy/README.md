@@ -4,7 +4,7 @@ Localazy is used to host the source strings and their translations.
 
 <!--- TOC -->
 
-* [Localazy project](#localazy-project)
+* [Project configuration](#project-configuration)
   * [Key naming rules](#key-naming-rules)
     * [Special suffixes](#special-suffixes)
     * [Placeholders](#placeholders)
@@ -14,11 +14,11 @@ Localazy is used to host the source strings and their translations.
 
 <!--- END -->
 
-## Localazy project
+## Project configuration
 
-[![Localazy](https://img.shields.io/endpoint?url=https%3A%2F%2Fconnect.localazy.com%2Fstatus%2Felement%2Fdata%3Fcontent%3Dall%26title%3Dlocalazy%26logo%3Dtrue)](https://localazy.com/p/element)
-
-To add new strings, or to translate existing strings, go the the Localazy project: [https://localazy.com/p/element](https://localazy.com/p/element). Please follow the key naming rules (see below).
+SecureChat does not publish translations to an inherited upstream project. Before using these
+optional helper scripts, configure a SecureChat-owned Localazy project and local credentials.
+Please follow the key naming rules below when adding or translating strings.
 
 Never edit manually the files `localazy.xml` or `translations.xml`!.
 

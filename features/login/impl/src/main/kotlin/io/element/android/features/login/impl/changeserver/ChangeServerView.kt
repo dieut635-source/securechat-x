@@ -13,16 +13,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.dialogs.SlidingSyncNotSupportedDialog
 import io.element.android.features.login.impl.error.ChangeServerError
-import io.element.android.libraries.androidutils.system.openGooglePlay
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.designsystem.components.ProgressDialog
-import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
 import io.element.android.libraries.designsystem.components.dialogs.ErrorDialog
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -37,7 +34,6 @@ fun ChangeServerView(
     onSuccess: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     val eventSink = state.eventSink
     when (state.changeServerAction) {
         is AsyncData.Failure -> {
@@ -80,19 +76,14 @@ fun ChangeServerView(
                     )
                 }
                 is ChangeServerError.NeedElementPro -> {
-                    ConfirmationDialog(
+                    ErrorDialog(
                         modifier = modifier,
                         title = stringResource(R.string.screen_change_server_error_element_pro_required_title),
                         content = stringResource(
                             R.string.screen_change_server_error_element_pro_required_message,
                             error.unauthorisedAccountProviderTitle,
                         ),
-                        submitText = stringResource(R.string.screen_change_server_error_element_pro_required_action_android),
-                        onSubmitClick = {
-                            context.openGooglePlay(error.applicationId)
-                            eventSink.invoke(ChangeServerEvent.ClearError)
-                        },
-                        onDismiss = {
+                        onSubmit = {
                             eventSink.invoke(ChangeServerEvent.ClearError)
                         },
                     )

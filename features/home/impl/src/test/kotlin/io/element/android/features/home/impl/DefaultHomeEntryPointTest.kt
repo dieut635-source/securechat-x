@@ -33,7 +33,6 @@ class DefaultHomeEntryPointTest : RobolectricTest() {
                 plugins = plugins,
                 matrixClient = FakeMatrixClient(),
                 presenter = createHomePresenter(),
-                inviteFriendsUseCase = { lambdaError() },
                 analyticsService = FakeAnalyticsService(),
                 acceptDeclineInviteView = { _, _, _, _ -> lambdaError() },
                 directLogoutView = { _ -> lambdaError() },

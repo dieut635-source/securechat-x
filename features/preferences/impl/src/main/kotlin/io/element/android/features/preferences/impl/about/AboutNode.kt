@@ -36,12 +36,12 @@ class AboutNode(
 
     private val callback: Callback = callback()
 
-    private fun onElementLegalClick(
+    private fun onSecureChatLegalClick(
         activity: Activity,
         darkTheme: Boolean,
-        elementLegal: ElementLegal,
+        secureChatLegal: SecureChatLegal,
     ) {
-        activity.openUrlInChromeCustomTab(null, darkTheme, elementLegal.url)
+        activity.openUrlInChromeCustomTab(null, darkTheme, secureChatLegal.url)
     }
 
     @Composable
@@ -52,8 +52,8 @@ class AboutNode(
         AboutView(
             state = state,
             onBackClick = ::navigateUp,
-            onElementLegalClick = { elementLegal ->
-                onElementLegalClick(activity, isDark, elementLegal)
+            onSecureChatLegalClick = { secureChatLegal ->
+                onSecureChatLegalClick(activity, isDark, secureChatLegal)
             },
             onOpenSourceLicensesClick = callback::navigateToOssLicenses,
             modifier = modifier

@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"選擇接收通知的機制"</string>
   <string name="screen_advanced_settings_developer_mode">"開發者模式"</string>
   <string name="screen_advanced_settings_developer_mode_description">"啟用以存取供開發者使用的功能。"</string>
-  <string name="screen_advanced_settings_element_call_base_url">"自訂 Element 通話基礎 URL"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"設定 Element 通話的自訂基礎 URL。"</string>
+  <string name="screen_advanced_settings_element_call_base_url">"自訂 SecureChat 通話基礎 URL"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"設定 SecureChat 通話的自訂基礎 URL。"</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"無效的 URL，請確定包含了協定 (http/https) 與正確的地址。"</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"在聊天室邀請請求中隱藏大頭貼"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"在時間軸中隱藏媒體預覽"</string>
@@ -87,8 +87,8 @@
   <string name="screen_notification_settings_sound_custom_fallback">"自訂"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"自訂音效⋯⋯"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"刪除檔案時發生錯誤"</string>
-  <string name="screen_notification_settings_sound_element_default">"Element 預設值"</string>
-  <string name="screen_notification_settings_sound_element_fade">"Element Fade"</string>
+  <string name="screen_notification_settings_sound_element_default">"SecureChat 預設值"</string>
+  <string name="screen_notification_settings_sound_element_fade">"SecureChat Fade"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"匯入檔案時發生錯誤"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"預覽警示音時發生問題"</string>
   <string name="screen_notification_settings_sound_section_title">"音效"</string>

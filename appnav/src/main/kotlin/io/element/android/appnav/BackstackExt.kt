@@ -9,17 +9,15 @@
 package io.element.android.appnav
 
 import com.bumble.appyx.navmodel.backstack.BackStack
+import com.bumble.appyx.navmodel.backstack.activeElement
 import com.bumble.appyx.navmodel.backstack.operation.NewRoot
 import com.bumble.appyx.navmodel.backstack.operation.Remove
 
-/**
- * Don't process NewRoot if the nav target already exists in the stack.
- */
+/** Don't process NewRoot only when the requested target is already active. */
 fun <T : Any> BackStack<T>.safeRoot(element: T) {
-    val containsRoot = elements.value.any {
-        it.key.navTarget == element
-    }
-    if (containsRoot) return
+    // A previous root can remain as an inactive element while a transition is settling. Treating
+    // that as current leaves the security splash permanently active after unlock.
+    if (activeElement == element) return
     accept(NewRoot(element))
 }
 

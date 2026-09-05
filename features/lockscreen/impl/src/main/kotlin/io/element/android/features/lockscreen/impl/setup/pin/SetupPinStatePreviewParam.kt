@@ -41,11 +41,13 @@ fun aSetupPinState(
     confirmPinEntry: PinEntry = PinEntry.createEmpty(4),
     isConfirmationStep: Boolean = false,
     creationFailure: SetupPinFailure? = null,
+    isDuressStep: Boolean = false,
 ) = SetupPinState(
     choosePinEntry = choosePinEntry,
     confirmPinEntry = confirmPinEntry,
     isConfirmationStep = isConfirmationStep,
     setupPinFailure = creationFailure,
-    appName = "Element",
+    isDuressStep = isDuressStep,
+    appName = "SecureChat",
     eventSink = {}
 )

@@ -142,6 +142,7 @@ class LoggedInPresenterTest {
             ),
             syncService = FakeSyncService(initialSyncState = SyncState.Running),
             pushService = FakePushService(
+                availablePushProviders = listOf(FakePushProvider()),
                 ensurePusherIsRegisteredResult = { Result.success(Unit) },
             ),
             sessionVerificationService = verificationService,
@@ -208,6 +209,33 @@ class LoggedInPresenterTest {
             assertThat(finalState.pusherRegistrationState.isSuccess()).isTrue()
             lambda.assertions()
                 .isCalledOnce()
+        }
+    }
+
+    @Test
+    fun `present - no push provider uses local sync without registering a pusher`() = runTest {
+        val lambda = lambdaRecorder<Result<Unit>> { Result.failure(AN_EXCEPTION) }
+        val sessionVerificationService = FakeSessionVerificationService(
+            initialSessionVerifiedStatus = SessionVerifiedStatus.Verified
+        )
+        val pushService = createFakePushService(
+            pushProvider0 = null,
+            pushProvider1 = null,
+            ensurePusherIsRegisteredResult = lambda,
+        )
+        createLoggedInPresenter(
+            pushService = pushService,
+            sessionVerificationService = sessionVerificationService,
+            matrixClient = FakeMatrixClient(
+                accountManagementUrlResult = { Result.success(null) },
+            ),
+        ).test {
+            val state = awaitItem()
+            advanceUntilIdle()
+            assertThat(state.pusherRegistrationState.isUninitialized()).isTrue()
+            lambda.assertions().isNeverCalled()
+            expectNoEvents()
+            cancelAndConsumeRemainingEvents()
         }
     }
 
@@ -308,8 +336,7 @@ class LoggedInPresenterTest {
     }
 
     @Test
-    fun `present - CheckSlidingSyncProxyAvailability forces the sliding sync migration under the right circumstances`() = runTest {
-        // The migration will be forced if the user is not using the native sliding sync
+    fun `present - CheckSlidingSyncProxyAvailability never requests a logout migration`() = runTest {
         val matrixClient = FakeMatrixClient(
             currentSlidingSyncVersionLambda = { Result.success(SlidingSyncVersion.Proxy) },
         )
@@ -319,13 +346,13 @@ class LoggedInPresenterTest {
             val initialState = awaitItem()
             assertThat(initialState.forceNativeSlidingSyncMigration).isFalse()
             initialState.eventSink(LoggedInEvent.CheckSlidingSyncProxyAvailability)
-            assertThat(awaitItem().forceNativeSlidingSyncMigration).isTrue()
+            expectNoEvents()
         }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `present - LogoutAndMigrateToNativeSlidingSync logs out the user`() = runTest {
+    fun `present - stale LogoutAndMigrateToNativeSlidingSync cannot log out the user`() = runTest {
         val logoutLambda = lambdaRecorder<Boolean, Boolean, Unit> { userInitiated, ignoreSdkError ->
             assertThat(userInitiated).isTrue()
             assertThat(ignoreSdkError).isTrue()
@@ -344,7 +371,7 @@ class LoggedInPresenterTest {
 
             advanceUntilIdle()
 
-            assertThat(logoutLambda.assertions().isCalledOnce())
+            assertThat(logoutLambda.assertions().isNeverCalled())
         }
     }
 

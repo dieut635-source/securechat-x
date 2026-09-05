@@ -172,7 +172,7 @@ private fun DirectMessageCallBody(state: RtcNotificationState.Active, modifier: 
             )
             Text(
                 modifier = Modifier.padding(start = 6.dp),
-                text = stringResource(CommonStrings.common_user_started_a_call, caller.displayName ?: caller.userId),
+                text = stringResource(CommonStrings.common_user_started_a_call, caller.displayName ?: caller.userId.displayLabel),
                 style = ElementTheme.typography.fontBodyMdMedium,
                 color = ElementTheme.colors.textPrimary,
             )
@@ -231,7 +231,7 @@ private fun GroupCallBody(event: TimelineItem.Event, state: RtcNotificationState
                 if (caller.userId == event.senderId) {
                     Text(
                         modifier = Modifier.padding(start = 6.dp),
-                        text = stringResource(CommonStrings.common_user_started_a_call, caller.displayName ?: caller.userId),
+                        text = stringResource(CommonStrings.common_user_started_a_call, caller.displayName ?: caller.userId.displayLabel),
                         style = ElementTheme.typography.fontBodySmRegular,
                         color = ElementTheme.colors.textSecondary,
                     )

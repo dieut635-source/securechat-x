@@ -23,7 +23,7 @@ class DefaultOAuthIntentResolverTest : RobolectricTest() {
         val sut = createDefaultOAuthIntentResolver()
         val intent = Intent(RuntimeEnvironment.getApplication(), Activity::class.java).apply {
             action = Intent.ACTION_VIEW
-            data = "io.element.android:/?error=access_denied&state=IFF1UETGye2ZA8pO".toUri()
+            data = "com.example.app://oauth/callback?error=access_denied&state=IFF1UETGye2ZA8pO".toUri()
         }
         val result = sut.resolve(intent)
         assertThat(result).isEqualTo(OAuthAction.GoBack())
@@ -34,12 +34,12 @@ class DefaultOAuthIntentResolverTest : RobolectricTest() {
         val sut = createDefaultOAuthIntentResolver()
         val intent = Intent(RuntimeEnvironment.getApplication(), Activity::class.java).apply {
             action = Intent.ACTION_VIEW
-            data = "io.element.android:/?state=IFF1UETGye2ZA8pO&code=y6X1GZeqA3xxOWcTeShgv8nkgFJXyzWB".toUri()
+            data = "com.example.app://oauth/callback?state=IFF1UETGye2ZA8pO&code=y6X1GZeqA3xxOWcTeShgv8nkgFJXyzWB".toUri()
         }
         val result = sut.resolve(intent)
         assertThat(result).isEqualTo(
             OAuthAction.Success(
-                url = "io.element.android:/?state=IFF1UETGye2ZA8pO&code=y6X1GZeqA3xxOWcTeShgv8nkgFJXyzWB"
+                url = "com.example.app://oauth/callback?state=IFF1UETGye2ZA8pO&code=y6X1GZeqA3xxOWcTeShgv8nkgFJXyzWB"
             )
         )
     }
@@ -49,10 +49,21 @@ class DefaultOAuthIntentResolverTest : RobolectricTest() {
         val sut = createDefaultOAuthIntentResolver()
         val intent = Intent(RuntimeEnvironment.getApplication(), Activity::class.java).apply {
             action = Intent.ACTION_VIEW
-            data = "io.element.android:/invalid".toUri()
+            data = "com.example.app://oauth/invalid".toUri()
         }
         val result = sut.resolve(intent)
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `non-view intents are rejected`() {
+        val sut = createDefaultOAuthIntentResolver()
+        val intent = Intent(RuntimeEnvironment.getApplication(), Activity::class.java).apply {
+            action = Intent.ACTION_SEND
+            data = "com.example.app://oauth/callback?state=state&code=code".toUri()
+        }
+
+        assertThat(sut.resolve(intent)).isNull()
     }
 
     private fun createDefaultOAuthIntentResolver(): DefaultOAuthIntentResolver {

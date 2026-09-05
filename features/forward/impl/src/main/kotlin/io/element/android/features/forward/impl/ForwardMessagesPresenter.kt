@@ -20,9 +20,18 @@ import io.element.android.libraries.architecture.runCatchingUpdatingState
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
+import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 import io.element.android.libraries.matrix.api.timeline.getActiveTimeline
+import io.element.android.libraries.matrix.api.timeline.item.event.EmoteMessageType
+import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
+import io.element.android.libraries.matrix.api.timeline.item.event.MessageContent
+import io.element.android.libraries.matrix.api.timeline.item.event.NoticeMessageType
+import io.element.android.libraries.matrix.api.timeline.item.event.TextMessageType
+import io.element.android.libraries.mdm.api.MdmService
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -32,6 +41,7 @@ class ForwardMessagesPresenter(
     @Assisted private val timelineProvider: TimelineProvider,
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
+    private val mdmService: MdmService,
 ) : Presenter<ForwardMessagesState> {
     private val eventId: EventId = EventId(eventId)
 
@@ -65,12 +75,36 @@ class ForwardMessagesPresenter(
         roomIds: List<RoomId>,
     ) = launch {
         suspend {
-            timelineProvider.getActiveTimeline().forwardEvent(eventId, roomIds)
+            val timeline = timelineProvider.getActiveTimeline()
+            timeline.assertForwardingAllowed(eventId)
+            timeline.forwardEvent(eventId, roomIds)
                 .onFailure {
                     Timber.e(it, "Error while forwarding event")
                 }
                 .getOrThrow()
             roomIds
         }.runCatchingUpdatingState(forwardingActionState)
+    }
+
+    private suspend fun Timeline.assertForwardingAllowed(eventId: EventId) {
+        // The SDK forwards the complete source event, including any media and caption. Resolve the
+        // source before reading the latest policy instead of trusting the screen that opened this flow.
+        // Missing, encrypted, malformed, location, or otherwise unknown content is denied rather
+        // than risking forwarding an attachment whose type could not be established.
+        val content = timelineItems.first()
+            .filterIsInstance<MatrixTimelineItem.Event>()
+            .firstOrNull { it.eventId == eventId }
+            ?.event
+            ?.content
+        check(mdmService.config.value.allowFileSend || content.isTextOnlyMessage()) {
+            "Forwarding files is disabled by the managed configuration"
+        }
+    }
+
+    private fun EventContent?.isTextOnlyMessage(): Boolean {
+        val messageType = (this as? MessageContent)?.type ?: return false
+        return messageType is TextMessageType ||
+            messageType is NoticeMessageType ||
+            messageType is EmoteMessageType
     }
 }

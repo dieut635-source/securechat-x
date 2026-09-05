@@ -49,7 +49,7 @@ class MissingKeyBackupNode(
                 context.startActivity(intent)
             } catch (e: ActivityNotFoundException) {
                 // Should not happen, Element Classic must be installed for this screen to be displayed.
-                Timber.e(e, "Element Classic app not found, cannot open it.")
+                Timber.e(e, "Previous Matrix app not found; cannot open it.")
             }
         }
     }

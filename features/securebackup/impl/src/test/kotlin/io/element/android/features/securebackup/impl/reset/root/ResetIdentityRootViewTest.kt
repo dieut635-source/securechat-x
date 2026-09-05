@@ -13,6 +13,7 @@ package io.element.android.features.securebackup.impl.reset.root
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.securebackup.impl.R
 import io.element.android.libraries.ui.strings.CommonStrings
@@ -27,6 +28,27 @@ import org.junit.Test
 import org.robolectric.annotation.Config
 
 class ResetIdentityRootViewTest : RobolectricTest() {
+    /**
+     * Màn hình này KHÔNG được tự giới thiệu là một lỗi.
+     *
+     * Bản kế thừa dùng BigIcon.Style.AlertSolid, mà BigIcon gán nhãn trợ năng cho kiểu đó là
+     * CommonStrings.common_error — nên trình đọc màn hình đọc "Error" ngay đầu màn hình thiết
+     * lập máy mới. Không nhìn thấy bằng mắt, chỉ lộ ra khi đọc cây trợ năng; đó là lý do nó
+     * sống sót qua Q10 và chỉ bị bắt khi rà lại bằng uiautomator trên máy thật.
+     *
+     * Test kiểm đúng cái nhãn đó, không kiểm tên kiểu icon: đổi sang một Style khác cũng mang
+     * nhãn "Error" thì vẫn phải đỏ.
+     */
+    @Test
+    fun `the screen does not announce itself as an error`() = runAndroidComposeUiTest {
+        setResetRootView(
+            ResetIdentityRootState(displayConfirmationDialog = false, eventSink = {}),
+        )
+
+        onNodeWithContentDescription(activity!!.getString(CommonStrings.common_error))
+            .assertDoesNotExist()
+    }
+
     @Test
     fun `pressing the back HW button invokes the expected callback`() = runAndroidComposeUiTest {
         ensureCalledOnce {
@@ -57,19 +79,19 @@ class ResetIdentityRootViewTest : RobolectricTest() {
             ResetIdentityRootState(displayConfirmationDialog = false, eventSink = eventsRecorder),
         )
 
-        clickOn(R.string.screen_encryption_reset_action_continue_reset)
+        clickOn(R.string.securechat_identity_setup_details_action)
 
         eventsRecorder.assertSingle(ResetIdentityRootEvent.Continue)
     }
 
     @Test
-    fun `clicking 'Yes, reset now' confirms the reset`() = runAndroidComposeUiTest {
+    fun `clicking the confirm button confirms the setup`() = runAndroidComposeUiTest {
         ensureCalledOnce {
             setResetRootView(
                 ResetIdentityRootState(displayConfirmationDialog = true, eventSink = {}),
                 onContinue = it,
             )
-            clickOn(R.string.screen_reset_encryption_confirmation_alert_action)
+            clickOn(R.string.securechat_identity_setup_confirm_action)
         }
     }
 
