@@ -66,9 +66,32 @@ else
     # keytool tự hỏi mật khẩu. KHÔNG truyền qua tham số dòng lệnh: nó sẽ nằm lại
     # trong lịch sử shell và trong danh sách tiến trình của mọi user trên máy.
     printf '  Nhập mật khẩu keystore khi được hỏi.\n'
-    fingerprint=$("$KEYTOOL" -exportcert -keystore "$KEYSTORE" -alias "$ALIAS" \
-        | openssl dgst -sha256 | sed -nE 's/.*=[[:space:]]*([0-9a-fA-F]{64}).*/\1/p' | tr 'A-F' 'a-f')
-    [[ "$fingerprint" =~ ^[0-9a-f]{64}$ ]] || die "Không đọc được vân tay certificate (alias '$ALIAS' có đúng không?)"
+    # Xuất certificate ra FILE, không qua đường ống.
+    #
+    # Bản trước viết `fingerprint=$(keytool ... | openssl ...)`. Với `set -euo
+    # pipefail`, keytool hỏng là cả lệnh gán hỏng, và `set -e` THOÁT NGAY — không
+    # bao giờ chạy tới dòng `|| die` ngay bên dưới. Nhập sai mật khẩu thì màn hình
+    # chỉ có "Enter keystore password:" rồi im lặng trở về dấu nhắc, không một chữ
+    # nào nói vì sao. Đã dựng lại đúng triệu chứng đó bằng một keystore thử.
+    #
+    # Tách ra thì keytool giữ được stderr trên terminal (cả câu hỏi mật khẩu lẫn
+    # câu báo lỗi), và mã thoát của nó kiểm được.
+    cert_der=$(mktemp "${TMPDIR:-/tmp}/securechat-cert.XXXXXX") || die "Không tạo được file tạm"
+    trap 'rm -f "$cert_der"' EXIT
+    if ! "$KEYTOOL" -exportcert -keystore "$KEYSTORE" -alias "$ALIAS" -file "$cert_der" -rfc >/dev/null; then
+        die "keytool không xuất được certificate.
+Hai nguyên nhân thường gặp, theo đúng thứ tự hay gặp:
+  1. SAI MẬT KHẨU keystore. Kiểm bằng:
+       \"$KEYTOOL\" -list -keystore \"$KEYSTORE\"
+     Lệnh đó báo rõ 'password was incorrect' nếu sai.
+  2. Sai alias. Lệnh -list ở trên cũng in ra danh sách alias thật có trong keystore."
+    fi
+    [[ -s "$cert_der" ]] || die "keytool báo thành công nhưng file certificate rỗng — bất thường, dừng lại."
+    fingerprint=$(openssl x509 -in "$cert_der" -outform der 2>/dev/null \
+        | openssl dgst -sha256 \
+        | sed -nE 's/.*=[[:space:]]*([0-9a-fA-F]{64}).*/\1/p' | tr 'A-F' 'a-f') || true
+    [[ "$fingerprint" =~ ^[0-9a-f]{64}$ ]] || die "Đọc được certificate nhưng không tính được vân tay SHA-256.
+Kiểm openssl: openssl version"
     printf '%s\n' "$fingerprint" > "$CERT_PIN"
     chmod 600 "$CERT_PIN"
     ok "$CERT_PIN"
