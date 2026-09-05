@@ -689,10 +689,15 @@ securechat_names = {
     "screen_change_server_error_element_pro_required_message",
     "screen_onboarding_welcome_title",
 }
-securechat_homeserver_names = {
-    "screen_change_account_provider_matrix_org_subtitle",
-    "screen_change_server_textfield_footer_register",
-    "screen_start_chat_join_room_by_address_supporting_text",
+# Ba chuỗi này TỪNG bị bắt buộc phải CHỨA tên miền máy chủ. Đợt rebrand đầu hiểu
+# "đổi thương hiệu" là "thay matrix.org bằng tên miền của mình". Yêu cầu nay ngược
+# lại: không chuỗi nào người dùng đọc được in địa chỉ máy chủ, vì khách đọc được là
+# mở trình duyệt vào thẳng trang web — đúng thứ chính sách "chỉ dùng trên app" chặn.
+#
+# Ngoại lệ DUY NHẤT: mdm_homeserver_url_description hiện trong CONSOLE MDM cho quản
+# trị viên, không hiện trong app, và phải nêu tên máy chủ mới có nghĩa.
+homeserver_leak_allowed_names = {
+    "mdm_homeserver_url_description",
 }
 definitive_upstream_brand = re.compile(
     r"\belement\s+(?:x|pro|classic|call|android|default|fade)\b|"
@@ -767,6 +772,10 @@ for path in sorted(resource_files):
         name = item.attrib.get("name", "<unnamed>")
         if definitive_upstream_brand.search(value) or (is_default_values and default_value_brand.search(value)):
             errors.append(f"{path}: {name} contains inherited branding: {value!r}")
+        # Quét MỌI chuỗi, không chỉ danh sách audited_names: lần rò rỉ vừa rồi nằm
+        # trong 73 file tài nguyên của các module, phần lớn không có trong danh sách nào.
+        if "chat.securechat.com.au" in value and name not in homeserver_leak_allowed_names:
+            errors.append(f"{path}: {name} làm lộ địa chỉ máy chủ ra người dùng: {value!r}")
     for item in root.findall("string"):
         name = item.attrib.get("name")
         if name not in audited_names:
@@ -776,8 +785,6 @@ for path in sorted(resource_files):
             errors.append(f"{path}: {name} contains inherited branding: {value!r}")
         if name in securechat_names and "SecureChat" not in value:
             errors.append(f"{path}: {name} does not identify SecureChat: {value!r}")
-        if name in securechat_homeserver_names and "chat.securechat.com.au" not in value:
-            errors.append(f"{path}: {name} does not use the SecureChat homeserver: {value!r}")
 
 if errors:
     print("Localized SecureChat branding audit failed:", file=sys.stderr)
