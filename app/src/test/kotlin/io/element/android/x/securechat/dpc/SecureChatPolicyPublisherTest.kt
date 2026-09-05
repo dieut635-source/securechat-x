@@ -34,6 +34,8 @@ class SecureChatPolicyPublisherTest {
 
         override fun readRestrictions(): Result<Map<String, Any>> = Result.success(published.orEmpty())
         override fun wipeDevice(): Result<Unit> = error("must never be reached")
+        override fun capabilities(): Map<String, String> = emptyMap()
+
         override fun relinquishDeviceOwner(): Result<Unit> = error("must never be reached")
     }
 

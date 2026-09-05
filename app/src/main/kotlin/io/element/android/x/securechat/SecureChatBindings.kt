@@ -11,9 +11,12 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesTo
 import io.element.android.x.securechat.dpc.SecureChatPolicyPublisher
 import io.element.android.x.securechat.dpc.SecureChatRemoteCommandPoller
+import io.element.android.x.securechat.dpc.DevicePolicyGateway
 
 @ContributesTo(AppScope::class)
 interface SecureChatBindings {
+    fun devicePolicyGateway(): DevicePolicyGateway
+
     fun secureChatPolicyPublisher(): SecureChatPolicyPublisher
 
     fun secureChatRemoteCommandPoller(): SecureChatRemoteCommandPoller

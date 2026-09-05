@@ -49,6 +49,19 @@ interface DevicePolicyGateway {
     fun wipeDevice(): Result<Unit>
 
     /**
+     * What this handset will actually let a device owner switch off.
+     *
+     * Read-only, and deliberately so: the answer to "can we turn USB data off" is a property of
+     * the hardware and the OEM's build, not of the documentation. Samsung ships its own device
+     * policy stack, and `canUsbDataSignalingBeDisabled()` returning false on a given model is a
+     * real outcome that no amount of reading the AOSP docs will reveal.
+     *
+     * Nothing here changes the device. It exists so the decision to ship a restriction is taken
+     * against a measurement.
+     */
+    fun capabilities(): Map<String, String>
+
+    /**
      * Give up device owner without a factory reset.
      *
      * The escape hatch for the risk this app takes on by being the device owner itself: if a
@@ -146,4 +159,47 @@ class AndroidDevicePolicyGateway(
         val dpm = manager ?: error("DevicePolicyManager unavailable")
         dpm.clearDeviceOwnerApp(context.packageName)
     }
+
+    override fun capabilities(): Map<String, String> {
+        val dpm = manager ?: return mapOf("error" to "DevicePolicyManager unavailable")
+        val report = linkedMapOf(
+            "sdkInt" to Build.VERSION.SDK_INT.toString(),
+            "manufacturer" to Build.MANUFACTURER,
+            "model" to Build.MODEL,
+            "isDeviceOwner" to isDeviceOwner.toString(),
+        )
+        // Mỗi phép đo bọc riêng: một API ném lỗi trên máy này không được làm mất
+        // kết quả của những API còn lại. Báo cáo thiếu một dòng là báo cáo sai.
+        report["usbDataSignalingCanBeDisabled"] = probe {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                dpm.canUsbDataSignalingBeDisabled().toString()
+            } else {
+                "cần API 31+"
+            }
+        }
+        report["usbDataSignalingEnabled"] = probe {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                dpm.isUsbDataSignalingEnabled.toString()
+            } else {
+                "cần API 31+"
+            }
+        }
+        report["locationEnabled"] = probe {
+            val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+            lm.isLocationEnabled.toString()
+        }
+        report["activeUserRestrictions"] = probe {
+            val um = context.getSystemService(Context.USER_SERVICE) as android.os.UserManager
+            val bundle = um.userRestrictions
+            bundle.keySet().filter { bundle.getBoolean(it) }.sorted().joinToString(",").ifEmpty { "(không có)" }
+        }
+        return report
+    }
+
+    private inline fun probe(block: () -> String): String =
+        try {
+            block()
+        } catch (throwable: Throwable) {
+            "không đo được: ${throwable.javaClass.simpleName}"
+        }
 }

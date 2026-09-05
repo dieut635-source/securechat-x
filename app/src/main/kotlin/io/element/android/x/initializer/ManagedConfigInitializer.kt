@@ -11,6 +11,7 @@ import android.content.Context
 import androidx.startup.Initializer
 import io.element.android.libraries.architecture.bindings
 import io.element.android.x.securechat.SecureChatBindings
+import timber.log.Timber
 
 /**
  * Publishes managed configuration before anything reads it.
@@ -30,6 +31,25 @@ class ManagedConfigInitializer : Initializer<Unit> {
         // Bắt đầu hỏi lệnh ngay từ lúc khởi động: một chiếc máy đã mất thì mỗi
         // phút chờ là một phút dữ liệu còn nằm trong tay người khác.
         bindings.secureChatRemoteCommandPoller().start()
+        logDevicePolicyCapabilities(bindings)
+    }
+
+    /**
+     * In ra những gì máy này THẬT SỰ cho phép tắt.
+     *
+     * Chỉ đọc, không đặt chính sách nào. Câu trả lời cho "có tắt được USB data không" là tính
+     * chất của phần cứng và bản dựng của nhà sản xuất, không phải của tài liệu Android: Samsung
+     * mang theo hệ chính sách riêng, và `canUsbDataSignalingBeDisabled()` trả false trên một
+     * model cụ thể là kết quả có thật mà đọc tài liệu AOSP bao nhiêu cũng không thấy.
+     *
+     * Có dòng này thì quyết định bật một hạn chế được đưa ra dựa trên phép đo, không dựa trên
+     * niềm tin. Đọc bằng:
+     *
+     *     adb logcat -d | grep "DPC capabilities"
+     */
+    private fun logDevicePolicyCapabilities(bindings: SecureChatBindings) {
+        val report = bindings.devicePolicyGateway().capabilities()
+        report.forEach { (key, value) -> Timber.i("DPC capabilities: %s = %s", key, value) }
     }
 
     override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()

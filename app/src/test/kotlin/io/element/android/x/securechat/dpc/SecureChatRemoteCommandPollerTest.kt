@@ -38,6 +38,8 @@ class SecureChatRemoteCommandPollerTest {
             wipeCount++
             return Result.success(Unit)
         }
+        override fun capabilities(): Map<String, String> = emptyMap()
+
         override fun relinquishDeviceOwner(): Result<Unit> = error("must never be reached")
     }
 
