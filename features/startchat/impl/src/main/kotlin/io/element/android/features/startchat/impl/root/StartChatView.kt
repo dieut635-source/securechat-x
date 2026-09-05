@@ -61,7 +61,6 @@ fun StartChatView(
     onCloseClick: () -> Unit,
     onNewRoomClick: () -> Unit,
     onOpenDM: (RoomId) -> Unit,
-    onInviteFriendsClick: () -> Unit,
     onJoinByAddressClick: () -> Unit,
     onRoomDirectorySearchClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -105,7 +104,6 @@ fun StartChatView(
                 CreateRoomActionButtonsList(
                     state = state,
                     onNewRoomClick = onNewRoomClick,
-                    onInvitePeopleClick = onInviteFriendsClick,
                     onJoinByAddressClick = onJoinByAddressClick,
                     onRoomDirectorySearchClick = onRoomDirectorySearchClick,
                     onDmClick = onOpenDM,
@@ -167,7 +165,6 @@ private fun CreateRoomRootViewTopBar(
 private fun CreateRoomActionButtonsList(
     state: StartChatState,
     onNewRoomClick: () -> Unit,
-    onInvitePeopleClick: () -> Unit,
     onJoinByAddressClick: () -> Unit,
     onRoomDirectorySearchClick: () -> Unit,
     onDmClick: (RoomId) -> Unit,
@@ -191,15 +188,6 @@ private fun CreateRoomActionButtonsList(
                     iconRes = CompoundDrawables.ic_compound_list_bulleted,
                     text = stringResource(id = R.string.screen_room_directory_search_title),
                     onClick = onRoomDirectorySearchClick,
-                )
-            }
-        }
-        if (StartChatConfig.CAN_INVITE_PEOPLE_TO_APP) {
-            item {
-                CreateRoomActionButton(
-                    iconRes = CompoundDrawables.ic_compound_share_android,
-                    text = stringResource(id = CommonStrings.action_invite_friends_to_app, state.applicationName),
-                    onClick = onInvitePeopleClick,
                 )
             }
         }
@@ -273,7 +261,6 @@ internal fun StartChatViewPreview(@PreviewParameter(StartChatStatePreviewParam::
             onNewRoomClick = {},
             onOpenDM = {},
             onJoinByAddressClick = {},
-            onInviteFriendsClick = {},
             onRoomDirectorySearchClick = {},
         )
     }

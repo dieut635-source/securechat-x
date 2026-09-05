@@ -11,7 +11,12 @@ package io.element.android.appconfig
  * Những lối vào phòng mà triển khai kín này không dùng.
  *
  * Quy tắc do chủ sản phẩm đặt: **chỉ quản trị viên tạo phòng và gửi lời mời, có lời mời thì mới
- * vào được**. Ba lối dưới đây đều đi vòng qua quy tắc đó, hoặc mang địa chỉ máy chủ ra ngoài.
+ * vào được**. Hai lối dưới đây đều đi vòng qua quy tắc đó.
+ *
+ * Lối thứ ba — "Invite people to SecureChat" — không có cờ ở đây vì đã **xoá hẳn** khỏi mã
+ * nguồn: nó gửi permalink chứa địa chỉ máy chủ ra SMS/WhatsApp, tức ra ngoài tầm kiểm soát,
+ * và vô nghĩa khi tài khoản do quản trị viên tạo. Một cờ tắt vẫn để lại đường dẫn còn sống
+ * trong bản build; xoá thì không.
  *
  * ⚠️ Đây là **giấu lối vào trên giao diện, KHÔNG phải chặn**. Một client khác — Element Web, hay
  * chính app này bị sửa — vẫn gọi được API. Chặn thật phải làm ở máy chủ (quy tắc join của phòng
@@ -33,13 +38,4 @@ object StartChatConfig {
      * ai cũng vào được mà không cần ai mời.
      */
     const val CAN_SEARCH_ROOM_DIRECTORY = false
-
-    /**
-     * "Invite people to SecureChat" — chia sẻ permalink của chính mình ra ứng dụng khác.
-     *
-     * Chỗ rò rỉ nặng nhất trong nhóm này: nó gửi `https://matrix.to/#/@ten:chat.securechat.com.au`
-     * sang SMS, WhatsApp, email — ra hẳn ngoài app, nơi không còn kiểm soát gì được nữa. Và nó
-     * vô nghĩa ở đây: tài khoản do quản trị viên tạo, không ai tự đăng ký được bằng lời mời.
-     */
-    const val CAN_INVITE_PEOPLE_TO_APP = false
 }

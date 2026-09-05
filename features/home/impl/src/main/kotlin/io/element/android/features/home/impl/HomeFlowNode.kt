@@ -50,7 +50,6 @@ import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.appyx.launchMolecule
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.core.extensions.runCatchingExceptions
-import io.element.android.libraries.deeplink.api.usecase.InviteFriendsUseCase
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.designsystem.utils.DelayedVisibility
 import io.element.android.libraries.di.SessionScope
@@ -80,7 +79,6 @@ class HomeFlowNode(
     @Assisted plugins: List<Plugin>,
     private val matrixClient: MatrixClient,
     private val presenter: HomePresenter,
-    private val inviteFriendsUseCase: InviteFriendsUseCase,
     private val analyticsService: AnalyticsService,
     private val acceptDeclineInviteView: AcceptDeclineInviteView,
     private val directLogoutView: DirectLogoutView,
@@ -147,9 +145,6 @@ class HomeFlowNode(
 
     private fun onMenuActionClick(activity: Activity, roomListMenuAction: RoomListMenuAction) {
         when (roomListMenuAction) {
-            RoomListMenuAction.InviteFriends -> {
-                inviteFriendsUseCase.execute(activity)
-            }
             RoomListMenuAction.ReportBug -> {
                 callback.navigateToBugReport()
             }

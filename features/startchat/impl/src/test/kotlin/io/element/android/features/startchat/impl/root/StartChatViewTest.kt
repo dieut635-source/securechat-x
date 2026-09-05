@@ -90,15 +90,19 @@ class StartChatViewTest : RobolectricTest() {
      * "Invite people to SecureChat" thì gửi permalink chứa `@ten:chat.securechat.com.au` sang
      * SMS hay WhatsApp — ra hẳn ngoài app.
      *
-     * Ba callback tương ứng dùng [EnsureNeverCalled] ở [setStartChatView], nên test này bắt cả
-     * trường hợp nút vẫn còn mà chỉ bị làm cho vô hình.
+     * "Invite people to SecureChat" không có mặt trong test này vì nó đã bị XOÁ hẳn khỏi mã
+     * nguồn — không còn tham số, không còn use case, không còn chuỗi để mà tìm. Hai cái còn
+     * lại vẫn là cờ, nên vẫn phải kiểm.
+     *
+     * Hai callback tương ứng dùng [EnsureNeverCalled] ở [setStartChatView], nên test này bắt
+     * cả trường hợp nút vẫn còn mà chỉ bị làm cho vô hình.
      *
      * ⚠️ Test này chứng minh giao diện KHÔNG mời gọi ba việc đó. Nó KHÔNG chứng minh máy chủ
      * từ chối chúng — client khác vẫn gọi được API. Chặn thật nằm ở máy chủ.
      */
     @Config(qualifiers = "h1024dp")
     @Test
-    fun `the three room entry points that bypass an invitation are absent`() = runAndroidComposeUiTest {
+    fun `the room entry points that bypass an invitation are absent`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<StartChatEvent>(expectEvents = false)
         setStartChatView(
             aCreateRoomRootState(
@@ -112,8 +116,6 @@ class StartChatViewTest : RobolectricTest() {
             .assertDoesNotExist()
         onNodeWithText(context.getString(R.string.screen_room_directory_search_title))
             .assertDoesNotExist()
-        onNodeWithText(context.getString(CommonStrings.action_invite_friends_to_app, "test"))
-            .assertDoesNotExist()
     }
 
 }
@@ -123,7 +125,6 @@ private fun AndroidComposeUiTest<ComponentActivity>.setStartChatView(
     onCloseClick: () -> Unit = EnsureNeverCalled(),
     onNewRoomClick: () -> Unit = EnsureNeverCalled(),
     onOpenDM: (RoomId) -> Unit = EnsureNeverCalledWithParam(),
-    onInviteFriendsClick: () -> Unit = EnsureNeverCalled(),
     onJoinRoomByAddressClick: () -> Unit = EnsureNeverCalled(),
     onRoomDirectorySearchClick: () -> Unit = EnsureNeverCalled(),
 ) {
@@ -133,7 +134,6 @@ private fun AndroidComposeUiTest<ComponentActivity>.setStartChatView(
             onCloseClick = onCloseClick,
             onNewRoomClick = onNewRoomClick,
             onOpenDM = onOpenDM,
-            onInviteFriendsClick = onInviteFriendsClick,
             onJoinByAddressClick = onJoinRoomByAddressClick,
             onRoomDirectorySearchClick = onRoomDirectorySearchClick,
         )
