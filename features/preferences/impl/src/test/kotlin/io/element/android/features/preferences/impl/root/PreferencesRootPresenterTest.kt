@@ -16,7 +16,6 @@ import io.element.android.features.logout.api.direct.aDirectLogoutState
 import io.element.android.features.preferences.impl.userstatus.aUserStatusState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
-import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
@@ -33,7 +32,6 @@ import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.A_USER_ID_2
 import io.element.android.libraries.matrix.test.A_USER_NAME
 import io.element.android.libraries.matrix.test.FakeMatrixClient
-import io.element.android.libraries.matrix.test.core.aBuildMeta
 import io.element.android.libraries.matrix.test.verification.FakeSessionVerificationService
 import io.element.android.services.analytics.test.FakeAnalyticsService
 import io.element.android.tests.testutils.WarmUpRule
@@ -88,7 +86,9 @@ class PreferencesRootPresenterTest {
             assertThat(loadedState.accountManagementUrl).isNull()
             assertThat(loadedState.showAnalyticsSettings).isFalse()
             assertThat(loadedState.showLinkNewDevice).isFalse()
-            assertThat(loadedState.showDeveloperSettings).isTrue()
+            // False even here, in a debug build. SecureChat ships without developer options in
+            // every build type, so that the build being tested is the build that ships.
+            assertThat(loadedState.showDeveloperSettings).isFalse()
             assertThat(loadedState.showSignOut).isFalse()
             assertThat(loadedState.canDeactivateAccount).isTrue()
             assertThat(loadedState.canReportBug).isTrue()
@@ -166,13 +166,13 @@ class PreferencesRootPresenterTest {
     }
 
     @Test
-    fun `present - developer settings is hidden by default in release builds`() = runTest {
+    fun `present - developer settings is hidden in every build type`() = runTest {
         createPresenter(
             matrixClient = FakeMatrixClient(
                 canDeactivateAccountResult = { true },
                 accountManagementUrlResult = { Result.success(null) },
             ),
-            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE))
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider()
         ).test {
             val loadedState = awaitFirstItem()
             assertThat(loadedState.showDeveloperSettings).isFalse()
@@ -180,13 +180,13 @@ class PreferencesRootPresenterTest {
     }
 
     @Test
-    fun `present - developer settings cannot be enabled in release builds`() = runTest {
+    fun `present - the seven-tap gesture cannot enable developer settings in any build type`() = runTest {
         createPresenter(
             matrixClient = FakeMatrixClient(
                 canDeactivateAccountResult = { true },
                 accountManagementUrlResult = { Result.success(null) },
             ),
-            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE))
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider()
         ).test {
             val loadedState = awaitFirstItem()
             repeat(times = ShowDeveloperSettingsProvider.DEVELOPER_SETTINGS_COUNTER) {
@@ -298,7 +298,7 @@ class PreferencesRootPresenterTest {
     private fun createPresenter(
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
         sessionVerificationService: FakeSessionVerificationService = FakeSessionVerificationService(),
-        showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.DEBUG)),
+        showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(),
         rageshakeFeatureAvailability: RageshakeFeatureAvailability = RageshakeFeatureAvailability { flowOf(true) },
         indicatorService: IndicatorService = FakeIndicatorService(),
         featureFlagService: FeatureFlagService = FakeFeatureFlagService(),

@@ -31,7 +31,6 @@ import io.element.android.features.login.impl.login.LoginModeState
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
-import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.ui.utils.MultipleTapToUnlock
@@ -140,7 +139,9 @@ class OnBoardingPresenter(
         return OnBoardingState(
             isAddingAccount = isAddingAccount,
             showBackButton = params.showBackButton,
-            showDeveloperSettings = buildMeta.buildType != BuildType.RELEASE,
+            // Never, in any build type. See ShowDeveloperSettingsProvider for why this is not
+            // gated on the build type: the build being tested has to be the build that ships.
+            showDeveloperSettings = false,
             productionApplicationName = buildMeta.productionApplicationName,
             defaultAccountProvider = defaultAccountProvider,
             mustChooseAccountProvider = mustChooseAccountProvider,
