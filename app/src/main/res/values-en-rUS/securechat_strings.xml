@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 SecureChat
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  Bản ghi đè cho en-US.
+
+  BẮT BUỘC PHẢI CÓ, không phải để cho đủ bộ. Android chọn tài nguyên theo mức khớp ngôn ngữ
+  TRƯỚC, rồi mới đến thứ tự module: một máy đặt en-US lấy values-en-rUS của features/login
+  chứ KHÔNG lấy values/ của app. Chỉ ghi đè ở values/ thì trên máy en-US không có tác dụng
+  gì, và bản sửa trông như đã xong trong khi màn hình vẫn nguyên câu cũ.
+
+  Kiểm chứng 05/09: máy hiện "decentralized" (chữ z, chính tả Mỹ) trong khi values/ của
+  module ghi "decentralised" — đó là dấu vết cho thấy chuỗi đến từ values-en-rUS.
+
+  APK chỉ đóng gói en và en-rUS (localeFilters trong app/build.gradle.kts), nên hai file
+  này là đủ. Thêm ngôn ngữ mới thì phải thêm bản ghi đè tương ứng.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
+    <string name="screen_login_subtitle">"Use the username and password your administrator gave you."</string>
+    <string name="screen_server_confirmation_message_login_matrix_dot_org">"A private server."</string>
+</resources>

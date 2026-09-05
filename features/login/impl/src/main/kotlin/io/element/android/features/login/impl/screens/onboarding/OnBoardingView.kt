@@ -284,7 +284,10 @@ private fun OnBoardingButtons(
             )
         } else {
             Button(
-                text = stringResource(id = R.string.screen_onboarding_sign_in_to, defaultAccountProvider),
+                // Không truyền tên máy chủ nữa: chuỗi SecureChat cho nút này chỉ còn "Sign in".
+                // Người dùng không được chọn máy chủ - cấu hình quản lý ấn định nó - nên in
+                // địa chỉ lên nút chỉ là tiếng ồn. Màn hình kế tiếp vẫn xác nhận rõ máy chủ.
+                text = stringResource(id = R.string.screen_onboarding_sign_in_to),
                 showProgress = isLoading,
                 onClick = {
                     state.eventSink(OnBoardingEvent.OnSignIn(defaultAccountProvider))

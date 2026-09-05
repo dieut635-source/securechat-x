@@ -39,6 +39,30 @@
     <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
     <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
     <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
+    <!--
+      Câu chào kế thừa là văn quảng cáo của Element: "the fastest %1$s ever. Supercharged
+      for speed and simplicity". Với nhân viên được tổ chức phát máy thì "nhanh nhất từ
+      trước tới nay" vô nghĩa — họ chưa từng dùng bản nào trước. Và tốc độ không phải thứ
+      sản phẩm này bán; thứ nó bán là bí mật cuộc trò chuyện.
+
+      Câu mới còn làm một việc nữa: nói thẳng rằng máy do tổ chức quản lý. Đây là máy có
+      Device Owner, và người dùng nên biết điều đó ngay từ màn hình đầu tiên.
+    -->
+    <string name="screen_onboarding_welcome_message">"%1$s is your organisation\'s private messenger. Messages are end-to-end encrypted, and this device is centrally managed."</string>
+    <!--
+      Nút cũ ghi nguyên "Sign in to https://chat.securechat.com.au". Người dùng không được
+      chọn máy chủ — nó do cấu hình quản lý ấn định — nên in địa chỉ lên nút chỉ là tiếng
+      ồn kỹ thuật, và làm nút dài quá khổ. Màn hình kế tiếp vẫn xác nhận rõ máy chủ.
+    -->
+    <string name="screen_onboarding_sign_in_to">"Sign in"</string>
+    <!--
+      Phụ đề màn hình đăng nhập vốn là "Matrix is an open network for secure, decentralised
+      communication." Sản phẩm gắn nhãn trắng thì người dùng không cần biết công nghệ nền;
+      và với người nhặt được máy, câu đó cho biết ngay đang chạy phần mềm gì. Thay bằng câu
+      nói cho người dùng biết phải làm gì.
+    -->
+    <string name="screen_login_subtitle">"Use the username and password your administrator gave you."</string>
+    <string name="screen_server_confirmation_message_login_matrix_dot_org">"A private server."</string>
     <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
     <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server at chat.securechat.com.au for secure communication."</string>
     <string name="screen_change_server_textfield_footer_register">"Create a SecureChat account on chat.securechat.com.au. Contact your administrator if you need access."</string>
