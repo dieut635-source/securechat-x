@@ -41,33 +41,45 @@ fun ResetIdentityRootView(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Đây KHÔNG phải màn hình sự cố, dù mã kế thừa dựng nó như vậy.
+    //
+    // Bản gốc dùng BigIcon.Style.AlertSolid: nền đỏ, biểu tượng ErrorSolid, và nhãn trợ năng
+    // là CommonStrings.common_error — trình đọc màn hình đọc thành "Error". Cộng với tiêu đề
+    // "Can't confirm? You'll need to reset your digital identity." và nút đỏ "Continue reset",
+    // khách hàng vừa được cấp máy bị nói rằng họ đã làm sai một việc mà họ không hề làm sai.
+    //
+    // Trong sản phẩm này màn hình chỉ tới được từ FTUE (xem securechat_strings.xml và
+    // KonsistSecureChatTest), nên nó luôn là bước thiết lập, không bao giờ là cứu hộ.
+    // Biểu tượng khoá, cùng biểu tượng với màn hình trước, giữ hai bước liền mạch.
     FlowStepPage(
         modifier = modifier,
-        iconStyle = BigIcon.Style.AlertSolid,
-        title = stringResource(R.string.screen_encryption_reset_title),
+        iconStyle = BigIcon.Style.Default(CompoundIcons.LockSolid()),
+        title = stringResource(R.string.securechat_identity_setup_details_title),
         isScrollable = true,
         content = { Content() },
         buttons = {
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                text = stringResource(id = R.string.screen_encryption_reset_action_continue_reset),
+                text = stringResource(id = R.string.securechat_identity_setup_details_action),
                 onClick = { state.eventSink(ResetIdentityRootEvent.Continue) },
-                destructive = true,
             )
         },
         onBackClick = onBack,
     )
 
     if (state.displayConfirmationDialog) {
+        // Hộp xác nhận GIỮ LẠI: việc này không quay lại được, và một lần hỏi trước điểm
+        // không quay lại là đúng. Cái bỏ đi là kiểu trình bày nguy hiểm (destructiveSubmit)
+        // và chữ "Are you sure you want to reset…" — nó hợp với người lỡ tay, không hợp với
+        // người đang làm đúng bước bắt buộc duy nhất.
         ConfirmationDialog(
-            title = stringResource(R.string.screen_reset_encryption_confirmation_alert_title),
-            content = stringResource(R.string.screen_reset_encryption_confirmation_alert_subtitle),
-            submitText = stringResource(R.string.screen_reset_encryption_confirmation_alert_action),
+            title = stringResource(R.string.securechat_identity_setup_confirm_title),
+            content = stringResource(R.string.securechat_identity_setup_confirm_subtitle),
+            submitText = stringResource(R.string.securechat_identity_setup_confirm_action),
             onSubmitClick = {
                 state.eventSink(ResetIdentityRootEvent.DismissDialog)
                 onContinue()
             },
-            destructiveSubmit = true,
             onDismiss = { state.eventSink(ResetIdentityRootEvent.DismissDialog) }
         )
     }
@@ -83,7 +95,7 @@ private fun Content() {
             modifier = Modifier.fillMaxWidth(),
             items = persistentListOf(
                 VisualListItemData(
-                    message = stringResource(R.string.screen_encryption_reset_bullet_1),
+                    message = stringResource(R.string.securechat_identity_setup_details_bullet_1),
                     iconComposable = {
                         Icon(
                             modifier = Modifier.size(20.dp),
@@ -94,7 +106,7 @@ private fun Content() {
                     },
                 ),
                 VisualListItemData(
-                    message = stringResource(R.string.screen_encryption_reset_bullet_2),
+                    message = stringResource(R.string.securechat_identity_setup_details_bullet_2),
                     iconComposable = {
                         Icon(
                             modifier = Modifier.size(20.dp),
@@ -105,7 +117,7 @@ private fun Content() {
                     },
                 ),
                 VisualListItemData(
-                    message = stringResource(R.string.screen_encryption_reset_bullet_3),
+                    message = stringResource(R.string.securechat_identity_setup_details_bullet_3),
                     iconComposable = {
                         Icon(
                             modifier = Modifier.size(20.dp),
@@ -120,7 +132,7 @@ private fun Content() {
 
         Text(
             modifier = Modifier.fillMaxWidth(),
-            text = stringResource(R.string.screen_encryption_reset_footer),
+            text = stringResource(R.string.securechat_identity_setup_details_footer),
             style = ElementTheme.typography.fontBodyMdMedium,
             color = ElementTheme.colors.textActionPrimary,
             textAlign = TextAlign.Center,
