@@ -587,20 +587,35 @@ resolved_paths = {
 
 def validate_network_security_config(resource_path):
     roots = parse_xmltree(resource_path)
-    certificate_nodes = [node for node in walk(roots) if node["tag"] == "certificates"]
-    certificate_sources = [node["attrs"].get("src") for node in certificate_nodes]
-    expected_system_source = '"system" (Raw: "system")'
-    if certificate_sources != [expected_system_source]:
-        raise SystemExit(
-            f"Packaged network security config {resource_path} must contain exactly one "
-            f"certificates source, system; got {certificate_sources!r}"
-        )
+    # Cấu trúc mong đợi, ĐO từ chính tài nguyên đã biên dịch (aapt dump xmltree):
+    #
+    #   network-security-config
+    #     base-config      cleartextTrafficPermitted=false
+    #       trust-anchors
+    #         certificates src="system"
+    #     domain-config
+    #       domain includeSubdomains=false  "chat.securechat.com.au"
+    #       domain includeSubdomains=false  "push.securechat.com.au"
+    #       pin-set expiration="..."
+    #         pin digest="SHA-256" ...   (ít nhất hai)
+    #
+    # Bản trước đòi root chỉ có ĐÚNG MỘT con, tức cấm luôn domain-config. Phép kiểm đó
+    # viết ngày 30/08; ghim chứng chỉ thêm ngày 01/09. Cùng khuôn mẫu với ba cổng trước:
+    # giả định cũ, chưa từng chạy nên chưa lộ.
+    #
+    # Nay đòi ngược lại: ghim PHẢI có mặt, đúng hai host của mình, ít nhất hai pin. Nới
+    # ra cho hết chặn thì dễ, nhưng cổng này tồn tại để bắt lúc ai đó lỡ gỡ ghim.
     if len(roots) != 1 or roots[0]["tag"] != "network-security-config":
         raise SystemExit(f"Unexpected packaged network-security root in {resource_path}")
     root = roots[0]
-    if root["attrs"] or root["content"] or len(root["children"]) != 1:
-        raise SystemExit(f"Packaged network security config must contain only one base policy: {resource_path}")
-    base_config = root["children"][0]
+    if root["attrs"] or root["content"] or len(root["children"]) != 2:
+        raise SystemExit(
+            f"Packaged network security config must contain exactly a base policy and a "
+            f"pinned domain policy: {resource_path}"
+        )
+
+    base_config, domain_config = root["children"]
+
     if (
         base_config["tag"] != "base-config"
         or base_config["attrs"] != {"cleartextTrafficPermitted": "(type 0x12)0x0"}
@@ -617,6 +632,7 @@ def validate_network_security_config(resource_path):
     ):
         raise SystemExit(f"Packaged network policy must contain only the system trust anchor: {resource_path}")
     certificates = trust_anchors["children"][0]
+    expected_system_source = '"system" (Raw: "system")'
     if (
         certificates["tag"] != "certificates"
         or certificates["attrs"] != {"src": expected_system_source}
@@ -624,6 +640,54 @@ def validate_network_security_config(resource_path):
         or certificates["content"]
     ):
         raise SystemExit(f"Packaged network policy must trust only system CAs: {resource_path}")
+
+    # Chỉ MỘT nguồn certificate trong toàn bộ tài nguyên. Bắt được trường hợp ai đó thêm
+    # src="user" — nghĩa là tin cả CA do người dùng cài, tức mở đường cho proxy chặn giữa.
+    certificate_nodes = [node for node in walk(roots) if node["tag"] == "certificates"]
+    certificate_sources = [node["attrs"].get("src") for node in certificate_nodes]
+    if certificate_sources != [expected_system_source]:
+        raise SystemExit(
+            f"Packaged network security config {resource_path} must contain exactly one "
+            f"certificates source, system; got {certificate_sources!r}"
+        )
+
+    if domain_config["tag"] != "domain-config" or domain_config["attrs"] or domain_config["content"]:
+        raise SystemExit(f"Unexpected packaged domain policy in {resource_path}")
+
+    pinned_domains = []
+    pin_sets = []
+    for node in domain_config["children"]:
+        if node["tag"] == "domain":
+            if node["attrs"] != {"includeSubdomains": "(type 0x12)0x0"} or node["children"]:
+                raise SystemExit(f"Unexpected packaged pinned domain entry in {resource_path}")
+            pinned_domains.append("".join(node["content"]).strip('"'))
+        elif node["tag"] == "pin-set":
+            pin_sets.append(node)
+        else:
+            raise SystemExit(f"Unexpected node {node['tag']!r} in packaged domain policy: {resource_path}")
+
+    expected_pinned_domains = ["chat.securechat.com.au", "push.securechat.com.au"]
+    if sorted(pinned_domains) != sorted(expected_pinned_domains):
+        raise SystemExit(
+            f"Packaged pinned domains are {pinned_domains!r}, expected {expected_pinned_domains!r}: {resource_path}"
+        )
+
+    if len(pin_sets) != 1:
+        raise SystemExit(f"Packaged domain policy must contain exactly one pin-set: {resource_path}")
+    pin_set = pin_sets[0]
+    if literal_string(pin_set["attrs"].get("expiration", "")) is None:
+        raise SystemExit(f"Packaged pin-set must declare an expiration date: {resource_path}")
+
+    # Ít nhất HAI pin. Một pin duy nhất nghĩa là ngày nhà cung cấp đổi chuỗi chứng chỉ thì
+    # toàn bộ máy ngoài hiện trường mất kết nối, và không ai vá được từ xa vì app cài tay.
+    pins = [node for node in pin_set["children"] if node["tag"] == "pin"]
+    if len(pins) != len(pin_set["children"]) or len(pins) < 2:
+        raise SystemExit(f"Packaged pin-set must contain at least two pin entries: {resource_path}")
+    for pin in pins:
+        if literal_string(pin["attrs"].get("digest", "")) != "SHA-256" or pin["children"]:
+            raise SystemExit(f"Packaged pin must use a SHA-256 digest: {resource_path}")
+        if not "".join(pin["content"]).strip('"').strip():
+            raise SystemExit(f"Packaged pin has no value: {resource_path}")
 
 
 for network_path in resolved_paths["network security config"]:
