@@ -8,11 +8,12 @@
 package io.element.android.libraries.matrix.impl.timeline
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.matrix.api.core.EventId
-import io.element.android.libraries.matrix.api.timeline.item.event.EventOrTransactionId
 import io.element.android.libraries.matrix.api.media.FileInfo
 import io.element.android.libraries.matrix.api.poll.PollKind
 import io.element.android.libraries.matrix.api.timeline.Timeline
+import io.element.android.libraries.matrix.api.timeline.item.event.EventOrTransactionId
 import io.element.android.libraries.matrix.test.A_ROOM_ID
 import io.element.android.libraries.matrix.test.timeline.FakeTimeline
 import kotlinx.coroutines.test.runTest
@@ -132,7 +133,7 @@ class EncryptionGuardedTimelineBehaviourTest {
     fun `an encrypted room lets the call through to the delegate`() = runTest {
         // The control. Without it every test above would also pass if the guard refused everything
         // unconditionally, which would be a different bug wearing the same green tick.
-        val thrown = runCatching {
+        val thrown = runCatchingExceptions {
             guarded(encrypted = true).sendMessage(
                 body = "hello",
                 htmlBody = null,

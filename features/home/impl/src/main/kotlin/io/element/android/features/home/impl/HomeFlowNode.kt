@@ -8,9 +8,7 @@
 
 package io.element.android.features.home.impl
 
-import android.app.Activity
 import android.os.Parcelable
-import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -143,7 +141,7 @@ class HomeFlowNode(
         backstack.push(NavTarget.DeclineInviteAndBlockUser(roomSummary.toInviteData()))
     }
 
-    private fun onMenuActionClick(activity: Activity, roomListMenuAction: RoomListMenuAction) {
+    private fun onMenuActionClick(roomListMenuAction: RoomListMenuAction) {
         when (roomListMenuAction) {
             RoomListMenuAction.ReportBug -> {
                 callback.navigateToBugReport()
@@ -162,7 +160,6 @@ class HomeFlowNode(
     private fun rootNode(buildContext: BuildContext): Node {
         return node(buildContext) { modifier ->
             val state by stateFlow.collectAsState()
-            val activity = requireNotNull(LocalActivity.current)
 
             val loadingJoinedRoomJob = remember { mutableStateOf<AsyncData<Job>>(AsyncData.Uninitialized) }
             if (loadingJoinedRoomJob.value.isLoading()) {
@@ -223,7 +220,7 @@ class HomeFlowNode(
                 onSetUpRecoveryClick = callback::navigateToSetUpRecovery,
                 onConfirmRecoveryKeyClick = callback::navigateToEnterRecoveryKey,
                 onRoomSettingsClick = callback::navigateToRoomSettings,
-                onMenuActionClick = { onMenuActionClick(activity, it) },
+                onMenuActionClick = { onMenuActionClick(it) },
                 onReportRoomClick = ::navigateToReportRoom,
                 onDeclineInviteAndBlockUser = ::navigateToDeclineInviteAndBlockUser,
                 modifier = modifier,

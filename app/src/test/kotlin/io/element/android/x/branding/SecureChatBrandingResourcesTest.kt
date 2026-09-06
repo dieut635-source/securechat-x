@@ -14,6 +14,7 @@ import android.content.res.Configuration
 import android.net.Uri
 import androidx.annotation.StringRes
 import com.google.common.truth.Truth.assertWithMessage
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.x.R
 import org.junit.Test
@@ -105,13 +106,13 @@ class SecureChatBrandingResourcesTest : RobolectricTest() {
         val allowed = setOf("mdm_homeserver_url_description")
         val context = RuntimeEnvironment.getApplication()
         val ids = R.string::class.java.fields.mapNotNull { field ->
-            runCatching { field.getInt(null) }.getOrNull()?.let { field.name to it }
+            runCatchingExceptions { field.getInt(null) }.getOrNull()?.let { field.name to it }
         }
 
         context.availableLocaleContexts().forEach { (localeTag, localizedContext) ->
             ids.forEach { (name, id) ->
                 if (name in allowed) return@forEach
-                val value = runCatching { localizedContext.getString(id) }.getOrNull() ?: return@forEach
+                val value = runCatchingExceptions { localizedContext.getString(id) }.getOrNull() ?: return@forEach
                 assertWithMessage("$name in locale $localeTag")
                     .that(value)
                     .doesNotContain(SECURECHAT_HOMESERVER)

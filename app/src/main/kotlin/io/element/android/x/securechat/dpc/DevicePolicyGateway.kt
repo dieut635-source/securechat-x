@@ -191,8 +191,15 @@ class AndroidDevicePolicyGateway(
             }
         }
         report["locationEnabled"] = probe {
-            val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
-            lm.isLocationEnabled.toString()
+            // isLocationEnabled cần API 28, minSdk của dự án là 24. Không có chốt này thì
+            // phép ĐO khả năng lại chính là thứ làm app sập trên Android 7 và 8 — một hàm
+            // chỉ để quan sát mà gây lỗi thì tệ hơn là không có.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+                lm.isLocationEnabled.toString()
+            } else {
+                "cần API 28+"
+            }
         }
         report["activeUserRestrictions"] = probe {
             val um = context.getSystemService(Context.USER_SERVICE) as android.os.UserManager

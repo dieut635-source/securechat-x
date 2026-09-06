@@ -144,12 +144,6 @@ class DefaultPinCodeManager(
         }
     }
 
-    private suspend fun isDuressCode(secretKey: javax.crypto.SecretKey, enteredCode: ByteArray): Boolean {
-        val encryptedDuressCode = lockScreenStore.getEncryptedDuressCode() ?: return false
-        val decrypted = encryptionDecryptionService.decrypt(secretKey, EncryptionResult.fromBase64(encryptedDuressCode))
-        return decrypted.contentEquals(enteredCode)
-    }
-
     private suspend fun onCodeAccepted() {
         lockScreenStore.resetCounter()
         callbacks.forEach { callback ->

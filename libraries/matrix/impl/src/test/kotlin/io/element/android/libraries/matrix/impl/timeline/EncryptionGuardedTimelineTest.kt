@@ -30,11 +30,23 @@ import org.junit.Test
 class EncryptionGuardedTimelineTest {
     /** Methods that publish content into the room. Each one is overridden in the wrapper. */
     private val publishesContent = setOf(
-        "sendMessage", "editMessage", "editCaption", "replyMessage",
-        "sendImage", "sendVideo", "sendAudio", "sendFile", "sendLocation",
-        "sendVoiceMessage", "sendGallery",
-        "createPoll", "editPoll", "sendPollResponse", "endPoll",
-        "toggleReaction", "forwardEvent",
+        "sendMessage",
+        "editMessage",
+        "editCaption",
+        "replyMessage",
+        "sendImage",
+        "sendVideo",
+        "sendAudio",
+        "sendFile",
+        "sendLocation",
+        "sendVoiceMessage",
+        "sendGallery",
+        "createPoll",
+        "editPoll",
+        "sendPollResponse",
+        "endPoll",
+        "toggleReaction",
+        "forwardEvent",
     )
 
     /**
@@ -46,8 +58,16 @@ class EncryptionGuardedTimelineTest {
      * `loadReplyDetails`, `isEventLoaded` and `getLatestEventId` only read.
      */
     private val doesNotPublish = setOf(
-        "sendReadReceipt", "markAsRead", "paginate", "redactEvent", "cancelSend",
-        "loadReplyDetails", "isEventLoaded", "pinEvent", "unpinEvent", "getLatestEventId",
+        "sendReadReceipt",
+        "markAsRead",
+        "paginate",
+        "redactEvent",
+        "cancelSend",
+        "loadReplyDetails",
+        "isEventLoaded",
+        "pinEvent",
+        "unpinEvent",
+        "getLatestEventId",
         "close",
     )
 
@@ -56,8 +76,12 @@ class EncryptionGuardedTimelineTest {
      * because `getLatestEventId` is a real method and a prefix rule would wave it through.
      */
     private val notMethods = setOf(
-        "getMode", "getTimelineItems", "getMembershipChangeEventReceived",
-        "getOnSyncedEventReceived", "getBackwardPaginationStatus", "getForwardPaginationStatus",
+        "getMode",
+        "getTimelineItems",
+        "getMembershipChangeEventReceived",
+        "getOnSyncedEventReceived",
+        "getBackwardPaginationStatus",
+        "getForwardPaginationStatus",
         "access",
     )
 

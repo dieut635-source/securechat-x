@@ -8,7 +8,6 @@
 
 package io.element.android.features.startchat.impl.root
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.bumble.appyx.core.lifecycle.subscribe
@@ -44,7 +43,6 @@ class StartChatNode(
     @Composable
     override fun View(modifier: Modifier) {
         val state = presenter.present()
-        val activity = requireNotNull(LocalActivity.current)
         StartChatView(
             state = state,
             modifier = modifier,

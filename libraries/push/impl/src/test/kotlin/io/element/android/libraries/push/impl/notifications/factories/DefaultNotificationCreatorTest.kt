@@ -111,7 +111,13 @@ class DefaultNotificationCreatorTest : RobolectricTest() {
      *
      * It must alert WITHOUT revealing anything: no sender, no message body. If a future upstream
      * merge silences this again, or someone "improves" it by adding content, this test fails.
+     *
+     * Notification.priority đã deprecated từ API 26 (nay dùng độ quan trọng của channel), nhưng
+     * đây chính là thứ phép kiểm này ĐANG kiểm: trên máy trước API 26 thông báo không được hạ
+     * xuống im lặng. Đọc trường deprecated là đúng việc; bản dựng thường bỏ qua cảnh báo, chỉ
+     * nghi thức phát hành bật -PallWarningsAsErrors=true nên nó thành lỗi.
      */
+    @Suppress("DEPRECATION")
     @Test
     fun `SecureChat - fallback notification alerts but reveals nothing`() {
         val sut = createNotificationCreator(

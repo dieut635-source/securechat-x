@@ -10,6 +10,7 @@ package io.element.android.libraries.matrix.impl.room.join
 
 import dev.zacsweers.metro.ContributesBinding
 import im.vector.app.features.analytics.plan.JoinedRoom
+import io.element.android.libraries.core.extensions.mapCatchingExceptions
 import io.element.android.libraries.core.extensions.mapFailure
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.MatrixClient
@@ -48,7 +49,7 @@ class DefaultJoinRoom(
             if (roomInfo != null) {
                 analyticsService.capture(roomInfo.toAnalyticsJoinedRoom(trigger))
             }
-        }.mapCatching { roomInfo ->
+        }.mapCatchingExceptions { roomInfo ->
             // Every room enters SecureChat through here, so this is where "encrypted or not at all"
             // is enforced. A plaintext room created by a compromised server or by another client on
             // the same account would otherwise be joinable, and everything sent in it readable by

@@ -8,10 +8,10 @@
 package io.element.android.libraries.matrix.impl.room.encryption
 
 import dev.zacsweers.metro.ContributesBinding
+import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.room.encryption.RoomEncryptionGuard
-import io.element.android.libraries.di.SessionScope
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
