@@ -157,6 +157,12 @@ class AndroidDevicePolicyGateway(
 
     override fun relinquishDeviceOwner(): Result<Unit> = runCatchingExceptions {
         val dpm = manager ?: error("DevicePolicyManager unavailable")
+        // Deprecated và không có API thay thế: Android muốn device owner chỉ gỡ được bằng cách
+        // khôi phục cài đặt gốc. Ở đây vẫn giữ, vì đây là đường thoát duy nhất cho tình huống
+        // một bản phát hành không khởi động được — lúc đó thứ giữ chính sách thiết bị là một
+        // app đang crash, và không có hàm này thì đường về duy nhất là xoá sạch mọi máy ngoài
+        // hiện trường. Không bao giờ được gọi bởi chính app.
+        @Suppress("DEPRECATION")
         dpm.clearDeviceOwnerApp(context.packageName)
     }
 

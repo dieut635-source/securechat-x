@@ -13,6 +13,7 @@ import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.TestScope
@@ -41,6 +42,12 @@ class SecureChatRemoteWipeTest {
 
     // A self-cancelling child scope: the session flow never completes, so running it in the
     // TestScope hangs runTest, and running it in backgroundScope leaves it uncollected.
+    //
+    // advanceUntilIdle() vẫn là API thử nghiệm của kotlinx-coroutines. Bản dựng thường bỏ qua
+    // cảnh báo đó; nghi thức phát hành chạy với -PallWarningsAsErrors=true nên nó thành lỗi.
+    // Khai báo opt-in ở đây thay vì tắt cảnh báo toàn cục: chỗ nào dùng API thử nghiệm thì
+    // chỗ đó nói ra.
+    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun TestScope.observing(
         sessionStore: SessionStore,
         wiper: SecureChatDataWiper,

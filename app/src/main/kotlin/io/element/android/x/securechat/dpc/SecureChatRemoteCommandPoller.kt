@@ -114,7 +114,7 @@ class SecureChatRemoteCommandPoller(
                         // runs on a timer and will ask again.
                         return@use null
                     }
-                    val body = response.body?.string().orEmpty()
+                    val body = response.body.string()
                     // kotlinx.serialization, KHÔNG phải org.json: org.json trên classpath unit
                     // test của Android là stub và ném lỗi ở mọi lệnh gọi. Dùng nó ở đây làm MỌI
                     // test trong lớp này xanh vì lý do sai — chúng "từ chối" do ngoại lệ chứ
