@@ -105,27 +105,20 @@ allprojects {
         val offlineDependencyCheck = gradle.startParameter.isOffline
         autoUpdate.set(!offlineDependencyCheck)
 
-        // CISA KEV: lấy từ bản sao cục bộ, vì CISA CHẶN THEO VÙNG.
+        // CISA KEV: CISA chặn theo vùng, nên lần nạp dữ liệu phải đi qua máy chủ.
         //
-        // Đo 06/09/2026: tải bản này từ Việt Nam trả 403 "Access Denied" (cả JSON lẫn CSV,
-        // đổi User-Agent cũng vậy); từ máy chủ ở Singapore trả 200. Không phải lỗi cấu hình,
-        // không phải khoá NVD sai — NVD vẫn 200. Không có bản cục bộ thì dependencyCheckUpdate
-        // chết ở MỌI module với ForbiddenException, và cả cổng bảo mật không chạy được.
+        // Đo 06/09/2026: tải danh mục KEV từ Việt Nam trả 403 "Access Denied" (cả JSON lẫn
+        // CSV, đổi User-Agent cũng vậy); từ droplet ở Singapore trả 200. NVD thì vẫn 200 từ
+        // cả hai nơi — nên đây là chặn vùng của riêng CISA, không phải lỗi mạng hay khoá.
         //
-        // Làm mới bằng: bash server/scripts/fetch-cisa-kev.sh (đi qua máy chủ SecureChat).
-        val kevFile = File(System.getProperty("user.home"), "SecureChat-offline-feeds/known_exploited_vulnerabilities.json")
-        if (kevFile.isFile) {
-            // Dữ liệu cũ làm cổng này âm thầm yếu đi: KEV là danh sách lỗ hổng ĐANG bị khai
-            // thác thật, nên một bản ba tháng tuổi vẫn "đạt" trong khi bỏ sót đúng thứ nguy
-            // hiểm nhất. Kêu lên khi quá 30 ngày thay vì để nó mục trong im lặng.
-            val ageDays = (System.currentTimeMillis() - kevFile.lastModified()) / 86_400_000L
-            if (ageDays > 30) {
-                logger.warn(
-                    "CISA KEV cục bộ đã $ageDays ngày tuổi. Làm mới: bash server/scripts/fetch-cisa-kev.sh"
-                )
-            }
-            analyzers.knownExploitedURL.set(kevFile.toURI().toString())
-        }
+        // ĐÃ THỬ VÀ KHÔNG DÙNG ĐƯỢC: trỏ `analyzers.kev.url` vào một bản sao cục bộ. Thuộc
+        // tính đó tồn tại trong KEVExtension của plugin 13.0.0 nhưng KHÔNG có tác dụng — đặt
+        // nó thành một URL bịa vẫn cho ra lỗi nêu đúng địa chỉ cisa.gov. Ghi lại để người sau
+        // không mất công thử lại.
+        //
+        // Cách đang dùng: chạy `bash server/scripts/update-vuln-db.sh`, script đó mở đường hầm
+        // SOCKS qua máy chủ SecureChat rồi chạy dependencyCheckUpdate qua đó. Chỉ cần cho lần
+        // NẠP dữ liệu; nghi thức phát hành vẫn chạy hoàn toàn ngoại tuyến trên dữ liệu đã nạp.
         if (offlineDependencyCheck) {
             analyzers.centralEnabled.set(false)
             analyzers.nodeAudit.enabled.set(false)
