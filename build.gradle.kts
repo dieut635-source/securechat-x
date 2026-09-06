@@ -105,20 +105,32 @@ allprojects {
         val offlineDependencyCheck = gradle.startParameter.isOffline
         autoUpdate.set(!offlineDependencyCheck)
 
-        // CISA KEV: CISA chặn theo vùng, nên lần nạp dữ liệu phải đi qua máy chủ.
+        // CISA KEV: TẮT. Đây là đánh đổi có chủ ý, không phải bỏ sót.
         //
-        // Đo 06/09/2026: tải danh mục KEV từ Việt Nam trả 403 "Access Denied" (cả JSON lẫn
-        // CSV, đổi User-Agent cũng vậy); từ droplet ở Singapore trả 200. NVD thì vẫn 200 từ
-        // cả hai nơi — nên đây là chặn vùng của riêng CISA, không phải lỗi mạng hay khoá.
+        // Đo 06/09/2026 — hai nguồn dữ liệu cần hai đường mạng NGƯỢC NHAU:
         //
-        // ĐÃ THỬ VÀ KHÔNG DÙNG ĐƯỢC: trỏ `analyzers.kev.url` vào một bản sao cục bộ. Thuộc
-        // tính đó tồn tại trong KEVExtension của plugin 13.0.0 nhưng KHÔNG có tác dụng — đặt
-        // nó thành một URL bịa vẫn cho ra lỗi nêu đúng địa chỉ cisa.gov. Ghi lại để người sau
-        // không mất công thử lại.
+        //                 đi thẳng      qua đường hầm SOCKS (máy chủ Singapore)
+        //   NVD + khoá    200           404
+        //   CISA KEV      403           200
         //
-        // Cách đang dùng: chạy `bash server/scripts/update-vuln-db.sh`, script đó mở đường hầm
-        // SOCKS qua máy chủ SecureChat rồi chạy dependencyCheckUpdate qua đó. Chỉ cần cho lần
-        // NẠP dữ liệu; nghi thức phát hành vẫn chạy hoàn toàn ngoại tuyến trên dữ liệu đã nạp.
+        // CISA chặn theo vùng nên phải đi vòng; NVD lại từ chối chính khoá đó khi yêu cầu
+        // đến từ IP máy chủ. Java đặt SOCKS ở mức toàn cục, không loại trừ được theo host,
+        // nên một tiến trình Gradle không thể chiều cả hai. Không có cách nào giữ cả hai.
+        //
+        // ĐÃ THỬ VÀ KHÔNG DÙNG ĐƯỢC: tải KEV về rồi trỏ `analyzers.kev.url` vào bản cục bộ.
+        // Thuộc tính đó tồn tại trong KEVExtension của plugin 13.0.0 nhưng KHÔNG có tác dụng
+        // — đặt nó thành một URL bịa vẫn cho ra lỗi nêu đúng địa chỉ cisa.gov.
+        //
+        // CÁI GIÁ THẬT SỰ MẤT ĐI, nói cho đúng: KEV đánh dấu lỗ hổng nào ĐANG bị khai thác
+        // ngoài thực tế. Nó KHÔNG đổi việc build hỏng hay không — failBuildOnCVSS là 0.0,
+        // tức mọi lỗ hổng có điểm đều làm hỏng build, dù có nằm trong KEV hay không. Thứ mất
+        // đi là nhãn ưu tiên khi ĐỌC báo cáo, không phải khả năng phát hiện.
+        //
+        // Giữ NVD (nguồn chính, đi thẳng) và bỏ KEV (nguồn phụ, không thể tới được) là đánh
+        // đổi đúng. Nếu sau này build từ nơi không bị CISA chặn, bật lại bằng cách xoá dòng
+        // dưới đây.
+        analyzers.kev.enabled.set(false)
+
         if (offlineDependencyCheck) {
             analyzers.centralEnabled.set(false)
             analyzers.nodeAudit.enabled.set(false)
