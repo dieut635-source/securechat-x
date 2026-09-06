@@ -104,6 +104,28 @@ allprojects {
         // request during the signing ceremony.
         val offlineDependencyCheck = gradle.startParameter.isOffline
         autoUpdate.set(!offlineDependencyCheck)
+
+        // CISA KEV: lấy từ bản sao cục bộ, vì CISA CHẶN THEO VÙNG.
+        //
+        // Đo 06/09/2026: tải bản này từ Việt Nam trả 403 "Access Denied" (cả JSON lẫn CSV,
+        // đổi User-Agent cũng vậy); từ máy chủ ở Singapore trả 200. Không phải lỗi cấu hình,
+        // không phải khoá NVD sai — NVD vẫn 200. Không có bản cục bộ thì dependencyCheckUpdate
+        // chết ở MỌI module với ForbiddenException, và cả cổng bảo mật không chạy được.
+        //
+        // Làm mới bằng: bash server/scripts/fetch-cisa-kev.sh (đi qua máy chủ SecureChat).
+        val kevFile = File(System.getProperty("user.home"), "SecureChat-offline-feeds/known_exploited_vulnerabilities.json")
+        if (kevFile.isFile) {
+            // Dữ liệu cũ làm cổng này âm thầm yếu đi: KEV là danh sách lỗ hổng ĐANG bị khai
+            // thác thật, nên một bản ba tháng tuổi vẫn "đạt" trong khi bỏ sót đúng thứ nguy
+            // hiểm nhất. Kêu lên khi quá 30 ngày thay vì để nó mục trong im lặng.
+            val ageDays = (System.currentTimeMillis() - kevFile.lastModified()) / 86_400_000L
+            if (ageDays > 30) {
+                logger.warn(
+                    "CISA KEV cục bộ đã $ageDays ngày tuổi. Làm mới: bash server/scripts/fetch-cisa-kev.sh"
+                )
+            }
+            analyzers.knownExploitedURL.set(kevFile.toURI().toString())
+        }
         if (offlineDependencyCheck) {
             analyzers.centralEnabled.set(false)
             analyzers.nodeAudit.enabled.set(false)
