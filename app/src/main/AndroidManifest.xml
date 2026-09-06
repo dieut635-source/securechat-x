@@ -149,6 +149,24 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_providers" />
         </provider>
+        <!--
+            LinkActivity của thư viện UnifiedPush không khai báo android:exported.
+
+            Nó không có intent-filter, nên mặc định của Android đã là false và không client
+            ngoài nào phân giải tới được. Khai báo tường minh ở đây KHÔNG đổi hành vi — nó chỉ
+            nói ra điều đang đúng, để phép kiểm manifest của nghi thức phát hành đọc được.
+            Phép kiểm đó đòi mọi thành phần đóng gói phải nói rõ exported, và đòi như vậy là
+            đúng: một thành phần im lặng dựa vào giá trị mặc định sẽ thay đổi ý nghĩa nếu
+            targetSdk hoặc thư viện đổi.
+
+            Đường mà ntfy thật sự chạm vào app là RaiseToForegroundService (đo trên máy thật
+            ngày 06/09), không phải activity này.
+        -->
+        <activity
+            android:name="org.unifiedpush.android.connector.internal.LinkActivity"
+            android:exported="false"
+            tools:node="merge" />
+
     </application>
 
 </manifest>
