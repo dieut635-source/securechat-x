@@ -74,10 +74,18 @@ captures/
 # .kotlin folder
 .kotlin
 
-# Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
-#*.jks
-#*.keystore
+# Signing material. The tracked debug/nightly test keystores remain tracked, but Git will refuse
+# to add any newly created production key in these common formats.
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pkcs12
+*-private.pem
+*-private.key
+
+# Output produced by the isolated SecureChat release workstation.
+release-out/
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild

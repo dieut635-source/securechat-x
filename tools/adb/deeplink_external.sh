@@ -7,4 +7,4 @@
 # Please see LICENSE files in the repository root for full details.
 
 adb shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE \
-   -d "https://app.element.io/#/room/!cuqHozLHNBgupgLMKN:matrix.org/%24LZDOueY3R8OD2ZYf8FLKtu95aF7imLBC3F5TIUj-4cc"
+   -d "https://matrix.to/#/%23securechat:chat.securechat.com.au"

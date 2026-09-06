@@ -14,7 +14,7 @@
             <action android:name="android.support.customtabs.action.CustomTabsService" />
         </intent>
 
-        <!-- To be able to start the service exported by Element Classic -->
+        <!-- Retained for source compatibility; SecureChat does not expose a legacy importer service. -->
         <package android:name="${elementClassicPackage}" />
     </queries>
 

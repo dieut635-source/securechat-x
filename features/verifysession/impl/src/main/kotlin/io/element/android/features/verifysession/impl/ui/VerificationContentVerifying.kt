@@ -30,14 +30,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.compound.tokens.SecureChatFonts
 import io.element.android.features.verifysession.impl.emoji.toEmojiResource
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.verification.SessionVerificationData
 import io.element.android.libraries.matrix.api.verification.VerificationEmoji
 import io.element.android.libraries.ui.strings.Strings
-import io.element.android.compound.tokens.SecureChatFonts
-import androidx.compose.ui.unit.em
 
 @Composable
 internal fun VerificationContentVerifying(

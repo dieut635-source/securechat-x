@@ -138,7 +138,10 @@ class OnboardingViewTest : RobolectricTestParameter() {
                 eventSink = eventSink,
             ),
         )
-        val buttonText = activity!!.getString(R.string.screen_onboarding_sign_in_to, "element.io")
+        // Nhãn nút KHÔNG còn mang tên máy chủ: chuỗi SecureChat cho nút này chỉ là "Sign in".
+        // Nhưng sự kiện phát ra VẪN phải mang đúng máy chủ — đó mới là điều test này canh, và
+        // nó vẫn canh được sau khi chữ trên nút đổi.
+        val buttonText = activity!!.getString(R.string.screen_onboarding_sign_in_to)
         onNodeWithText(buttonText).performClick()
         eventSink.assertSingle(OnBoardingEvent.OnSignIn("element.io"))
     }

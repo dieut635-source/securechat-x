@@ -11,7 +11,7 @@
 
 ## Overview
 
-Element Android uses [MapTiler](https://www.maptiler.com/) to provide map
+SecureChat can use [MapTiler](https://www.maptiler.com/) to provide map
 imagery where required. MapTiler requires an API key, which we bake in to
 the app at release time.
 
@@ -35,10 +35,10 @@ styles will be used.
 ## Making releasable builds with MapTiler
 
 To insert the MapTiler API key when building an APK, set the
-`ELEMENT_ANDROID_MAPTILER_API_KEY` environment variable in your build
+`SECURECHAT_MAPTILER_API_KEY` environment variable in your build
 environment.
-If you've added custom styles also set the `ELEMENT_ANDROID_MAPTILER_LIGHT_MAP_ID`
-and `ELEMENT_ANDROID_MAPTILER_DARK_MAP_ID` environment variables accordingly.
+If you've added custom styles also set the `SECURECHAT_MAPTILER_LIGHT_MAP_ID`
+and `SECURECHAT_MAPTILER_DARK_MAP_ID` environment variables accordingly.
 
 ## Using other map sources or MapTiler styles
 

@@ -21,7 +21,7 @@ open class AnalyticsOptInStatePreviewParam : PreviewParameterProvider<AnalyticsO
 fun aAnalyticsOptInState(
     hasPolicyLink: Boolean = true,
 ) = AnalyticsOptInState(
-    applicationName = "Element X",
+    applicationName = "SecureChat",
     hasPolicyLink = hasPolicyLink,
     eventSink = {}
 )

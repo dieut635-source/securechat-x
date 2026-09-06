@@ -57,7 +57,7 @@
   <string name="screen_room_timeline_add_reaction">"أضف تفاعل"</string>
   <string name="screen_room_timeline_beginning_of_room">"هنا بداية %1$s"</string>
   <string name="screen_room_timeline_beginning_of_room_no_name">"هنا بداية المحادثة"</string>
-  <string name="screen_room_timeline_legacy_call">"مكالمة غير مدعومة. اسأل المتصل عما إذا كان بإمكانه استخدام تطبيق Element X الجديد."</string>
+  <string name="screen_room_timeline_legacy_call">"مكالمة غير مدعومة. اسأل المتصل عما إذا كان بإمكانه استخدام تطبيق SecureChat الجديد."</string>
   <string name="screen_room_timeline_less_reactions">"أظهر أقل"</string>
   <string name="screen_room_timeline_message_copied">"نُسِخت الرسالة"</string>
   <string name="screen_room_timeline_no_permission_to_post">"لا تملك الإذن بالنشر في هذه الغرفة"</string>

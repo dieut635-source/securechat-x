@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2025 Element Creations Ltd.
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  Device administration policies SecureChat asks for.
+
+  Only what is actually used is listed. Every extra policy widens what a bug in this app is capable
+  of doing to somebody's handset, and unused policies are pure downside: they cost the operator
+  trust at the provisioning prompt and buy nothing.
+
+  wipe-data  - remote destruction of a lost or seized handset, gated by DeviceWipeAuthority.
+  force-lock - lock the screen on demand; a proportionate response short of destroying data.
+
+  Managed configuration (setApplicationRestrictions) needs no entry here: it comes from device
+  owner, not from a device-admin policy.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <wipe-data />
+        <force-lock />
+    </uses-policies>
+</device-admin>

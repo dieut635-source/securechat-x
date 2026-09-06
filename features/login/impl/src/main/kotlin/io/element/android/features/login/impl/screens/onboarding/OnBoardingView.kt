@@ -10,6 +10,7 @@ package io.element.android.features.login.impl.screens.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -37,8 +37,8 @@ import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.login.LoginModeEvent
 import io.element.android.features.login.impl.login.LoginModeView
 import io.element.android.libraries.architecture.AsyncData
-import io.element.android.libraries.designsystem.atomic.atoms.ElementLogoAtom
-import io.element.android.libraries.designsystem.atomic.atoms.ElementLogoAtomSize
+import io.element.android.libraries.designsystem.atomic.atoms.SecureChatLogoAtom
+import io.element.android.libraries.designsystem.atomic.atoms.SecureChatLogoAtomSize
 import io.element.android.libraries.designsystem.atomic.molecules.ButtonColumnMolecule
 import io.element.android.libraries.designsystem.atomic.pages.FlowStepPage
 import io.element.android.libraries.designsystem.atomic.pages.OnBoardingPage
@@ -199,48 +199,29 @@ private fun AddOtherAccountScaffold(
 
 @Composable
 private fun OnBoardingContent(state: OnBoardingState) {
-    Box(
+    Column(
         modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = BiasAlignment(
-                horizontalBias = 0f,
-                verticalBias = -0.4f
-            )
-        ) {
-            ElementLogoAtom(
-                size = ElementLogoAtomSize.Large,
-                modifier = Modifier.padding(top = ElementLogoAtomSize.Large.shadowRadius / 2)
-            )
-        }
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = BiasAlignment(
-                horizontalBias = 0f,
-                verticalBias = 0.6f
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalAlignment = CenterHorizontally,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_title),
-                    color = ElementTheme.colors.textPrimary,
-                    style = ElementTheme.typography.fontHeadingLgBold,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_message, state.productionApplicationName),
-                    color = ElementTheme.colors.textPrimary,
-                    style = ElementTheme.typography.fontBodyLgRegular,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
+        SecureChatLogoAtom(
+            size = SecureChatLogoAtomSize.Large,
+            modifier = Modifier.padding(top = SecureChatLogoAtomSize.Large.shadowRadius / 2)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(id = R.string.screen_onboarding_welcome_title),
+            color = ElementTheme.colors.textPrimary,
+            style = ElementTheme.typography.fontHeadingLgBold,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(id = R.string.screen_onboarding_welcome_message, state.productionApplicationName),
+            color = ElementTheme.colors.textPrimary,
+            style = ElementTheme.typography.fontBodyLgRegular,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -303,7 +284,10 @@ private fun OnBoardingButtons(
             )
         } else {
             Button(
-                text = stringResource(id = R.string.screen_onboarding_sign_in_to, defaultAccountProvider),
+                // Không truyền tên máy chủ nữa: chuỗi SecureChat cho nút này chỉ còn "Sign in".
+                // Người dùng không được chọn máy chủ - cấu hình quản lý ấn định nó - nên in
+                // địa chỉ lên nút chỉ là tiếng ồn. Màn hình kế tiếp vẫn xác nhận rõ máy chủ.
+                text = stringResource(id = R.string.screen_onboarding_sign_in_to),
                 showProgress = isLoading,
                 onClick = {
                     state.eventSink(OnBoardingEvent.OnSignIn(defaultAccountProvider))

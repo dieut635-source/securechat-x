@@ -25,7 +25,7 @@ open class LoginWithClassicStatePreviewParam : PreviewParameterProvider<LoginWit
 
 fun aLoginWithClassicState(
     isElementPro: Boolean = false,
-    userId: UserId = UserId("@alice:matrix.org"),
+    userId: UserId = UserId("@alice:chat.securechat.com.au"),
     displayName: String? = null,
     avatar: Bitmap? = null,
     loginWithClassicAction: AsyncAction<Unit> = AsyncAction.Uninitialized,

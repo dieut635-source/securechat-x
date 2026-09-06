@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 SecureChat
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  Hộp thoại xác nhận đăng xuất.
+
+  Bản kế thừa nói "Remove this device / Are you sure you want to remove this device?" — ở
+  sản phẩm này câu đó vừa sai vừa thiếu.
+
+  Sai: người dùng đọc "remove this device" dễ hiểu thành xoá máy, mà app này CÓ chức năng
+  xoá máy thật. Hai việc khác hẳn nhau không được dùng chung một chữ.
+
+  Thiếu: ở đây đăng nhập lại KHÔNG tự làm được. Máy sinh device_id mới nằm ngoài danh sách
+  duyệt, phải có quản trị viên duyệt trên dashboard thì mới dùng lại được. Ở sản phẩm khác
+  đăng xuất là việc hoàn tác được trong mười giây; ở đây thì không, nên phải nói ra trước
+  khi bấm chứ không phải sau.
+-->
+<resources>
+    <string name="securechat_signout_confirm_title">"Sign out of SecureChat"</string>
+    <string name="securechat_signout_confirm_content">"Messages stored on this device will be erased. To sign in again, your administrator has to approve this device."</string>
+    <string name="securechat_signout_confirm_submit">"Sign out"</string>
+</resources>

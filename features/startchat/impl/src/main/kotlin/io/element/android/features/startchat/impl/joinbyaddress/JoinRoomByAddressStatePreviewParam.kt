@@ -18,10 +18,10 @@ open class JoinRoomByAddressStatePreviewParam : PreviewParameterProvider<JoinRoo
             aJoinRoomByAddressState(),
             aJoinRoomByAddressState(address = "#room-"),
             aJoinRoomByAddressState(address = "#room-", addressState = RoomAddressState.Invalid),
-            aJoinRoomByAddressState(address = "#room-name:matrix.org", addressState = RoomAddressState.Resolving),
-            aJoinRoomByAddressState(address = "#room-name-none:matrix.org", addressState = RoomAddressState.RoomNotFound),
+            aJoinRoomByAddressState(address = "#room-name:chat.securechat.com.au", addressState = RoomAddressState.Resolving),
+            aJoinRoomByAddressState(address = "#room-name-none:chat.securechat.com.au", addressState = RoomAddressState.RoomNotFound),
             aJoinRoomByAddressState(
-                address = "#room-name:matrix.org",
+                address = "#room-name:chat.securechat.com.au",
                 addressState = RoomAddressState.RoomFound(ResolvedRoomAlias(RoomId("!aRoom:id"), emptyList())),
             ),
         )

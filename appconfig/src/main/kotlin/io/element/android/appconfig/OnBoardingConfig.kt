@@ -9,6 +9,6 @@
 package io.element.android.appconfig
 
 object OnBoardingConfig {
-    /** Whether the user can create an account using the app. */
-    const val CAN_CREATE_ACCOUNT = true
+    /** Closed SecureChat deployments provision accounts administratively, never in the app. */
+    const val CAN_CREATE_ACCOUNT = false
 }

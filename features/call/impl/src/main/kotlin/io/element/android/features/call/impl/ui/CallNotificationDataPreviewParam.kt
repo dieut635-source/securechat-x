@@ -32,10 +32,10 @@ internal fun aCallNotificationData(
     audioOnly: Boolean
 ): CallNotificationData {
     return CallNotificationData(
-        sessionId = SessionId("@alice:matrix.org"),
-        roomId = RoomId("!1234:matrix.org"),
-        eventId = EventId("\$asdadadsad:matrix.org"),
-        senderId = UserId("@bob:matrix.org"),
+        sessionId = SessionId("@alice:chat.securechat.com.au"),
+        roomId = RoomId("!1234:chat.securechat.com.au"),
+        eventId = EventId("\$asdadadsad:chat.securechat.com.au"),
+        senderId = UserId("@bob:chat.securechat.com.au"),
         roomName = ROOM_NAME,
         senderName = USER_NAME_BOB,
         avatarUrl = null,

@@ -37,4 +37,4 @@ fun aRoomAliasResolverState(
     eventSink = eventSink,
 )
 
-private val A_ROOM_ALIAS = RoomAlias("#exa:matrix.org")
+private val A_ROOM_ALIAS = RoomAlias("#exa:chat.securechat.com.au")

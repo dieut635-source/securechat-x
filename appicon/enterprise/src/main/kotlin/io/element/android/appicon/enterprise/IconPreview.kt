@@ -25,7 +25,7 @@ internal fun IconPreview() {
         Image(painter = painterResource(id = R.mipmap.ic_launcher_background_enterprise), contentDescription = null)
         Image(
             modifier = Modifier.align(Alignment.Center),
-            painter = painterResource(id = R.mipmap.ic_launcher_foreground_enterprise),
+            painter = painterResource(id = R.drawable.ic_launcher_foreground_enterprise),
             contentDescription = null,
         )
     }
@@ -38,7 +38,7 @@ internal fun RoundIconPreview() {
         Image(painter = painterResource(id = R.mipmap.ic_launcher_background_enterprise), contentDescription = null)
         Image(
             modifier = Modifier.align(Alignment.Center),
-            painter = painterResource(id = R.mipmap.ic_launcher_foreground_enterprise),
+            painter = painterResource(id = R.drawable.ic_launcher_foreground_enterprise),
             contentDescription = null,
         )
     }

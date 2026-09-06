@@ -8,14 +8,10 @@
 
 package io.element.android.features.call.impl.pip
 
-import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
-import io.element.android.libraries.core.bool.orFalse
-import io.element.android.libraries.di.annotations.ApplicationContext
 
 interface PipSupportProvider {
     @ChecksSdkIntAtLeast(Build.VERSION_CODES.O)
@@ -23,12 +19,8 @@ interface PipSupportProvider {
 }
 
 @ContributesBinding(AppScope::class)
-class DefaultPipSupportProvider(
-    @ApplicationContext private val context: Context,
-) : PipSupportProvider {
-    override fun isPipSupported(): Boolean {
-        val isSupportedByTheOs = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            context.packageManager?.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE).orFalse()
-        return isSupportedByTheOs
-    }
+class DefaultPipSupportProvider : PipSupportProvider {
+    // PiP can keep participant video visible after the application PIN has locked. SecureChat's
+    // closed-distribution security profile therefore disables it independently of OS support.
+    override fun isPipSupported(): Boolean = false
 }

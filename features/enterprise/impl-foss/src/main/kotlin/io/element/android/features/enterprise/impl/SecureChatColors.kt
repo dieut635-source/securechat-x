@@ -33,7 +33,7 @@ object SecureChatColors {
     val accent = Color(0xFF00C2A8)
 
     // --- Nền và chữ (giao diện tối) ---
-    private val bgBase = Color(0xFF0B0E14)   // nền chính
+    private val bgBase = Color(0xFF0B0E14) // nền chính
     private val bgSurface = Color(0xFF151A23) // thẻ, bong bóng nhận, ô nhập
     private val bgSurfaceHi = Color(0xFF1C2230)
     private val textHi = Color(0xFFE6EAF0)
@@ -87,7 +87,6 @@ object SecureChatColors {
             separatorSecondary = borderLo,
             borderInteractivePrimary = borderHi,
             borderInteractiveSecondary = borderLo,
-
             // Hành động — nút chính, bong bóng gửi đi, tooltip, chip đang chọn.
             // Ở giao diện tối gốc, nút là nền gần-trắng + chữ gần-đen. Ta đổi sang nền xanh nên
             // BẮT BUỘC đổi luôn chữ/icon trên nền đó sang trắng, nếu không sẽ là đen trên xanh.
@@ -96,7 +95,6 @@ object SecureChatColors {
             bgActionPrimaryPressed = bluePressed,
             textOnSolidPrimary = Color(0xFFFFFFFF),
             iconOnSolidPrimary = Color(0xFFFFFFFF),
-
             // Nhấn mạnh
             bgAccentRest = brand,
             bgAccentHovered = blueHovered,

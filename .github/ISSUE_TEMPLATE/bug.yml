@@ -1,5 +1,5 @@
-name: Bug report for the Element X Android app
-description: Report any issues that you have found with the Element X app. Please [check open issues](https://github.com/element-hq/element-x-android/issues) first, in case it has already been reported.
+name: Bug report for SecureChat Android
+description: Report a SecureChat issue after checking this repository's open issues for duplicates.
 labels: [T-Defect]
 body:
   - type: markdown
@@ -7,7 +7,7 @@ body:
       value: |
         Thanks for taking the time to fill out this bug report!
 
-        Please report security issues by email to security@matrix.org
+        Please report security issues through GitHub's private vulnerability reporting instead of a public issue.
   - type: textarea
     id: reproduction-steps
     attributes:
@@ -50,7 +50,7 @@ body:
     attributes:
       label: Application version and app store
       description: You can find the version information at the bottom of the Settings screen.
-      placeholder: e.g. Element X version 0.3.0
+      placeholder: e.g. SecureChat version 1.2.3
     validations:
       required: false
   - type: input
@@ -59,7 +59,7 @@ body:
       label: Homeserver
       description: |
         Which server is your account registered on? If it is a local or non-public homeserver, please tell us what is the homeserver implementation (ex: Synapse/Dendrite/etc.) and the version.
-      placeholder: e.g. matrix.org or Synapse 1.50.0rc1
+      placeholder: e.g. chat.securechat.com.au or Synapse 1.150.0
     validations:
       required: false
   - type: dropdown

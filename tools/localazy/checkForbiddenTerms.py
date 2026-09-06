@@ -12,34 +12,9 @@ from xml.dom import minidom
 
 file = sys.argv[1]
 
-# Dict of forbidden terms, with exceptions for some String name
-# Keys are the terms, values are the exceptions.
+# Product names inherited from the upstream application are forbidden in translated values.
 forbiddenTerms = {
-    r"\bElement\b": [
-        # Those 2 strings are only used in debug version
-        "screen_advanced_settings_element_call_base_url",
-        "screen_advanced_settings_element_call_base_url_description",
-        # only used for element.io homeserver, so it's fine
-        "screen_server_confirmation_message_login_element_dot_io",
-        # "Be in your element", will probably be changed on the forks, so we can ignore.
-        "screen_onboarding_welcome_title",
-        # Contains "Element Call"
-        "screen_incoming_call_subtitle_android",
-        "call_invalid_audio_device_bluetooth_devices_disabled",
-        # Contains "Element X"
-        "screen_room_timeline_legacy_call",
-        # We explicitly want to mention Element Pro in these 2:
-        "screen_change_server_error_element_pro_required_title",
-        "screen_change_server_error_element_pro_required_message",
-        # Contains "Element Classic"
-        "screen_missing_key_backup_open_element_classic",
-        "screen_missing_key_backup_step_1",
-        # These are notification sound names
-        "screen_notification_settings_sound_element_default",
-        "screen_notification_settings_sound_element_fade",
-        # This contains the word 'element' in some languages
-        "screen_media_upload_preview_item_count",
-    ]
+    r"\b(?:Element|Vector|Riot)\b": [],
 }
 
 content = minidom.parse(file)
@@ -57,7 +32,7 @@ for elem in content.getElementsByTagName('string'):
     value = child.nodeValue
     # If value contains a forbidden term, add the error to errors
     for (term, exceptions) in forbiddenTerms.items():
-        matches = re.search(term, value)
+        matches = re.search(term, value, re.IGNORECASE)
         if matches and name not in exceptions:
             errors.append('Forbidden term "' + term + '" in string: "' + name + '": ' + value)
 
@@ -75,7 +50,7 @@ for elem in content.getElementsByTagName('plurals'):
         value = child.nodeValue
         # If value contains a forbidden term, add the error to errors
         for (term, exceptions) in forbiddenTerms.items():
-            matches = re.search(term, value)
+            matches = re.search(term, value, re.IGNORECASE)
             if matches and name not in exceptions:
                 errors.append('Forbidden term "' + term + '" in plural: "' + name + '": ' + value)
 

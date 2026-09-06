@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"选择如何接收通知"</string>
   <string name="screen_advanced_settings_developer_mode">"开发者模式"</string>
   <string name="screen_advanced_settings_developer_mode_description">"启用以访问适用于开发者的功能与特性。"</string>
-  <string name="screen_advanced_settings_element_call_base_url">"自定义 Element Call 基础 URL"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"为 Element Call 设置基础 URL。"</string>
+  <string name="screen_advanced_settings_element_call_base_url">"自定义 SecureChat Calls 基础 URL"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"为 SecureChat Calls 设置基础 URL。"</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"URL 无效，请确保包含协议（http/https）和正确的地址。"</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"在房间邀请请求中隐藏头像"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"在时间线上隐藏媒体预览"</string>
@@ -87,8 +87,8 @@
   <string name="screen_notification_settings_sound_custom_fallback">"自定义"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"自定义提示音…"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"删除文件时出错"</string>
-  <string name="screen_notification_settings_sound_element_default">"Element 默认"</string>
-  <string name="screen_notification_settings_sound_element_fade">"Element 淡入"</string>
+  <string name="screen_notification_settings_sound_element_default">"SecureChat 默认"</string>
+  <string name="screen_notification_settings_sound_element_fade">"SecureChat 淡入"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"导入文件时出错"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"预览提示音时出现问题"</string>
   <string name="screen_notification_settings_sound_section_title">"提示音"</string>

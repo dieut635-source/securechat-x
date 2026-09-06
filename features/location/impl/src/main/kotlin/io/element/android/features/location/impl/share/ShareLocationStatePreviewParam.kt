@@ -78,7 +78,7 @@ class ShareLocationStatePreviewParam : PreviewParameterProvider<ShareLocationSta
 
 fun aShareLocationState(
     customMapTilerConfig: AsyncData<MapTilerConfig?> = AsyncData.Success(null),
-    currentUser: MatrixUser = MatrixUser(UserId("@user:matrix.org")),
+    currentUser: MatrixUser = MatrixUser(UserId("@user:chat.securechat.com.au")),
     dialogState: ShareLocationState.Dialog = ShareLocationState.Dialog.None,
     trackUserPosition: Boolean = false,
     userLocationState: UserLocationState = UserLocationState(null),

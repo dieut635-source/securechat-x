@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 SecureChat
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  Màn hình thứ hai của bước thiết lập danh tính — tiếp nối Q10.
+
+  Q10 sửa màn hình đầu (chọn cách xác minh), nhưng màn hình NGAY SAU nó vẫn nguyên si:
+  biểu tượng cảnh báo đỏ mà BigIcon gán nhãn trợ năng là "Error", tiêu đề "Can't confirm?
+  You'll need to reset your digital identity.", và nút đỏ "Continue reset". Khách hàng
+  mới cấp máy, chưa có gì hỏng, vẫn bị dẫn qua một màn báo lỗi.
+
+  Đã ĐO: trong toàn bộ mã nguồn, `InitialTarget.ResetIdentity` chỉ có ĐÚNG MỘT nơi đi tới
+  là FtueSessionVerificationFlowNode. Từ Settings chỉ tới được `Root` và `EnterRecoveryKey`
+  (LoggedInFlowNode.kt:360,364). Nên màn hình này trong sản phẩm này KHÔNG BAO GIỜ là
+  đường cứu hộ sau sự cố — nó luôn là bước thiết lập máy mới. Có test Konsist ghim tính
+  chất đó lại; nếu sau này thêm lối vào từ Settings thì test đỏ và phải xem lại chữ ở đây.
+
+  Ba gạch đầu dòng gốc cũng sai với sản phẩm này: nói "verify all your existing devices
+  again" trong khi chính sách là một tài khoản một máy, và nói mất "message history stored
+  only on the server" trong khi máy chủ vốn chỉ giữ 7 ngày. Viết lại cho đúng việc thật
+  đang xảy ra, và nói thẳng cái giá thay vì gọi nó là thất bại.
+-->
+<resources>
+    <string name="securechat_identity_setup_details_title">"Set up encryption on this device"</string>
+    <string name="securechat_identity_setup_details_bullet_1">"Your account, contacts, preferences and chat list are kept"</string>
+    <string name="securechat_identity_setup_details_bullet_2">"New encryption keys are created on this device, and nobody keeps a copy of them"</string>
+    <string name="securechat_identity_setup_details_bullet_3">"Messages sent before this sign-in cannot be read on this device"</string>
+    <string name="securechat_identity_setup_details_footer">"This step runs once, each time a device is set up."</string>
+    <string name="securechat_identity_setup_details_action">"Create encryption keys"</string>
+    <string name="securechat_identity_setup_confirm_title">"Create new encryption keys?"</string>
+    <string name="securechat_identity_setup_confirm_subtitle">"This cannot be undone. Messages sent before this sign-in will not be readable on this device."</string>
+    <string name="securechat_identity_setup_confirm_action">"Create keys"</string>
+</resources>

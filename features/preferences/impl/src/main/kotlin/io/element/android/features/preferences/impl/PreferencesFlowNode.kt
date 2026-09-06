@@ -23,7 +23,6 @@ import io.element.android.annotations.ContributesNode
 import io.element.android.features.deactivation.api.AccountDeactivationEntryPoint
 import io.element.android.features.licenses.api.OpenSourceLicensesEntryPoint
 import io.element.android.features.lockscreen.api.LockScreenEntryPoint
-import io.element.android.features.logout.api.LogoutEntryPoint
 import io.element.android.features.preferences.api.PreferencesEntryPoint
 import io.element.android.features.preferences.impl.about.AboutNode
 import io.element.android.features.preferences.impl.advanced.AdvancedSettingsNode
@@ -48,7 +47,9 @@ import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.mediaviewer.api.FileViewerEntryPoint
 import io.element.android.libraries.troubleshoot.api.NotificationTroubleShootEntryPoint
 import io.element.android.libraries.troubleshoot.api.PushHistoryEntryPoint
+import io.element.android.libraries.ui.common.nodes.emptyNode
 import kotlinx.parcelize.Parcelize
+import timber.log.Timber
 
 @ContributesNode(SessionScope::class)
 @AssistedInject
@@ -59,7 +60,6 @@ class PreferencesFlowNode(
     private val notificationTroubleShootEntryPoint: NotificationTroubleShootEntryPoint,
     private val pushHistoryEntryPoint: PushHistoryEntryPoint,
     private val fileViewerEntryPoint: FileViewerEntryPoint,
-    private val logoutEntryPoint: LogoutEntryPoint,
     private val openSourceLicensesEntryPoint: OpenSourceLicensesEntryPoint,
     private val accountDeactivationEntryPoint: AccountDeactivationEntryPoint,
 ) : BaseFlowNode<PreferencesFlowNode.NavTarget>(
@@ -182,7 +182,13 @@ class PreferencesFlowNode(
                     }
 
                     override fun startSignOutFlow() {
-                        backstack.push(NavTarget.SignOut)
+                        // Đường này KHÔNG được đi tới nữa. Nó từng rỗng và im lặng, nên khi tôi
+                        // bật lại nút đăng xuất thì nút hiện ra mà bấm không có gì xảy ra —
+                        // canDoDirectSignOut sai vì isLastDevice luôn đúng ở sản phẩm này.
+                        // Nay DirectLogoutPresenter không xét isLastDevice nữa, nên nhánh này
+                        // chỉ còn là lối chết. Kêu lên thay vì im, để lần sau không mất một
+                        // vòng thử trên máy thật mới biết.
+                        Timber.w("startSignOutFlow reached: đăng xuất phải đi qua DirectLogout")
                     }
 
                     override fun startAccountDeactivationFlow() {
@@ -337,16 +343,8 @@ class PreferencesFlowNode(
                 createNode<BlockedUsersNode>(buildContext)
             }
             NavTarget.SignOut -> {
-                val callBack: LogoutEntryPoint.Callback = object : LogoutEntryPoint.Callback {
-                    override fun navigateToSecureBackup() {
-                        callback.navigateToSecureBackup()
-                    }
-                }
-                logoutEntryPoint.createNode(
-                    parentNode = this,
-                    buildContext = buildContext,
-                    callback = callBack,
-                )
+                // Fail closed for stale saved navigation from builds that exposed sign out.
+                emptyNode(buildContext)
             }
             is NavTarget.OssLicenses -> {
                 openSourceLicensesEntryPoint.createNode(this, buildContext)

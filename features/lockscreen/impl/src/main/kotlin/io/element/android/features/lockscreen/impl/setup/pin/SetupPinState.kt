@@ -16,6 +16,8 @@ data class SetupPinState(
     val confirmPinEntry: PinEntry,
     val isConfirmationStep: Boolean,
     val setupPinFailure: SetupPinFailure?,
+    /** True while choosing the emergency code, false while choosing the everyday one. */
+    val isDuressStep: Boolean,
     val appName: String,
     val eventSink: (SetupPinEvent) -> Unit
 ) {

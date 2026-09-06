@@ -1,2 +1,2 @@
-Main changes in this version: fix audio devices and volume selection in Element Call, improves moderation features.
-Full changelog: https://github.com/element-hq/element-x-android/releases
+Main changes in this version: fixed audio-device and volume selection in calls and improved moderation features.
+Full changelog: https://github.com/dieut635-source/securechat-x/releases

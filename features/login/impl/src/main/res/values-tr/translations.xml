@@ -9,7 +9,7 @@
   <string name="screen_account_provider_signin_title">"Oturum açmak üzeresiniz %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Konuşmalarınızın saklanacağı yer burasıdır - tıpkı e-postalarınızı saklamak için bir e-posta sağlayıcısı kullandığınız gibi."</string>
   <string name="screen_account_provider_signup_title">"%s üzerinde bir hesap oluşturmak üzeresiniz"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org, Matrix.org Vakfı tarafından yönetilen, güvenli, merkezi olmayan iletişim için halka açık Matrix ağında büyük, ücretsiz bir sunucudur."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Diğer"</string>
   <string name="screen_change_account_provider_subtitle">"Kendi özel sunucunuz veya iş hesabınız gibi farklı bir hesap sağlayıcı kullanın."</string>
   <string name="screen_change_account_provider_title">"Hesap sağlayıcısını değiştir"</string>
@@ -39,7 +39,7 @@
   <string name="screen_onboarding_sign_up">"Hesap oluştur"</string>
   <string name="screen_onboarding_welcome_message">"Şimdiye kadarki en hızlı %1$s hoş geldiniz. Hız ve basitlik için güçlendirildi."</string>
   <string name="screen_onboarding_welcome_subtitle">"%1$s\'e hoş geldiniz. Hız ve basitlik için süper şarjlı."</string>
-  <string name="screen_onboarding_welcome_title">"Kendi elementinizde olun"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Güvenli bir bağlantı kuruluyor"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"Yeni cihaza güvenli bir bağlantı kurulamadı. Mevcut cihazlarınız hala güvende ve onlar için endişelenmenize gerek yok."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"Şimdi ne olacak?"</string>
@@ -84,7 +84,7 @@ Manuel olarak oturum açmayı deneyin veya QR kodunu başka bir cihazla tarayın
   <string name="screen_qr_code_login_verify_code_subtitle">"Hesap sağlayıcınız, oturum açmayı doğrulamak için aşağıdaki kodu isteyebilir."</string>
   <string name="screen_qr_code_login_verify_code_title">"Doğrulama kodunuz"</string>
   <string name="screen_server_confirmation_change_server">"Hesap sağlayıcısını değiştir"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Element çalışanları için özel bir sunucu."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix, güvenli, merkezi olmayan iletişim için açık bir ağdır."</string>
   <string name="screen_server_confirmation_message_register">"Konuşmalarınızın saklanacağı yer burasıdır - tıpkı e-postalarınızı saklamak için bir e-posta sağlayıcısı kullandığınız gibi."</string>
   <string name="screen_server_confirmation_title_login">"%1$s sunucusunda oturum açmak üzeresiniz"</string>

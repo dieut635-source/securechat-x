@@ -36,6 +36,7 @@ import io.element.android.libraries.di.RoomScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.timeline.Timeline
+import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.mediaupload.api.MediaSenderFactory
 import io.element.android.libraries.permissions.api.PermissionsEvent
 import io.element.android.libraries.permissions.api.PermissionsPresenter
@@ -50,6 +51,7 @@ import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.File
@@ -66,6 +68,7 @@ class DefaultVoiceMessageComposerPresenter(
     mediaSenderFactory: MediaSenderFactory,
     private val player: VoiceMessageComposerPlayer,
     private val messageComposerContext: MessageComposerContext,
+    private val mdmService: MdmService,
     permissionsPresenterFactory: PermissionsPresenter.Factory
 ) : VoiceMessageComposerPresenter {
     @ContributesBinding(RoomScope::class)
@@ -85,8 +88,21 @@ class DefaultVoiceMessageComposerPresenter(
         val playerState by player.state.collectAsState(initial = VoiceMessageComposerPlayer.State.Initial)
         val keepScreenOn by remember { derivedStateOf { recorderState is VoiceRecorderState.Recording } }
         val permissionState by rememberUpdatedState(permissionsPresenter.present())
+        val mdmConfig by mdmService.config.collectAsState()
         var isSending by remember { mutableStateOf(false) }
+        var sendJob by remember { mutableStateOf<Job?>(null) }
         var showSendFailureDialog by remember { mutableStateOf(false) }
+
+        LaunchedEffect(mdmConfig.allowFileSend) {
+            if (!mdmConfig.allowFileSend) {
+                pendingEvent = null
+                sendJob?.cancel()
+                player.pause()
+                if (recorderState !is VoiceRecorderState.Idle) {
+                    sessionCoroutineScope.cancelRecording()
+                }
+            }
+        }
 
         LaunchedEffect(recorderState) {
             val recording = recorderState as? VoiceRecorderState.Finished
@@ -94,8 +110,8 @@ class DefaultVoiceMessageComposerPresenter(
             player.setMedia(recording.file.path)
         }
 
-        LaunchedEffect(permissionState.permissionGranted) {
-            if (permissionState.permissionGranted) {
+        LaunchedEffect(permissionState.permissionGranted, mdmConfig.allowFileSend) {
+            if (permissionState.permissionGranted && mdmConfig.allowFileSend) {
                 pendingEvent?.let {
                     localCoroutineScope.startRecording()
                     pendingEvent = null
@@ -120,6 +136,7 @@ class DefaultVoiceMessageComposerPresenter(
             pendingEvent = null
             when (event) {
                 VoiceMessageRecorderEvent.Start -> {
+                    if (!isFileSendingAllowed()) return
                     Timber.v("Voice message record button pressed")
                     when {
                         permissionState.permissionGranted -> {
@@ -154,6 +171,7 @@ class DefaultVoiceMessageComposerPresenter(
         }
 
         fun sendVoiceMessage(inReplyToEventId: EventId?) {
+            if (!isFileSendingAllowed()) return
             val finishedState = recorderState as? VoiceRecorderState.Finished
             if (finishedState == null) {
                 val exception = VoiceMessageException.FileException("No file to send")
@@ -167,7 +185,7 @@ class DefaultVoiceMessageComposerPresenter(
             isSending = true
             player.pause()
             analyticsService.captureComposerEvent()
-            sessionCoroutineScope.launch {
+            val job = sessionCoroutineScope.launch {
                 val result = sendMessage(
                     file = finishedState.file,
                     mimeType = finishedState.mimeType,
@@ -177,8 +195,11 @@ class DefaultVoiceMessageComposerPresenter(
                 if (result.isFailure) {
                     showSendFailureDialog = true
                 }
-            }.invokeOnCompletion {
+            }
+            sendJob = job
+            job.invokeOnCompletion {
                 isSending = false
+                sendJob = null
             }
         }
 
@@ -290,6 +311,9 @@ class DefaultVoiceMessageComposerPresenter(
         waveform: List<Float>,
         inReplyToEventId: EventId? = null,
     ): Result<Unit> {
+        if (!isFileSendingAllowed()) {
+            return Result.failure(IllegalStateException("Sending files is disabled by the managed configuration"))
+        }
         val result = mediaSender.sendVoiceMessage(
             uri = file.toUri(),
             mimeType = mimeType,
@@ -306,6 +330,8 @@ class DefaultVoiceMessageComposerPresenter(
 
         return result
     }
+
+    private fun isFileSendingAllowed(): Boolean = mdmService.config.value.allowFileSend
 
     private fun AnalyticsService.captureComposerEvent() =
         capture(

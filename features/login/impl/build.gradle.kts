@@ -31,7 +31,10 @@ android {
 
     buildTypes {
         val elementClassicPackageKey = "elementClassicPackage"
-        val elementClassicPackage = "im.vector.app"
+        // Legacy account import is intentionally disconnected from third-party apps in SecureChat.
+        // Keeping the generated field avoids a risky source migration while pointing it at this app,
+        // which does not export the importer service.
+        val elementClassicPackage = "com.securechat.app"
         val elementClassicPackageDebug = "$elementClassicPackage.debug"
         val elementClassicPackageNightly = "$elementClassicPackage.nightly"
         getByName("release") {

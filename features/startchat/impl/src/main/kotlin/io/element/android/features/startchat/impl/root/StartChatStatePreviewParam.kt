@@ -69,7 +69,7 @@ fun aConfirmingStartDmWithMatrixUser(
 }
 
 fun aCreateRoomRootState(
-    applicationName: String = "Element X Preview",
+    applicationName: String = "SecureChat Preview",
     userListState: UserListState = aUserListState(),
     startDmAction: AsyncAction<RoomId> = AsyncAction.Uninitialized,
     eventSink: (StartChatEvent) -> Unit = {},

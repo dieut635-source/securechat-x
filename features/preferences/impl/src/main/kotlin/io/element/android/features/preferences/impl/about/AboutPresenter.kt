@@ -17,7 +17,7 @@ class AboutPresenter : Presenter<AboutState> {
     @Composable
     override fun present(): AboutState {
         return AboutState(
-            elementLegals = getAllLegals(),
+            secureChatLegals = getAllLegals(),
         )
     }
 }

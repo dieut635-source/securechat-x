@@ -54,7 +54,7 @@ if args.verbose:
 
 
 # Split the artifact URL to get information
-# Ex: https://github.com/element-hq/element-x-android/actions/runs/9065756777
+# Ex: https://github.com/dieut635-source/securechat-x/actions/runs/9065756777
 runUrl = args.runUrl
 
 url_regex = r"https://github.com/(.+?)/(.+?)/actions/runs/(.+)"
@@ -63,7 +63,7 @@ result = re.search(url_regex, runUrl)
 if result is None:
     print(
         "❌ Invalid parameter --runUrl '%s'. Please check the format.\nIt should be something like: %s" %
-        (runUrl, 'https://github.com/element-hq/element-x-android/actions/runs/9065756777')
+        (runUrl, 'https://github.com/dieut635-source/securechat-x/actions/runs/9065756777')
     )
     exit(1)
 

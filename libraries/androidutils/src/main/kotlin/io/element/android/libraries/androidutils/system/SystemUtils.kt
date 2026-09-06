@@ -18,7 +18,6 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
-import androidx.annotation.RequiresApi
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.net.toUri
 import io.element.android.libraries.androidutils.R
@@ -60,12 +59,14 @@ fun Context.getVersionCodeFromManifest(): Long {
  * @receiver the context
  * @param text the text to copy
  * @param toastMessage content of the toast message as a String resource. Null for no toast
+ * @param isSensitive whether Android should treat the clipboard value as sensitive data
  */
 fun Context.copyToClipboard(
     text: CharSequence,
-    toastMessage: String? = null
+    toastMessage: String? = null,
+    isSensitive: Boolean = true,
 ) {
-    CopyToClipboardUseCase(this).execute(text)
+    CopyToClipboardUseCase(this).execute(text, isSensitive = isSensitive)
     toastMessage?.let { toast(it) }
 }
 
@@ -117,20 +118,6 @@ fun Context.openAppSettingsPage(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
-fun Context.startInstallFromSourceIntent(
-    activityResultLauncher: ActivityResultLauncher<Intent>,
-    noActivityFoundMessage: String = getString(R.string.error_no_compatible_app_found),
-) {
-    val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-        .setData("package:$packageName".toUri())
-    try {
-        activityResultLauncher.launch(intent)
-    } catch (_: ActivityNotFoundException) {
-        toast(noActivityFoundMessage)
-    }
-}
-
 fun Context.startSharePlainTextIntent(
     activityResultLauncher: ActivityResultLauncher<Intent>?,
     chooserTitle: String?,
@@ -168,6 +155,7 @@ fun Context.openUrlInExternalApp(
     errorMessage: String = getString(R.string.error_no_compatible_app_found),
     throwInCaseOfError: Boolean = false,
 ) {
+    if (!isAllowedExternalUrl(url)) return
     val intent = Intent(Intent.ACTION_VIEW, url.toUri())
     if (this !is Activity) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -177,22 +165,6 @@ fun Context.openUrlInExternalApp(
     } catch (activityNotFoundException: ActivityNotFoundException) {
         if (throwInCaseOfError) throw activityNotFoundException
         toast(errorMessage)
-    }
-}
-
-/**
- * Open Google Play on the provided application Id.
- */
-fun Context.openGooglePlay(
-    appId: String,
-) {
-    try {
-        openUrlInExternalApp(
-            url = "market://details?id=$appId",
-            throwInCaseOfError = true,
-        )
-    } catch (_: ActivityNotFoundException) {
-        openUrlInExternalApp("https://play.google.com/store/apps/details?id=$appId")
     }
 }
 

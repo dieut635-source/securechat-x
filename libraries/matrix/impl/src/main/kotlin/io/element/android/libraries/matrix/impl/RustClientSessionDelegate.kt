@@ -89,6 +89,7 @@ class RustClientSessionDelegate(
                 loginType = existingData.loginType,
                 passphrase = existingData.passphrase,
                 sessionPaths = existingData.getSessionPaths(),
+                accountProvider = existingData.accountProvider,
             )
             runBlocking { sessionStore.updateData(newData) }
             Timber.tag(loggerTag.value).i("Saved new session data.")

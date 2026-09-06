@@ -90,7 +90,7 @@ fun SessionDetailsView(
 internal fun SessionDetailsViewPreview() = ElementPreview {
     Column {
         SessionDetailsView(
-            deviceName = "Element X Android",
+            deviceName = "SecureChat Android",
             deviceId = DeviceId("ILAKNDNASDLK"),
             signInFormattedTimestamp = "12:34",
         )

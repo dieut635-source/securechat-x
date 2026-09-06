@@ -222,22 +222,6 @@ private fun RowScope.RoomListMenuItems(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
-            if (RoomListConfig.SHOW_INVITE_MENU_ITEM) {
-                DropdownMenuItem(
-                    onClick = {
-                        showMenu = false
-                        onMenuActionClick(RoomListMenuAction.InviteFriends)
-                    },
-                    text = { Text(stringResource(id = CommonStrings.action_invite)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = CompoundIcons.ShareAndroid(),
-                            tint = ElementTheme.colors.iconSecondary,
-                            contentDescription = null,
-                        )
-                    }
-                )
-            }
             if (RoomListConfig.SHOW_REPORT_PROBLEM_MENU_ITEM && canReportBug) {
                 DropdownMenuItem(
                     onClick = {

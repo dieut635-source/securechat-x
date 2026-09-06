@@ -8,5 +8,5 @@
   <string name="screen_start_chat_join_room_by_address_placeholder">"Zadajte…"</string>
   <string name="screen_start_chat_join_room_by_address_room_found">"Nájdená zodpovedajúca miestnosť"</string>
   <string name="screen_start_chat_join_room_by_address_room_not_found">"Miestnosť sa nenašla"</string>
-  <string name="screen_start_chat_join_room_by_address_supporting_text">"napr. #nazov-miestnosti:matrix.org"</string>
+  <string name="screen_start_chat_join_room_by_address_supporting_text">"napr. #nazov-miestnosti:your-server"</string>
 </resources>

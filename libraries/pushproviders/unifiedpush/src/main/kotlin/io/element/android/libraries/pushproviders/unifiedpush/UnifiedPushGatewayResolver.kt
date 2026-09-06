@@ -30,6 +30,8 @@ interface UnifiedPushGatewayResolver {
     suspend fun getGateway(endpoint: String): UnifiedPushGatewayResolverResult
 }
 
+private const val HTTPS_PORT = 443
+
 private val loggerTag = LoggerTag("DefaultUnifiedPushGatewayResolver")
 
 @ContributesBinding(AppScope::class)
@@ -47,8 +49,38 @@ class DefaultUnifiedPushGatewayResolver(
             Timber.tag(loggerTag.value).d("ErrorInvalidUrl")
             UnifiedPushGatewayResolverResult.ErrorInvalidUrl
         } else {
-            val port = if (url.port != -1) ":${url.port}" else ""
-            val customBase = "${url.protocol}://${url.host}$port"
+            // Từ chối mọi host không phải của SecureChat TRƯỚC khi hỏi nó bất cứ điều gì.
+            // Máy nào chưa trỏ ntfy về máy chủ của mình sẽ giữ mặc định ntfy.sh công cộng,
+            // mà chỗ đó CÓ quảng bá Matrix gateway hợp lệ — nên nếu không chặn ở đây thì
+            // toàn bộ siêu dữ liệu push đi qua bên thứ ba mà không ai hay biết.
+            if (!url.host.equals(UnifiedPushConfig.ALLOWED_GATEWAY_HOST, ignoreCase = true)) {
+                Timber.tag(loggerTag.value).w(
+                    "Refusing endpoint on host '${url.host}': only ${UnifiedPushConfig.ALLOWED_GATEWAY_HOST} is allowed"
+                )
+                return UnifiedPushGatewayResolverResult.ErrorInvalidUrl
+            }
+            // Kiểm tra host thôi thì chưa đủ. Bản trước giữ nguyên protocol và port của endpoint,
+            // nên https://push...:8443 hay http://push... đều được chấp nhận và đi tiếp. Cổng tuỳ ý
+            // trên đúng tên miền vẫn là một dịch vụ khác; và http thì siêu dữ liệu push đi ra ngoài
+            // dạng đọc được, bất kể tên miền có đúng hay không.
+            if (!url.protocol.equals("https", ignoreCase = true)) {
+                Timber.tag(loggerTag.value).w("Refusing endpoint with scheme '${url.protocol}': only https is allowed")
+                return UnifiedPushGatewayResolverResult.ErrorInvalidUrl
+            }
+            if (url.port != -1 && url.port != HTTPS_PORT) {
+                Timber.tag(loggerTag.value).w("Refusing endpoint on port ${url.port}: only $HTTPS_PORT is allowed")
+                return UnifiedPushGatewayResolverResult.ErrorInvalidUrl
+            }
+            if (!url.userInfo.isNullOrEmpty()) {
+                // https://push.securechat.com.au@evil.example đọc lướt qua trông giống tên miền của
+                // mình. URL.host phân giải đúng, nhưng thông tin đăng nhập nhúng trong URL không có
+                // lý do gì xuất hiện ở một endpoint push.
+                Timber.tag(loggerTag.value).w("Refusing endpoint carrying userinfo")
+                return UnifiedPushGatewayResolverResult.ErrorInvalidUrl
+            }
+            // Dựng lại từ hằng số thay vì từ chuỗi nhận được: những gì đi tiếp không còn mang theo
+            // mảnh nào của endpoint bên ngoài.
+            val customBase = "https://${UnifiedPushConfig.ALLOWED_GATEWAY_HOST}"
             val customUrl = "$customBase/_matrix/push/v1/notify"
             Timber.tag(loggerTag.value).i("Testing $customUrl")
             return withContext(coroutineDispatchers.io) {

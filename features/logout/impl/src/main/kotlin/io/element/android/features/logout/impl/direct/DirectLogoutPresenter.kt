@@ -46,8 +46,6 @@ class DirectLogoutPresenter(
         }
             .collectAsState(initial = BackupUploadState.Unknown)
 
-        val isLastDevice by encryptionService.isLastDevice.collectAsState()
-
         fun handleEvent(event: DirectLogoutEvent) {
             when (event) {
                 is DirectLogoutEvent.Logout -> {
@@ -64,8 +62,19 @@ class DirectLogoutPresenter(
         }
 
         return DirectLogoutState(
-            canDoDirectSignOut = !isLastDevice &&
-                !backupUploadState.isBackingUp(),
+            // KHÔNG còn xét isLastDevice.
+            //
+            // Thượng nguồn chặn đăng xuất trực tiếp trên thiết bị cuối cùng để đẩy người dùng
+            // qua một luồng mời họ lập sao lưu khoá trước khi mất quyền giải mã lịch sử. Ở
+            // SecureChat, luồng đó KHÔNG CÓ GÌ ĐỂ MỜI: đã chốt không sao lưu khoá, và chính
+            // sách một tài khoản một máy nên isLastDevice LUÔN đúng.
+            //
+            // Giữ nguyên điều kiện đó ở đây có nghĩa: nút đăng xuất rơi vào startSignOutFlow(),
+            // mà hàm đó rỗng — nút hiện ra và bấm không có gì xảy ra. Đã đo trên máy thật.
+            //
+            // Điều kiện backupUploadState thì GIỮ: đăng xuất giữa chừng một lần tải khoá lên
+            // vẫn là mất dữ liệu, không liên quan tới việc có sao lưu hay không.
+            canDoDirectSignOut = !backupUploadState.isBackingUp(),
             logoutAction = logoutAction.value,
             eventSink = ::handleEvent,
         )

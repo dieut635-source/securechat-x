@@ -11,4 +11,9 @@ package io.element.android.features.lockscreen.impl.setup.pin.validation
 sealed interface SetupPinFailure {
     data object ForbiddenPin : SetupPinFailure
     data object PinsDoNotMatch : SetupPinFailure
+
+    /**
+     * The duress code is too close to the real one: one mistyped digit would erase everything.
+     */
+    data object DuressPinTooSimilar : SetupPinFailure
 }

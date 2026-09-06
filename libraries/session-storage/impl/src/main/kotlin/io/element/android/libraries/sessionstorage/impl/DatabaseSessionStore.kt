@@ -84,6 +84,7 @@ class DatabaseSessionStore(
                     lastUsageIndex = result.lastUsageIndex,
                     userDisplayName = result.userDisplayName,
                     userAvatarUrl = result.userAvatarUrl,
+                    accountProvider = result.accountProvider,
                 ).toDbModel()
             )
         }

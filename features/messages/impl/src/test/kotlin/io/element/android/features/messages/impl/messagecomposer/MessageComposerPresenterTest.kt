@@ -55,9 +55,6 @@ import io.element.android.libraries.matrix.api.timeline.TimelineException
 import io.element.android.libraries.matrix.api.timeline.item.event.EventOrTransactionId
 import io.element.android.libraries.matrix.api.timeline.item.event.InReplyTo
 import io.element.android.libraries.matrix.api.timeline.item.event.toEventOrTransactionId
-import io.element.android.libraries.mdm.api.MdmConfig
-import io.element.android.libraries.mdm.api.MdmService
-import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.matrix.test.ANOTHER_MESSAGE
 import io.element.android.libraries.matrix.test.AN_EVENT_ID
 import io.element.android.libraries.matrix.test.A_CAPTION
@@ -81,6 +78,9 @@ import io.element.android.libraries.matrix.test.room.powerlevels.FakeRoomPermiss
 import io.element.android.libraries.matrix.test.timeline.FakeTimeline
 import io.element.android.libraries.matrix.ui.media.contentvalidation.InMemoryEventContentValidationCache
 import io.element.android.libraries.matrix.ui.messages.reply.InReplyToDetails
+import io.element.android.libraries.mdm.api.MdmConfig
+import io.element.android.libraries.mdm.api.MdmService
+import io.element.android.libraries.mdm.test.FakeMdmService
 import io.element.android.libraries.mediapickers.api.PickerProvider
 import io.element.android.libraries.mediapickers.test.FakePickerProvider
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfig
@@ -1679,6 +1679,53 @@ class MessageComposerPresenterTest : RobolectricTest() {
         }
     }
 
+    @Test
+    fun `present - allow_file_send off refuses every direct media event`() = runTest {
+        val onPreviewAttachment = lambdaRecorder { _: ImmutableList<Attachment>, _: EventId? -> }
+        val presenter = createPresenter(
+            navigator = FakeMessagesNavigator(onPreviewAttachmentLambda = onPreviewAttachment),
+            permissionPresenter = FakePermissionsPresenter().apply { setPermissionGranted() },
+            mdmService = FakeMdmService(MdmConfig.default.copy(allowFileSend = false)),
+        )
+
+        presenter.test {
+            val state = awaitFirstItem()
+            state.eventSink(MessageComposerEvent.SendUri(Uri.parse("content://rich-content")))
+            state.eventSink(MessageComposerEvent.PickAttachmentSource.FromGallery)
+            state.eventSink(MessageComposerEvent.PickAttachmentSource.FromFiles)
+            state.eventSink(MessageComposerEvent.PickAttachmentSource.PhotoFromCamera)
+            state.eventSink(MessageComposerEvent.PickAttachmentSource.VideoFromCamera)
+            advanceUntilIdle()
+
+            onPreviewAttachment.assertions().isNeverCalled()
+            assertThat(mediaPreProcessor.processCallCount).isEqualTo(0)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - an existing event sink follows an allow_file_send update`() = runTest {
+        val mdmService = FakeMdmService()
+        val onPreviewAttachment = lambdaRecorder { _: ImmutableList<Attachment>, _: EventId? -> }
+        val presenter = createPresenter(
+            navigator = FakeMessagesNavigator(onPreviewAttachmentLambda = onPreviewAttachment),
+            mdmService = mdmService,
+        )
+
+        presenter.test {
+            val stateBeforePolicyUpdate = awaitFirstItem()
+            mdmService.emit(MdmConfig.default.copy(allowFileSend = false))
+            assertThat(awaitItem().canSendAttachments).isFalse()
+
+            stateBeforePolicyUpdate.eventSink(MessageComposerEvent.SendUri(Uri.parse("content://rich-content")))
+            stateBeforePolicyUpdate.eventSink(MessageComposerEvent.PickAttachmentSource.FromGallery)
+            advanceUntilIdle()
+
+            onPreviewAttachment.assertions().isNeverCalled()
+            assertThat(mediaPreProcessor.processCallCount).isEqualTo(0)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 
     private fun TestScope.createPresenter(
         room: JoinedRoom = FakeJoinedRoom(

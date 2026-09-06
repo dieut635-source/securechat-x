@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 SecureChat
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  Màn hình xác minh danh tính khi KHÔNG có cách nào để xác minh.
+
+  Màn hình kế thừa hỏi "Choose how to verify" rồi hiện hai nút có điều kiện: xác minh bằng
+  thiết bị khác, hoặc bằng recovery key. Trong sản phẩm này CẢ HAI đều bất khả thi theo
+  thiết kế — chính sách một tài khoản một máy nên không có thiết bị thứ hai, và đã chốt
+  không sao lưu khoá nên không có recovery key.
+
+  Kết quả là người dùng thấy một câu hỏi không có lựa chọn nào, và lối đi duy nhất được
+  gắn nhãn "Can't confirm?" — trình bày con đường DUY NHẤT như một sự thất bại. Với mô
+  hình vận hành có xoá máy từ xa và cấp lại máy thường xuyên, mỗi lần cấp lại là một lần
+  người dùng đâm vào bức tường đó.
+
+  Ba chuỗi dưới đây thay thế khi không có lựa chọn nào: nói thẳng chuyện gì đang xảy ra,
+  và nói luôn cái giá — tin nhắn trước đó không đọc lại được, vì không ai giữ bản sao khoá.
+-->
+<resources>
+    <string name="securechat_identity_setup_title">"Set up secure messaging"</string>
+    <string name="securechat_identity_setup_subtitle">"This device will create new encryption keys. Nobody keeps a copy of them, so messages sent before this sign-in cannot be read on this device."</string>
+    <string name="securechat_identity_setup_action">"Set up this device"</string>
+</resources>

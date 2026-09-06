@@ -125,7 +125,7 @@ fun EditUserProfileView(
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 modifier = Modifier.fillMaxWidth(),
-                text = state.userId.value,
+                text = state.userId.displayLabel,
                 style = ElementTheme.typography.fontBodyLgRegular,
                 textAlign = TextAlign.Center,
             )

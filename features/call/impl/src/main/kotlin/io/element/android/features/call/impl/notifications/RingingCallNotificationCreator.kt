@@ -18,10 +18,11 @@ import androidx.core.app.PendingIntentCompat
 import androidx.core.app.Person
 import dev.zacsweers.metro.Inject
 import io.element.android.appconfig.ElementCallConfig
-import io.element.android.features.call.api.CallData
+import io.element.android.features.call.impl.R
 import io.element.android.features.call.impl.receivers.DeclineCallBroadcastReceiver
 import io.element.android.features.call.impl.ui.IncomingCallActivity
-import io.element.android.features.call.impl.utils.IntentProvider
+import io.element.android.features.lockscreen.api.LockScreenLockState
+import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.libraries.designsystem.components.avatar.AvatarData
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.designsystem.utils.CommonDrawables
@@ -33,6 +34,8 @@ import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.ui.media.ImageLoaderHolder
 import io.element.android.libraries.push.api.notifications.NotificationBitmapLoader
+import io.element.android.services.appnavstate.api.AppForegroundStateService
+import kotlinx.coroutines.flow.first
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -44,6 +47,8 @@ class RingingCallNotificationCreator(
     private val matrixClientProvider: MatrixClientProvider,
     private val imageLoaderHolder: ImageLoaderHolder,
     private val notificationBitmapLoader: NotificationBitmapLoader,
+    private val lockScreenService: LockScreenService,
+    private val appForegroundStateService: AppForegroundStateService,
 ) {
     companion object {
         /**
@@ -55,6 +60,12 @@ class RingingCallNotificationCreator(
          * Request code for the full screen intent.
          */
         const val FULL_SCREEN_INTENT_REQUEST_CODE = 2
+
+        /**
+         * Request code for the answer action. This must differ from the full-screen intent so
+         * Android cannot reuse an intent which bypasses the unlock request.
+         */
+        const val ANSWER_REQUEST_CODE = 3
     }
 
     suspend fun createNotification(
@@ -72,31 +83,29 @@ class RingingCallNotificationCreator(
         audioOnly: Boolean,
     ): Notification? {
         val matrixClient = matrixClientProvider.getOrRestore(sessionId).getOrNull() ?: return null
-        val imageLoader = imageLoaderHolder.get(matrixClient)
-        val userIcon = notificationBitmapLoader.getUserIcon(
-            avatarData = AvatarData(
-                id = roomId.value,
-                name = roomName,
-                url = roomAvatarUrl,
-                size = AvatarSize.RoomDetailsHeader,
-            ),
-            imageLoader = imageLoader,
-        )
+        val mayRevealCaller = appForegroundStateService.isInForeground.value &&
+            lockScreenService.isPinSetup().first() &&
+            lockScreenService.lockState.value == LockScreenLockState.Unlocked
+        val userIcon = if (mayRevealCaller) {
+            notificationBitmapLoader.getUserIcon(
+                avatarData = AvatarData(
+                    id = roomId.value,
+                    name = roomName,
+                    url = roomAvatarUrl,
+                    size = AvatarSize.RoomDetailsHeader,
+                ),
+                imageLoader = imageLoaderHolder.get(matrixClient),
+            )
+        } else {
+            null
+        }
 
         val caller = Person.Builder()
-            .setName(senderDisplayName)
+            .setName(if (mayRevealCaller) senderDisplayName else context.getString(R.string.element_call))
             .setIcon(userIcon)
             .setImportant(true)
             .build()
 
-        val answerIntent = IntentProvider.getPendingIntent(
-            context,
-            CallData(
-                sessionId = sessionId,
-                roomId = roomId,
-                isAudioCall = audioOnly,
-            ),
-        )
         val notificationData = CallNotificationData(
             sessionId = sessionId,
             roomId = roomId,
@@ -111,6 +120,19 @@ class RingingCallNotificationCreator(
             expirationTimestamp = expirationTimestamp,
             audioOnly = audioOnly,
         )
+
+        // Both notification entry points go through IncomingCallActivity. In particular, the
+        // answer action must never jump directly to ElementCallActivity before the app PIN gate.
+        val answerIntent = PendingIntentCompat.getActivity(
+            context,
+            ANSWER_REQUEST_CODE,
+            Intent(context, IncomingCallActivity::class.java).apply {
+                putExtra(IncomingCallActivity.EXTRA_NOTIFICATION_DATA, notificationData)
+                putExtra(IncomingCallActivity.EXTRA_ANSWER_REQUESTED, true)
+            },
+            PendingIntent.FLAG_CANCEL_CURRENT,
+            false,
+        )!!
 
         val declineIntent = PendingIntentCompat.getBroadcast(
             context,
@@ -146,8 +168,11 @@ class RingingCallNotificationCreator(
             .setWhen(timestamp)
             .setOngoing(true)
             .setShowWhen(false)
+            // This is enforced even when caller details were populated while the app was open:
+            // Android must never render them on a secure device lock screen.
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             // If textContent is null, the content text is set by the style (will be "Incoming call")
-            .setContentText(textContent)
+            .setContentText(textContent.takeIf { mayRevealCaller })
             .setSound(Settings.System.DEFAULT_RINGTONE_URI, AudioManager.STREAM_RING)
             .setTimeoutAfter(ElementCallConfig.RINGING_CALL_DURATION_SECONDS.seconds.inWholeMilliseconds)
             .setContentIntent(answerIntent)

@@ -124,7 +124,7 @@ internal fun SpaceHeaderViewPreview() = ElementPreview {
             url = "anUrl",
             size = AvatarSize.SpaceHeader,
         ),
-        alias = RoomAlias("#spaceAlias:matrix.org"),
+        alias = RoomAlias("#spaceAlias:chat.securechat.com.au"),
         name = SPACE_NAME,
         topic = "Space topic: " + LoremIpsum(40).values.first(),
         topicMaxLines = 2,

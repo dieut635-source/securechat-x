@@ -22,7 +22,7 @@ open class CallScreenStatePreviewParam : PreviewParameterProvider<CallScreenStat
 }
 
 internal fun aCallScreenState(
-    urlState: AsyncData<String> = AsyncData.Success("https://call.element.io/some-actual-call?with=parameters"),
+    urlState: AsyncData<String> = AsyncData.Success("https://chat.securechat.com.au/call?with=parameters"),
     webViewError: String? = null,
     userAgent: String = "",
     isCallActive: Boolean = true,

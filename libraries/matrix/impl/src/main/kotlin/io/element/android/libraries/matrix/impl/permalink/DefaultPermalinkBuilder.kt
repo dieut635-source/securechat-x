@@ -8,16 +8,14 @@
 
 package io.element.android.libraries.matrix.impl.permalink
 
+import android.net.Uri
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
-import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.matrix.api.core.MatrixPatterns
 import io.element.android.libraries.matrix.api.core.RoomAlias
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.permalink.PermalinkBuilder
 import io.element.android.libraries.matrix.api.permalink.PermalinkBuilderError
-import org.matrix.rustcomponents.sdk.matrixToRoomAliasPermalink
-import org.matrix.rustcomponents.sdk.matrixToUserPermalink
 
 @ContributesBinding(AppScope::class)
 class DefaultPermalinkBuilder : PermalinkBuilder {
@@ -25,17 +23,23 @@ class DefaultPermalinkBuilder : PermalinkBuilder {
         if (!MatrixPatterns.isUserId(userId.value)) {
             return Result.failure(PermalinkBuilderError.InvalidData)
         }
-        return runCatchingExceptions {
-            matrixToUserPermalink(userId.value)
-        }
+        return Result.success(buildMatrixUri(USER_PATH, userId.value))
     }
 
     override fun permalinkForRoomAlias(roomAlias: RoomAlias): Result<String> {
         if (!MatrixPatterns.isRoomAlias(roomAlias.value)) {
             return Result.failure(PermalinkBuilderError.InvalidData)
         }
-        return runCatchingExceptions {
-            matrixToRoomAliasPermalink(roomAlias.value)
-        }
+        return Result.success(buildMatrixUri(ROOM_PATH, roomAlias.value))
+    }
+
+    private fun buildMatrixUri(entityPath: String, identifier: String): String {
+        val identifierWithoutSigil = identifier.drop(1)
+        return "matrix:$entityPath/${Uri.encode(identifierWithoutSigil, ":")}"
+    }
+
+    private companion object {
+        const val USER_PATH = "u"
+        const val ROOM_PATH = "r"
     }
 }

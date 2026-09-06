@@ -18,6 +18,8 @@ import app.cash.molecule.moleculeFlow
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.matrix.test.core.aBuildMeta
+import io.element.android.libraries.mediaviewer.api.anApkMediaInfo
+import io.element.android.libraries.mediaviewer.api.anImageMediaInfo
 import io.element.android.libraries.mediaviewer.test.viewer.aLocalMedia
 import io.element.android.tests.testutils.fake.registerFakeMediaStoreContentProvider
 import io.element.android.tests.testutils.robolectric.RobolectricTest
@@ -57,6 +59,27 @@ class AndroidLocalMediaActionsTest : RobolectricTest() {
         val sut = createAndroidLocalMediaActions()
         val result = sut.open(aLocalMedia(Uri.parse("file://afile")))
         assertThat(result.exceptionOrNull()).isNotNull()
+    }
+
+    @Test
+    fun `opening an Android package is blocked`() = runTest {
+        val sut = createAndroidLocalMediaActions()
+        val result = sut.open(aLocalMedia(Uri.parse("file://payload.apk"), anApkMediaInfo()))
+
+        assertThat(result.exceptionOrNull()).isInstanceOf(SecurityException::class.java)
+    }
+
+    @Test
+    fun `opening a disguised Android package filename is blocked`() = runTest {
+        val sut = createAndroidLocalMediaActions()
+        val disguisedPackage = anImageMediaInfo().copy(
+            filename = "payload.APK",
+            fileExtension = "bin",
+            mimeType = "application/octet-stream",
+        )
+        val result = sut.open(aLocalMedia(Uri.parse("file://payload.APK"), disguisedPackage))
+
+        assertThat(result.exceptionOrNull()).isInstanceOf(SecurityException::class.java)
     }
 
     @Test

@@ -64,18 +64,16 @@ echo "Record screenshots (Compound)"
 ./gradlew :libraries:compound:recordRoborazziDebug --stacktrace -PpreDexEnable=false --max-workers 4 --warn $GRADLE_ARGS
 
 echo "Committing changes"
-git config http.sslVerify false
-
 if [[ -z ${INPUT_AUTHOR_NAME} ]]; then
-  git config user.name "ElementBot"
+  git config user.name "SecureChat Bot"
 else
   git config --local user.name "${INPUT_AUTHOR_NAME}"
 fi
 
 if [[ -z ${INPUT_AUTHOR_EMAIL} ]]; then
-  git config user.email "android@element.io"
+  git config user.email "ci@securechat.com.au"
 else
-  git config --local user.name "${INPUT_AUTHOR_EMAIL}"
+  git config --local user.email "${INPUT_AUTHOR_EMAIL}"
 fi
 git add -A
 if git diff --cached --quiet; then

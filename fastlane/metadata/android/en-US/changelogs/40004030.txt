@@ -7,4 +7,4 @@ Main changes in this version:
 
 And several other bugfixes.
 
-Full changelog: https://github.com/element-hq/element-x-android/releases
+Full changelog: https://github.com/dieut635-source/securechat-x/releases

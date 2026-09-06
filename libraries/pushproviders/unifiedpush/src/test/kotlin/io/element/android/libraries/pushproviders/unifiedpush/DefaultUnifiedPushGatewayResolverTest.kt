@@ -46,9 +46,9 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("https://custom.url")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://custom.url")
-        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.Success("https://custom.url/_matrix/push/v1/notify"))
+        val result = sut.getGateway("https://push.securechat.com.au")
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://push.securechat.com.au")
+        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.Success("https://push.securechat.com.au/_matrix/push/v1/notify"))
     }
 
     @Test
@@ -59,9 +59,11 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("https://custom.url:123")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://custom.url:123")
-        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.Success("https://custom.url:123/_matrix/push/v1/notify"))
+        val result = sut.getGateway("https://push.securechat.com.au:123")
+        // A port of our own choosing on the right hostname is still a different service. The
+        // resolver must refuse it before asking it anything, so the API is never even built.
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isNull()
+        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.ErrorInvalidUrl)
     }
 
     @Test
@@ -72,9 +74,9 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("https://custom.url:123/some/path")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://custom.url:123")
-        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.Success("https://custom.url:123/_matrix/push/v1/notify"))
+        val result = sut.getGateway("https://push.securechat.com.au:123/some/path")
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isNull()
+        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.ErrorInvalidUrl)
     }
 
     @Test
@@ -85,9 +87,10 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("http://custom.url:123/some/path")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("http://custom.url:123")
-        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.Success("http://custom.url:123/_matrix/push/v1/notify"))
+        val result = sut.getGateway("http://push.securechat.com.au:123/some/path")
+        // Cleartext carries the push metadata in the open regardless of how right the hostname is.
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isNull()
+        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.ErrorInvalidUrl)
     }
 
     @Test
@@ -98,9 +101,9 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("http://custom.url")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("http://custom.url")
-        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.Error("http://custom.url/_matrix/push/v1/notify"))
+        val result = sut.getGateway("https://push.securechat.com.au")
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://push.securechat.com.au")
+        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.Error("https://push.securechat.com.au/_matrix/push/v1/notify"))
     }
 
     @Test
@@ -113,8 +116,8 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("http://custom.url")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("http://custom.url")
+        val result = sut.getGateway("https://push.securechat.com.au")
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://push.securechat.com.au")
         assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.NoMatrixGateway)
     }
 
@@ -128,8 +131,8 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("http://custom.url")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("http://custom.url")
+        val result = sut.getGateway("https://push.securechat.com.au")
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://push.securechat.com.au")
         assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.NoMatrixGateway)
     }
 
@@ -143,8 +146,8 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("http://custom.url")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("http://custom.url")
+        val result = sut.getGateway("https://push.securechat.com.au")
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://push.securechat.com.au")
         assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.NoMatrixGateway)
     }
 
@@ -158,9 +161,59 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("http://custom.url")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("http://custom.url")
-        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.Error("http://custom.url/_matrix/push/v1/notify"))
+        val result = sut.getGateway("https://push.securechat.com.au")
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://push.securechat.com.au")
+        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.Error("https://push.securechat.com.au/_matrix/push/v1/notify"))
+    }
+
+    /**
+     * SecureChat: refuse any gateway that is not SecureChat's own.
+     *
+     * A device whose ntfy app was never pointed at SecureChat's server keeps ntfy's default,
+     * https://ntfy.sh. That public host really does advertise a Matrix gateway, so without this
+     * check resolution succeeds and every push is routed through a third party, leaking who got a
+     * message, in which room, and when. ntfy has no managed-configuration support, so no MDM can
+     * stop that on the device; it has to be refused here.
+     *
+     * The refusal must happen BEFORE any request, so a wrong host is never even contacted.
+     */
+    @Test
+    fun `SecureChat - the public ntfy dot sh gateway is refused and never contacted`() = runTest {
+        val unifiedPushApiFactory = FakeUnifiedPushApiFactory(
+            discoveryResponse = matrixDiscoveryResponse
+        )
+        val sut = createDefaultUnifiedPushGatewayResolver(
+            unifiedPushApiFactory = unifiedPushApiFactory
+        )
+        val result = sut.getGateway("https://ntfy.sh/upAbCdEf?up=1")
+        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.ErrorInvalidUrl)
+        // Never contacted: the host was rejected before any network call.
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isNull()
+    }
+
+    @Test
+    fun `SecureChat - a host merely ending with the allowed one is refused`() = runTest {
+        val unifiedPushApiFactory = FakeUnifiedPushApiFactory(
+            discoveryResponse = matrixDiscoveryResponse
+        )
+        val sut = createDefaultUnifiedPushGatewayResolver(
+            unifiedPushApiFactory = unifiedPushApiFactory
+        )
+        val result = sut.getGateway("https://push.securechat.com.au.attacker.invalid/upAbCdEf")
+        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.ErrorInvalidUrl)
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isNull()
+    }
+
+    @Test
+    fun `SecureChat - the allowed host is matched case-insensitively`() = runTest {
+        val unifiedPushApiFactory = FakeUnifiedPushApiFactory(
+            discoveryResponse = matrixDiscoveryResponse
+        )
+        val sut = createDefaultUnifiedPushGatewayResolver(
+            unifiedPushApiFactory = unifiedPushApiFactory
+        )
+        val result = sut.getGateway("https://PUSH.SecureChat.COM.AU/upAbCdEf")
+        assertThat(result).isInstanceOf(UnifiedPushGatewayResolverResult.Success::class.java)
     }
 
     @Test
@@ -184,8 +237,8 @@ class DefaultUnifiedPushGatewayResolverTest {
         val sut = createDefaultUnifiedPushGatewayResolver(
             unifiedPushApiFactory = unifiedPushApiFactory
         )
-        val result = sut.getGateway("https://custom.url")
-        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://custom.url")
+        val result = sut.getGateway("https://push.securechat.com.au")
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://push.securechat.com.au")
         assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.NoMatrixGateway)
     }
 
@@ -197,4 +250,37 @@ class DefaultUnifiedPushGatewayResolverTest {
         unifiedPushApiFactory = unifiedPushApiFactory,
         coroutineDispatchers = testCoroutineDispatchers()
     )
+
+    @Test
+    fun `an endpoint carrying userinfo is refused`() = runTest {
+        val unifiedPushApiFactory = FakeUnifiedPushApiFactory(
+            discoveryResponse = matrixDiscoveryResponse
+        )
+        val sut = createDefaultUnifiedPushGatewayResolver(unifiedPushApiFactory)
+
+        // Reads at a glance as our own hostname; URL.host is actually evil.example. The host check
+        // already catches this one, so this test exists to keep it caught.
+        val result = sut.getGateway("https://push.securechat.com.au@evil.example/_matrix/push/v1/notify")
+
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isNull()
+        assertThat(result).isEqualTo(UnifiedPushGatewayResolverResult.ErrorInvalidUrl)
+    }
+
+    @Test
+    fun `the resolved url is rebuilt from the constant, not from the endpoint`() = runTest {
+        val unifiedPushApiFactory = FakeUnifiedPushApiFactory(
+            discoveryResponse = matrixDiscoveryResponse
+        )
+        val sut = createDefaultUnifiedPushGatewayResolver(unifiedPushApiFactory)
+
+        // Same host, but with a path and a query the caller supplied. Nothing of that may survive
+        // into the url the app then talks to: checking a string and then reusing it is how parsing
+        // differences slip through.
+        val result = sut.getGateway("https://push.securechat.com.au/somewhere?x=1")
+
+        assertThat(unifiedPushApiFactory.baseUrlParameter).isEqualTo("https://push.securechat.com.au")
+        assertThat(result).isEqualTo(
+            UnifiedPushGatewayResolverResult.Success("https://push.securechat.com.au/_matrix/push/v1/notify")
+        )
+    }
 }

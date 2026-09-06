@@ -1,2 +1,2 @@
-Element X is the new generation of Element for professional and personal use on mobile. It’s the fastest Matrix client with a seamless & intuitive user interface.
-Full changelog: https://github.com/element-hq/element-x-android/releases
+SecureChat provides fast Matrix messaging for professional and personal use on mobile, with a seamless and intuitive interface.
+Full changelog: https://github.com/dieut635-source/securechat-x/releases

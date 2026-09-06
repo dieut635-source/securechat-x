@@ -9,13 +9,13 @@
   <string name="screen_account_provider_signin_title">"%s にサインインを試みています"</string>
   <string name="screen_account_provider_signup_subtitle">"メールアプリのように、あなたの会話はこのサーバー上に保管されます。"</string>
   <string name="screen_account_provider_signup_title">"%s 上にアカウントを作成しようとしています"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org は Matrix.org Foundation が運営する、大規模で安全な分散型コミュニケーションを実現する無償のサーバーです。"</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"その他"</string>
   <string name="screen_change_account_provider_subtitle">"自身のサーバーや仕事用のアカウントにサインインするには、アカウント提供元を変更してください。"</string>
   <string name="screen_change_account_provider_title">"アカウント提供元を変更"</string>
   <string name="screen_change_server_error_element_pro_required_action_android">"Google Play"</string>
-  <string name="screen_change_server_error_element_pro_required_message">"%1$s では Element Pro を使用する必要があります。アプリストアよりダウンロードしてください。"</string>
-  <string name="screen_change_server_error_element_pro_required_title">"Element Pro が必要です"</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
   <string name="screen_change_server_error_invalid_homeserver">"このホームサーバーに接続できませんでした。正しいURLを入力したことを確認し、問題が継続する場合は、ホームサーバーの管理者に問い合わせてください。"</string>
   <string name="screen_change_server_error_invalid_well_known">".well-knownファイルに問題があるためサーバーを使用できません: %1$s"</string>
   <string name="screen_change_server_error_no_sliding_sync_message">"このアカウント提供元は、スライド同期に対応していません。%1$s を使用するにはサーバーのアップグレードが必要です。"</string>
@@ -28,7 +28,7 @@
   <string name="screen_change_server_navigation_title_register">"アカウントを作成"</string>
   <string name="screen_change_server_subtitle">"サーバーのアドレスは何ですか？"</string>
   <string name="screen_change_server_textfield_footer_login">"アカウントが会社やコミュニティから発行されている場合は、アカウント提供元を変更してください (例: kaisha-mei.com)。"</string>
-  <string name="screen_change_server_textfield_footer_register">"matrix.org 上に無料でアカウントを作成できます。異なるアカウント提供元上にアカウントを作成したい場合は、それにならって変更してください (例: dantai-mei.org)。"</string>
+  <string name="screen_change_server_textfield_footer_register">"Accounts are created by your administrator. Contact them if you need access."</string>
   <string name="screen_change_server_textfield_header">"アカウント提供元"</string>
   <string name="screen_change_server_textfield_placeholder">"example.com"</string>
   <string name="screen_change_server_title">"サーバーを選択"</string>
@@ -44,8 +44,8 @@
   <string name="screen_login_subtitle">"Matrix は安全で分散型のオープンなネットワークです。"</string>
   <string name="screen_login_title">"お待ちしておりました。"</string>
   <string name="screen_login_title_with_homeserver">"%1$s にサインイン"</string>
-  <string name="screen_missing_key_backup_open_element_classic">"Element Classic を開く"</string>
-  <string name="screen_missing_key_backup_step_1">"Element Classic をこの端末で開く"</string>
+  <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
+  <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
   <string name="screen_missing_key_backup_step_2_android">"「設定- セキュリティとプライバシー」に移動します"</string>
   <string name="screen_missing_key_backup_step_3_android">"暗号鍵の管理から、暗号化されたメッセージの回復を選択します"</string>
   <string name="screen_missing_key_backup_step_4">"指示に従って、鍵の保管庫を有効化してください"</string>
@@ -60,7 +60,7 @@
   <string name="screen_onboarding_welcome_back">"おかえりなさい"</string>
   <string name="screen_onboarding_welcome_message">"最速の %1$s にようこそ。機能性と利便性を極限まで追求しました。"</string>
   <string name="screen_onboarding_welcome_subtitle">"機敏と利便を追求した %1$s へようこそ。"</string>
-  <string name="screen_onboarding_welcome_title">"Be in your element"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"安全な通信を確立しています"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"新しい端末で安全な通信を確立できませんでした。既存の端末は安全な状態を維持しています。"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"どうしますか？"</string>
@@ -107,7 +107,7 @@
   <string name="screen_qr_code_login_verify_code_subtitle">"アカウント提供元が、サインインを検証するために以下の文字列を要求することがあります。"</string>
   <string name="screen_qr_code_login_verify_code_title">"検証コード"</string>
   <string name="screen_server_confirmation_change_server">"アカウント提供元を変更"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Element 開発者用の非公開のサーバーです。"</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix は安全で分散型のオープンなネットワークです。"</string>
   <string name="screen_server_confirmation_message_register">"メールアプリのように、あなたの会話はこのサーバー上に保管されます。"</string>
   <string name="screen_server_confirmation_title_login">"%1$s にサインインを試みています"</string>

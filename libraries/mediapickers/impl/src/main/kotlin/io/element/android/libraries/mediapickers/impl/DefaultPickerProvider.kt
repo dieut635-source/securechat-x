@@ -25,6 +25,7 @@ import io.element.android.libraries.mediapickers.api.PickerLauncher
 import io.element.android.libraries.mediapickers.api.PickerProvider
 import io.element.android.libraries.mediapickers.api.PickerType
 import java.io.File
+import java.util.UUID
 
 @ContributesBinding(AppScope::class)
 class DefaultPickerProvider(
@@ -145,7 +146,7 @@ class DefaultPickerProvider(
         return if (LocalInspectionMode.current) {
             NoOpPickerLauncher { onResult(null) }
         } else {
-            val tmpFile = remember { getTemporaryFile("photo.jpg") }
+            val tmpFile = remember { getTemporaryFile("jpg") }
             val tmpFileUri = remember(tmpFile) { getTemporaryUri(tmpFile) }
             rememberPickerLauncher(type = PickerType.Camera.Photo(tmpFileUri)) { success ->
                 onResult(if (success) tmpFileUri else null)
@@ -162,7 +163,7 @@ class DefaultPickerProvider(
         return if (LocalInspectionMode.current) {
             NoOpPickerLauncher { onResult(null) }
         } else {
-            val tmpFile = remember { getTemporaryFile("video.mp4") }
+            val tmpFile = remember { getTemporaryFile("mp4") }
             val tmpFileUri = remember(tmpFile) { getTemporaryUri(tmpFile) }
             rememberPickerLauncher(type = PickerType.Camera.Video(tmpFileUri)) { success ->
                 // Execute callback
@@ -172,9 +173,14 @@ class DefaultPickerProvider(
     }
 
     private fun getTemporaryFile(
-        filename: String,
+        extension: String,
     ): File {
-        return File(context.cacheDir, filename)
+        val captureDirectory = File(context.cacheDir, CAMERA_CAPTURE_DIRECTORY).apply {
+            if (!exists() && !mkdirs()) {
+                error("Unable to create the private camera capture directory")
+            }
+        }
+        return File(captureDirectory, "${UUID.randomUUID()}.$extension")
     }
 
     private fun getTemporaryUri(
@@ -182,5 +188,9 @@ class DefaultPickerProvider(
     ): Uri {
         val authority = "${context.packageName}.fileprovider"
         return FileProvider.getUriForFile(context, authority, file)
+    }
+
+    private companion object {
+        const val CAMERA_CAPTURE_DIRECTORY = "temp/camera"
     }
 }

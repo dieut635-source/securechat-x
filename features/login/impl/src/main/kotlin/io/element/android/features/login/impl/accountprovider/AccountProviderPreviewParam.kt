@@ -24,7 +24,7 @@ open class AccountProviderPreviewParam : PreviewParameterProvider<AccountProvide
 
 fun anAccountProvider(
     url: String = AuthenticationConfig.DEFAULT_HOMESERVER_URL,
-    subtitle: String? = "Matrix.org is an open network for secure, decentralized communication.",
+    subtitle: String? = "SecureChat uses a private server for secure communication.",
     isPublic: Boolean = true,
     isMatrixOrg: Boolean = true,
 ) = AccountProvider(

@@ -89,16 +89,16 @@ open class RoomListRoomSummaryPreviewParam : PreviewParameterProvider<RoomListRo
                 aRoomListRoomSummary(
                     displayType = RoomSummaryDisplayType.INVITE,
                     inviteSender = anInviteSender(
-                        userId = UserId("@alice:matrix.org"),
+                        userId = UserId("@alice:chat.securechat.com.au"),
                         displayName = USER_NAME_ALICE,
                     ),
-                    canonicalAlias = RoomAlias("#alias:matrix.org"),
+                    canonicalAlias = RoomAlias("#alias:chat.securechat.com.au"),
                 ),
                 aRoomListRoomSummary(
                     name = USER_NAME_BOB,
                     displayType = RoomSummaryDisplayType.INVITE,
                     inviteSender = anInviteSender(
-                        userId = UserId("@bob:matrix.org"),
+                        userId = UserId("@bob:chat.securechat.com.au"),
                         displayName = USER_NAME_BOB,
                     ),
                     isDm = true,
@@ -107,7 +107,7 @@ open class RoomListRoomSummaryPreviewParam : PreviewParameterProvider<RoomListRo
                     name = null,
                     displayType = RoomSummaryDisplayType.INVITE,
                     inviteSender = anInviteSender(
-                        userId = UserId("@bob:matrix.org"),
+                        userId = UserId("@bob:chat.securechat.com.au"),
                         displayName = USER_NAME_BOB,
                     ),
                 ),
@@ -115,7 +115,7 @@ open class RoomListRoomSummaryPreviewParam : PreviewParameterProvider<RoomListRo
                     name = "A space invite",
                     displayType = RoomSummaryDisplayType.INVITE,
                     inviteSender = anInviteSender(
-                        userId = UserId("@bob:matrix.org"),
+                        userId = UserId("@bob:chat.securechat.com.au"),
                         displayName = USER_NAME_BOB,
                     ),
                     isSpace = true
@@ -126,7 +126,7 @@ open class RoomListRoomSummaryPreviewParam : PreviewParameterProvider<RoomListRo
                 ),
                 aRoomListRoomSummary(
                     name = "A knocked room with alias",
-                    canonicalAlias = RoomAlias("#knockable:matrix.org"),
+                    canonicalAlias = RoomAlias("#knockable:chat.securechat.com.au"),
                     displayType = RoomSummaryDisplayType.KNOCKED,
                 ),
                 aRoomListRoomSummary(

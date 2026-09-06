@@ -16,6 +16,7 @@ import dev.zacsweers.metro.Multibinds
 import dev.zacsweers.metro.Provides
 import io.element.android.libraries.architecture.NodeFactoriesBindings
 import io.element.android.libraries.di.annotations.ApplicationContext
+import io.element.android.libraries.pushproviders.api.PushProvider
 import io.element.android.libraries.workmanager.api.di.MetroWorkerFactory
 import kotlin.reflect.KClass
 
@@ -26,6 +27,13 @@ interface AppGraph : NodeFactoriesBindings {
     @Multibinds
     val workerProviders:
         Map<KClass<out ListenableWorker>, MetroWorkerFactory.WorkerInstanceFactory<*>>
+
+    /**
+     * A closed SecureChat build intentionally has no remote push provider. Declaring the empty set
+     * keeps dependency injection valid without compiling Firebase or a public UnifiedPush client.
+     */
+    @Multibinds(allowEmpty = true)
+    val pushProviders: Set<PushProvider>
 
     @DependencyGraph.Factory
     interface Factory {

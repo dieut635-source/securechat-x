@@ -257,7 +257,7 @@ class DefaultElementClassicConnection(
                 }
             }
         } else {
-            Timber.tag(loggerTag.value).w("Received profile data but current state is not ElementClassicReady: %s", currentState)
+            Timber.tag(loggerTag.value).w("Received profile data but the previous-app session is not ready: %s", currentState)
         }
     }
 
@@ -284,8 +284,8 @@ class DefaultElementClassicConnection(
             if (elementXCanConnect) {
                 state
             } else {
-                Timber.tag(loggerTag.value).w("Cannot import session because the homeserver is not compatible with Element X")
-                ElementClassicConnectionState.Error("The homeserver is not compatible with Element X")
+                Timber.tag(loggerTag.value).w("Cannot import session because the homeserver is not compatible with SecureChat")
+                ElementClassicConnectionState.Error("The homeserver is not compatible with SecureChat")
             }
         } else {
             state
@@ -301,10 +301,10 @@ class DefaultElementClassicConnection(
                 Timber.tag(loggerTag.value).d("Ready state for user: %s", state.elementClassicSession.userId)
             }
             ElementClassicConnectionState.ElementClassicReadyNoSession -> {
-                Timber.tag(loggerTag.value).d("No session from Element Classic")
+                Timber.tag(loggerTag.value).d("No session from the previous Matrix app")
             }
             ElementClassicConnectionState.ElementClassicNotFound -> {
-                Timber.tag(loggerTag.value).d("Element Classic not found")
+                Timber.tag(loggerTag.value).d("Previous Matrix app not found")
             }
             ElementClassicConnectionState.Idle -> {
                 Timber.tag(loggerTag.value).d("Idle")
@@ -330,7 +330,7 @@ class DefaultElementClassicConnection(
                 val roomKeysVersion = getString(KEY_ROOM_KEYS_VERSION_STR)
                     .also {
                         if (secrets != null && it == null) {
-                            Timber.tag(loggerTag.value).w("Room keys version is null, outdated version of Element Classic, ignore secrets")
+                            Timber.tag(loggerTag.value).w("Room keys version is null; previous Matrix app is outdated, ignoring secrets")
                             // In this case, just ignore the secrets, the SDK will not accept them anyway
                             secrets = null
                         }
@@ -343,7 +343,7 @@ class DefaultElementClassicConnection(
                     matrixAuthenticationService.doSecretsContainBackupKey(userId, secrets, roomKeysVersion)
                 Timber.tag(loggerTag.value).d(
                     buildString {
-                        append("Receiving session $userId ($displayName) from Element Classic, with secrets: ")
+                        append("Receiving session $userId ($displayName) from the previous Matrix app, with secrets: ")
                         append(secrets != null)
                         append(", with roomKeysVersion: ")
                         append(roomKeysVersion != null)
@@ -372,7 +372,7 @@ class DefaultElementClassicConnection(
 
     // Everything in this companion object must match what is defined in Element Classic
     companion object {
-        const val ELEMENT_CLASSIC_SERVICE_FULL_CLASS_NAME = "im.vector.app.features.importer.ImporterService"
+        const val ELEMENT_CLASSIC_SERVICE_FULL_CLASS_NAME = "com.securechat.legacy.ImporterService"
 
         // Command to the service to get the userId/displayName/secrets of a verified session.
         const val MSG_GET_SESSION = 1

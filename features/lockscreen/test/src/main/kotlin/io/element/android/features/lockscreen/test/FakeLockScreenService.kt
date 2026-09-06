@@ -32,6 +32,12 @@ class FakeLockScreenService : LockScreenService {
         return isPinSetup
     }
 
+    override suspend fun lockIfPinSetup(): Boolean {
+        if (!isPinSetup.value) return false
+        _lockState.value = LockScreenLockState.Locked
+        return true
+    }
+
     fun setLockState(lockState: LockScreenLockState) {
         _lockState.value = lockState
     }

@@ -55,7 +55,10 @@ class FakeMatrixAuthenticationService(
         }
     }
 
-    override suspend fun setHomeserver(homeserver: String): Result<MatrixHomeServerDetails> = simulateLongTask {
+    override suspend fun setHomeserver(
+        homeserver: String,
+        accountProvider: String,
+    ): Result<MatrixHomeServerDetails> = simulateLongTask {
         setHomeserverResult(homeserver)
     }
 

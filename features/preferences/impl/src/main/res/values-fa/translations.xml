@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"گزینش چگونگی دریافت آگاهی"</string>
   <string name="screen_advanced_settings_developer_mode">"حالت توسعه‌دهنده"</string>
   <string name="screen_advanced_settings_developer_mode_description">"دسترسی به ویژگی ها و عملکردها را برای توسعه دهندگان فعال کنید."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"نشانی پایهٔ تماس المنتی سفارشی"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"تنظمی نشانی پایه‌‌ای سفارشی برای تماس المنتی."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"نشانی پایهٔ تماس SecureChat سفارشی"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"تنظمی نشانی پایه‌‌ای سفارشی برای تماس SecureChat."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"URL نامعتبر، لطفا مطمئن شوید که پروتکل (http/https) و آدرس صحیح را درج کرده اید."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"نهفتن چهرک‌ها در درخواست‌های دعوت اتاق"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"نهفتن رسانه در خط زمانی"</string>
@@ -88,8 +88,8 @@
   <string name="screen_notification_settings_sound_custom_fallback">"سفارشی"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"صدای سفارشی…"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"خطا در حذف فایل"</string>
-  <string name="screen_notification_settings_sound_element_default">"Element پیش‌فرض"</string>
-  <string name="screen_notification_settings_sound_element_fade">"Element فید"</string>
+  <string name="screen_notification_settings_sound_element_default">"SecureChat پیش‌فرض"</string>
+  <string name="screen_notification_settings_sound_element_fade">"SecureChat فید"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"خطا در وارد کردن فایل"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"مشکل در پیش‌نمایش صدای هشدار"</string>
   <string name="screen_notification_settings_sound_section_title">"صدا"</string>

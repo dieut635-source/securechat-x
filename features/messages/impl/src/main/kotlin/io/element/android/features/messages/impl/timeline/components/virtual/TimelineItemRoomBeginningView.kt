@@ -92,7 +92,7 @@ internal fun TimelineItemRoomBeginningViewPreview() = ElementPreview {
                 onPredecessorRoomClick = {},
             )
             TimelineItemRoomBeginningView(
-                predecessorRoom = PredecessorRoom(RoomId("!roomId:matrix.org")),
+                predecessorRoom = PredecessorRoom(RoomId("!roomId:chat.securechat.com.au")),
                 roomName = ROOM_NAME,
                 isDm = isDm,
                 onPredecessorRoomClick = {},

@@ -16,20 +16,20 @@ import org.junit.Test
 class DefaultPermalinkParserTest : RobolectricTest() {
     @Test
     fun `a matrix-to link to a user id with a slash is parsed as a user link`() {
-        val result = createParser().parse("https://matrix.to/#/@it/sme:matrix.org")
-        assertThat(result).isEqualTo(PermalinkData.UserLink(UserId("@it/sme:matrix.org")))
+        val result = createParser().parse("https://matrix.to/#/@it/sme:chat.securechat.com.au")
+        assertThat(result).isEqualTo(PermalinkData.UserLink(UserId("@it/sme:chat.securechat.com.au")))
     }
 
     @Test
     fun `an escaped slash in a user id is parsed as a user link`() {
-        val result = createParser().parse("https://matrix.to/#/@it%2Fsme:matrix.org")
-        assertThat(result).isEqualTo(PermalinkData.UserLink(UserId("@it/sme:matrix.org")))
+        val result = createParser().parse("https://matrix.to/#/@it%2Fsme:chat.securechat.com.au")
+        assertThat(result).isEqualTo(PermalinkData.UserLink(UserId("@it/sme:chat.securechat.com.au")))
     }
 
     @Test
-    fun `an element web link to a user id with a slash is parsed as a user link`() {
-        val result = createParser().parse("https://app.element.io/#/user/@it/sme:matrix.org")
-        assertThat(result).isEqualTo(PermalinkData.UserLink(UserId("@it/sme:matrix.org")))
+    fun `an arbitrary web link to a user id is not parsed as a user link`() {
+        val result = createParser().parse("https://example.org/#/user/@it/sme:chat.securechat.com.au")
+        assertThat(result).isInstanceOf(PermalinkData.FallbackLink::class.java)
     }
 
     @Test

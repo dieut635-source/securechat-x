@@ -67,22 +67,21 @@ class CreateRoomConfigStore(
 
     /**
      * Sets both the room visibility and its access based on the provided join rule.
+     *
+     * A public join rule is downgraded to private. SecureChat creates public rooms without
+     * encryption, which would leave message bodies readable on the server and inside its backups,
+     * so the choice is refused at the data layer rather than only hidden in the UI: the presenter
+     * no longer offers it, but an event carrying a public rule must not be able to produce a
+     * public room in the window before the presenter's fallback runs.
      */
     fun setJoinRule(joinRule: JoinRuleItem) {
+        val safeJoinRule = when (joinRule) {
+            is JoinRuleItem.PrivateVisibility -> joinRule
+            is JoinRuleItem.PublicVisibility -> JoinRuleItem.PrivateVisibility.Private
+        }
         createRoomConfigFlow.getAndUpdate { config ->
             config.copy(
-                visibilityState = when (joinRule) {
-                    is JoinRuleItem.PrivateVisibility -> RoomVisibilityState.Private(
-                        joinRuleItem = joinRule
-                    )
-                    is JoinRuleItem.PublicVisibility -> {
-                        val roomAliasName = roomAliasHelper.roomAliasNameFromRoomDisplayName(config.roomName.orEmpty())
-                        RoomVisibilityState.Public(
-                            roomAddress = RoomAddress.AutoFilled(roomAliasName),
-                            joinRuleItem = joinRule,
-                        )
-                    }
-                }
+                visibilityState = RoomVisibilityState.Private(joinRuleItem = safeJoinRule)
             )
         }
     }

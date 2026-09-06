@@ -18,17 +18,19 @@ To setup, please refer at [https://maestro.mobile.dev](https://maestro.mobile.de
 
 From root dir of the project
 
-*Note: Since Element X does not allow account creation, we have to use an existing account to run maestro test suite. So to run locally, please replace `user` and `123` with your test matrix.org account credentials, and `my room` with one of a room this account has joined. Note that the test will send messages to this room.*
+*Note: SecureChat disables account creation by default, so the Maestro suite needs an existing
+`chat.securechat.com.au` test account and a room that account has joined. The test sends messages
+to the configured room.*
 
 ```shell
 maestro test \
-    -e MAESTRO_APP_ID=io.element.android.x.debug \
-    -e MAESTRO_USERNAME=user1 \
+    -e MAESTRO_APP_ID=com.securechat.app.debug \
+    -e MAESTRO_USERNAME=maestrosecurechat \
     -e MAESTRO_PASSWORD=123 \
     -e MAESTRO_RECOVERY_KEY=ABC \
     -e MAESTRO_ROOM_NAME="MyRoom" \
-    -e MAESTRO_INVITEE1_MXID=user2 \
-    -e MAESTRO_INVITEE2_MXID=user3 \
+    -e MAESTRO_INVITEE1_MXID=@maestrosecurechat2:chat.securechat.com.au \
+    -e MAESTRO_INVITEE2_MXID=@maestrosecurechat3:chat.securechat.com.au \
     .maestro/allTests.yaml
 ```
 
@@ -40,7 +42,7 @@ Test result will be printed on the console, and screenshots will be generated at
 
 Tests are yaml files. Generally each yaml file should leave the app in the same screen than at the beginning.
 
-Start the Element X app and run this command to help writing test.
+Start SecureChat and run this command to help write a test.
 
 ```shell
 maestro studio
@@ -52,8 +54,10 @@ Also, if updating the application code, do not forget to deploy again the applic
 
 ## CI
 
-The CI is running maestro using the workflow `.github/worflow/maestro.yaml` and [maestro cloud](https://cloud.mobile.dev/). For now we are limited to 100 runs a month.
-Some GitHub secrets are used to be able to do that: `MAESTRO_CLOUD_API_KEY`, for now api key from `benoitm@element.io` maestro cloud account, and `MATRIX_MAESTRO_ACCOUNT_PASSWORD` which is the password of the account `@maestroelement:matrix.org`. This account contains a room `MyRoom` to be able to run the maestro test suite.
+CI runs Maestro in a local Android emulator through `.github/workflows/maestro-local.yml`.
+`MATRIX_MAESTRO_ACCOUNT_PASSWORD` and `MATRIX_MAESTRO_ACCOUNT_RECOVERY_KEY` must belong to the
+SecureChat-owned test account configured in that workflow. The account must have access to `MyRoom`
+and the two configured invitee accounts.
 
 ## iOS
 
@@ -70,5 +74,5 @@ So you have to change your input keyboard to QWERTY for it to work properly.
 
 ## Future
 
-- run on Element X iOS. This is already working but it need some change on the test to make it works. Could pass a PLATFORM parameter to have unique test and use conditional test.
-- run specific test on both iOS and Android devices to make them communicate together. Could be possible to test room invite and join, verification, call, etc. To be done when Element X will be able to create account and create room. A main script would be able to detect the Android device and the iOS device, and run several maestro tests sequentially, using `--device` parameter to perform a global test.
+- Run on an iOS client by passing a platform parameter and using conditional commands where needed.
+- Run selected tests across iOS and Android devices to cover room invites, verification, and calls.

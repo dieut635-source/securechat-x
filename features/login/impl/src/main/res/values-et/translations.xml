@@ -9,13 +9,13 @@
   <string name="screen_account_provider_signin_title">"Sa oled sisse logimas %s teenusesse"</string>
   <string name="screen_account_provider_signup_subtitle">"See on koht, kus sinu vestlused elavad – just nagu kasutaksid oma e-kirjade säilitamiseks e-postiteenuse pakkujat."</string>
   <string name="screen_account_provider_signup_title">"Sa oled loomas kasutajakontot %s teenuses"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org on suur ja tasuta koduserver Matrixi võrgus, mis on mõeldud turvalise ja hajutatud suhtluse jaoks. Selle serveri halduse eest vastutab Matrix.org Foundation."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Muu teenusepakkuja"</string>
   <string name="screen_change_account_provider_subtitle">"Kasuta erinevat teenusepakkujat, milleks võib olla ka sinu oma server või töökoha hallatav server."</string>
   <string name="screen_change_account_provider_title">"Muuda teenusepakkujat"</string>
   <string name="screen_change_server_error_element_pro_required_action_android">"Google Play"</string>
-  <string name="screen_change_server_error_element_pro_required_message">"%1$s koduserver eeldab Element Pro rakenduse kasutamist. Palun laadi ta alla rakendustepoest."</string>
-  <string name="screen_change_server_error_element_pro_required_title">"Vajalik on Element Pro"</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
   <string name="screen_change_server_error_invalid_homeserver">"Me ei suutnud luuaühendust selle koduserveriga. Palun kontrolli, kas koduserveri aadress on õige. Kui aadress on õige, siis täiendavat teavet oskab sulle anda koduserveri haldaja."</string>
   <string name="screen_change_server_error_invalid_well_known">"Server pole saadaval vea tõttu well-known failis:
 %1$s"</string>
@@ -29,7 +29,7 @@
   <string name="screen_change_server_navigation_title_register">"Loo kasutajakonto"</string>
   <string name="screen_change_server_subtitle">"Mis on sinu koduserveri aadress?"</string>
   <string name="screen_change_server_textfield_footer_login">"Kui sinu kasutajakonto paikneb äriühingu või kogukonna serveris, siis muuda kontoteenuse pakkujat (näiteks: minufirmanimi.ee)."</string>
-  <string name="screen_change_server_textfield_footer_register">"Loo tasuta kasutajakonto matrix.org serverisse. Kui soovid luua kasutajakonto mõne teise teenusepakkuja juures, siis muuda seda vastavalt (näiteks: minukogukond.ee)."</string>
+  <string name="screen_change_server_textfield_footer_register">"Accounts are created by your administrator. Contact them if you need access."</string>
   <string name="screen_change_server_textfield_header">"Teenusepakkuja"</string>
   <string name="screen_change_server_textfield_placeholder">"domeeninäidis.ee"</string>
   <string name="screen_change_server_title">"Vali oma server"</string>
@@ -45,8 +45,8 @@
   <string name="screen_login_subtitle">"Matrix on avatud võrk turvalise ja hajutatud suhtluse jaoks."</string>
   <string name="screen_login_title">"Tere tulemast tagasi!"</string>
   <string name="screen_login_title_with_homeserver">"Logi sisse serverisse %1$s"</string>
-  <string name="screen_missing_key_backup_open_element_classic">"Ava Element Classic"</string>
-  <string name="screen_missing_key_backup_step_1">"Ava Element Classic oma seadmes"</string>
+  <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
+  <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
   <string name="screen_missing_key_backup_step_2_android">"Ava „Seadistused“ → „Turvalisus ja privaatsus“"</string>
   <string name="screen_missing_key_backup_step_3_android">"Krüptovõtmete halduses vali „Krüptitud sõnumite taastamine“"</string>
   <string name="screen_missing_key_backup_step_4">"Võtmehoidla kasutuselevõtmiseks palun järgi juhendit"</string>
@@ -61,7 +61,7 @@
   <string name="screen_onboarding_welcome_back">"Tere tulemast tagasi"</string>
   <string name="screen_onboarding_welcome_message">"Läbi aegade kiireim ja mugavaim %1$s."</string>
   <string name="screen_onboarding_welcome_subtitle">"Tere tulemast kasutama kiiret ja lihtsat suhtlusrakendust %1$s."</string>
-  <string name="screen_onboarding_welcome_title">"Ole oma elemendis"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Loome turvalist ühendust"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"Turvalise ühenduse loomine uue seadmega ei õnnestunud. Sinu olemasolevad seadmed on jätkuvalt turvatud ja sa ei pea nende pärast muretsema."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"Mida järgmiseks teeme?"</string>
@@ -108,7 +108,7 @@ Proovi käsitsi sisselogimist või skaneeri QR-koodi mõne muu seadmega."</strin
   <string name="screen_qr_code_login_verify_code_subtitle">"Sinu teenusepakkuja võib sisselogimisel eeldada selle verifitseerimiskoodi kasutamist."</string>
   <string name="screen_qr_code_login_verify_code_title">"Sinu verifitseerimiskood"</string>
   <string name="screen_server_confirmation_change_server">"Muuda teenusepakkujat"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Privaatne server Elemendi töötajate jaoks."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix on avatud võrk turvalise ja hajutatud suhtluse jaoks."</string>
   <string name="screen_server_confirmation_message_register">"See on koht, kus sinu vestlused elavad – just nagu kasutaksid oma e-kirjade säilitamiseks e-postiteenuse pakkujat."</string>
   <string name="screen_server_confirmation_title_login">"Sa oled sisselogimas koduserverisse %1$s"</string>

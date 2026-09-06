@@ -27,14 +27,12 @@ import io.element.android.features.networkmonitor.api.NetworkMonitor
 import io.element.android.features.networkmonitor.api.NetworkStatus
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
-import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.core.log.logger.LoggerTag
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
 import io.element.android.libraries.matrix.api.roomlist.RoomListService
-import io.element.android.libraries.matrix.api.sync.SlidingSyncVersion
 import io.element.android.libraries.matrix.api.sync.SyncService
 import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
@@ -84,17 +82,22 @@ class LoggedInPresenter(
                     when (sessionVerifiedStatus) {
                         SessionVerifiedStatus.Unknown -> Unit
                         SessionVerifiedStatus.Verified -> {
-                            Timber.tag(pusherTag.value).d("Ensure pusher is registered")
-                            pushService.ensurePusherIsRegistered(matrixClient).fold(
-                                onSuccess = {
-                                    Timber.tag(pusherTag.value).d("Pusher registered")
-                                    pusherRegistrationState.value = AsyncData.Success(Unit)
-                                },
-                                onFailure = {
-                                    Timber.tag(pusherTag.value).e(it, "Failed to register pusher")
-                                    pusherRegistrationState.value = AsyncData.Failure(it)
-                                },
-                            )
+                            if (pushService.getAvailablePushProviders().isEmpty()) {
+                                Timber.tag(pusherTag.value).d("Remote push is disabled; using local-sync mode")
+                                pusherRegistrationState.value = AsyncData.Uninitialized
+                            } else {
+                                Timber.tag(pusherTag.value).d("Ensure pusher is registered")
+                                pushService.ensurePusherIsRegistered(matrixClient).fold(
+                                    onSuccess = {
+                                        Timber.tag(pusherTag.value).d("Pusher registered")
+                                        pusherRegistrationState.value = AsyncData.Success(Unit)
+                                    },
+                                    onFailure = {
+                                        Timber.tag(pusherTag.value).e(it, "Failed to register pusher")
+                                        pusherRegistrationState.value = AsyncData.Failure(it)
+                                    },
+                                )
+                            }
                         }
                         SessionVerifiedStatus.NotVerified -> {
                             pusherRegistrationState.value = AsyncData.Failure(PusherRegistrationFailure.AccountNotVerified())
@@ -168,12 +171,13 @@ class LoggedInPresenter(
                         }
                     }
                 }
-                LoggedInEvent.CheckSlidingSyncProxyAvailability -> coroutineScope.launch {
-                    forceNativeSlidingSyncMigration = matrixClient.needsForcedNativeSlidingSyncMigration().getOrDefault(false)
+                LoggedInEvent.CheckSlidingSyncProxyAvailability -> {
+                    // This fixed SecureChat SDK baseline never revokes the sole enrolled session
+                    // for an in-app transport migration. A future migration must preserve it.
+                    forceNativeSlidingSyncMigration = false
                 }
-                LoggedInEvent.LogoutAndMigrateToNativeSlidingSync -> coroutineScope.launch {
-                    // Force the logout since Native Sliding Sync is already enforced by the SDK
-                    matrixClient.logout(userInitiated = true, ignoreSdkError = true)
+                LoggedInEvent.LogoutAndMigrateToNativeSlidingSync -> {
+                    Timber.w("Logout-based sliding-sync migration blocked by SecureChat single-device policy")
                 }
                 LoggedInEvent.DismissLocalNetworkPermissionPrompt -> {
                     localNetworkPromptDismissedThisSession = true
@@ -198,12 +202,6 @@ class LoggedInPresenter(
             localNetworkPermissionDialog = localNetworkPermissionDialog,
             eventSink = ::handleEvent,
         )
-    }
-
-    // Force the user to log out if they were using the proxy sliding sync as it's no longer supported by the SDK
-    private suspend fun MatrixClient.needsForcedNativeSlidingSyncMigration(): Result<Boolean> = runCatchingExceptions {
-        val currentSlidingSyncVersion = currentSlidingSyncVersion().getOrThrow()
-        currentSlidingSyncVersion == SlidingSyncVersion.Proxy
     }
 
     private fun reportCryptoStatusToAnalytics(verificationState: SessionVerifiedStatus, recoveryState: RecoveryState) {

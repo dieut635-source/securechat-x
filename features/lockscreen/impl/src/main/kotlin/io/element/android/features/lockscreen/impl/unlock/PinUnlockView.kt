@@ -47,12 +47,9 @@ import io.element.android.features.lockscreen.impl.components.PinEntryTextField
 import io.element.android.features.lockscreen.impl.pin.model.PinDigit
 import io.element.android.features.lockscreen.impl.pin.model.PinEntry
 import io.element.android.features.lockscreen.impl.unlock.keypad.PinKeypad
-import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.designsystem.components.BigIcon
-import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.designsystem.components.button.BackButton
-import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
 import io.element.android.libraries.designsystem.components.dialogs.ErrorDialog
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -79,20 +76,9 @@ fun PinUnlockView(
     Surface(modifier) {
         PinUnlockPage(state = state, isInAppUnlock = isInAppUnlock, onCancel = onCancel)
         if (state.showSignOutPrompt) {
-            SignOutPrompt(
-                isCancellable = state.isSignOutPromptCancellable,
-                onSignOut = { state.eventSink(PinUnlockEvent.SignOut) },
+            AdminRecoveryPrompt(
                 onDismiss = { state.eventSink(PinUnlockEvent.ClearSignOutPrompt) },
             )
-        }
-        when (state.signOutAction) {
-            AsyncAction.Loading -> {
-                ProgressDialog(text = stringResource(id = R.string.screen_signout_in_progress_dialog_content))
-            }
-            is AsyncAction.Success,
-            is AsyncAction.Confirming,
-            is AsyncAction.Failure,
-            AsyncAction.Uninitialized -> Unit
         }
 
         if (state.showBiometricUnlockError) {
@@ -194,25 +180,14 @@ private fun PinUnlockPage(
 }
 
 @Composable
-private fun SignOutPrompt(
-    isCancellable: Boolean,
-    onSignOut: () -> Unit,
+private fun AdminRecoveryPrompt(
     onDismiss: () -> Unit,
 ) {
-    if (isCancellable) {
-        ConfirmationDialog(
-            title = stringResource(id = R.string.screen_app_lock_signout_alert_title),
-            content = stringResource(id = R.string.screen_app_lock_signout_alert_message),
-            onSubmitClick = onSignOut,
-            onDismiss = onDismiss,
-        )
-    } else {
-        ErrorDialog(
-            title = stringResource(id = R.string.screen_app_lock_signout_alert_title),
-            content = stringResource(id = R.string.screen_app_lock_signout_alert_message),
-            onSubmit = onSignOut,
-        )
-    }
+    ErrorDialog(
+        title = stringResource(id = R.string.screen_app_lock_admin_recovery_title),
+        content = stringResource(id = R.string.screen_app_lock_admin_recovery_message),
+        onSubmit = onDismiss,
+    )
 }
 
 @Composable

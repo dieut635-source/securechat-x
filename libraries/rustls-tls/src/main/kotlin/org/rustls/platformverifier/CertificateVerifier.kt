@@ -16,10 +16,9 @@ import android.content.Context
 import android.net.http.X509TrustManagerExtensions
 import android.util.Log
 import java.io.ByteArrayInputStream
-import java.io.File
+import java.io.IOException
+import java.security.GeneralSecurityException
 import java.security.KeyStore
-import java.security.KeyStoreException
-import java.security.MessageDigest
 import java.security.PublicKey
 import java.security.cert.CertificateException
 import java.security.cert.CertificateExpiredException
@@ -28,9 +27,21 @@ import java.security.cert.CertificateNotYetValidException
 import java.security.cert.CertificateParsingException
 import java.security.cert.X509Certificate
 import java.util.Date
+import java.util.Enumeration
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 import javax.security.auth.x500.X500Principal
+
+private const val SYSTEM_CERTIFICATE_ALIAS_PREFIX = "system:"
+
+internal fun selectSystemCertificateAliases(aliases: Enumeration<String>): List<String> = buildList {
+    while (aliases.hasMoreElements()) {
+        val alias = aliases.nextElement()
+        if (alias.startsWith(SYSTEM_CERTIFICATE_ALIAS_PREFIX)) {
+            add(alias)
+        }
+    }
+}
 
 // If this is updated, update the Rust definition too.
 // Marked private as this is not meant to be used in Android code.
@@ -64,11 +75,18 @@ private class VerificationResult(
 internal object CertificateVerifier {
     private const val TAG = "rustls-platform-verifier-android"
 
-    private fun createTrustManager(keystore: KeyStore?): X509TrustManagerExtensions? {
-        // This can never throw since the default algorithm is used.
-        val factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-
-        factory.init(keystore)
+    private fun createTrustManager(keystore: KeyStore): X509TrustManagerExtensions? {
+        val factory = try {
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply {
+                init(keystore)
+            }
+        } catch (e: GeneralSecurityException) {
+            Log.e(TAG, "failed to initialize a TrustManager", e)
+            return null
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "unexpected failure initializing a TrustManager", e)
+            return null
+        }
 
         val availableTrustManagers = try {
             factory.trustManagers
@@ -90,11 +108,62 @@ internal object CertificateVerifier {
     }
 
     private fun makeLazyTrustManager(keystore: KeyStore?): Lazy<X509TrustManagerExtensions?> {
-        // Ensure the keystore is loaded. Since all of the trust managers are initialized in a
-        // `Lazy`, this will only run once.
-        keystore?.load(null)
+        return lazy { keystore?.let(::createTrustManager) }
+    }
 
-        return lazy { createTrustManager(keystore) }
+    private fun createEmptyKeystore(): KeyStore {
+        return KeyStore.getInstance(KeyStore.getDefaultType()).apply { load(null) }
+    }
+
+    private fun loadPlatformKeystore(): KeyStore? {
+        return try {
+            KeyStore.getInstance("AndroidCAStore").apply { load(null) }
+        } catch (e: GeneralSecurityException) {
+            Log.e(TAG, "failed to load Android CA store", e)
+            null
+        } catch (e: IOException) {
+            Log.e(TAG, "failed to read Android CA store", e)
+            null
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "unexpected failure loading Android CA store", e)
+            null
+        }
+    }
+
+    /**
+     * Copies only active Android system trust anchors into a separate keystore.
+     *
+     * AndroidCAStore also exposes aliases prefixed with `user:`. Initializing a trust manager
+     * directly from that store would therefore bypass the release network-security-config for
+     * Matrix traffic verified through Rust. Returning null on any error is intentional: release
+     * verification must fail closed rather than silently fall back to the platform default store.
+     */
+    private fun createSystemOnlyKeystore(platformKeystore: KeyStore?): KeyStore? {
+        if (platformKeystore == null) return null
+
+        return try {
+            val systemOnlyKeystore = createEmptyKeystore()
+            selectSystemCertificateAliases(platformKeystore.aliases()).forEach { alias ->
+                val certificate = platformKeystore.getCertificate(alias)
+                if (certificate is X509Certificate) {
+                    systemOnlyKeystore.setCertificateEntry(alias, certificate)
+                }
+            }
+            systemOnlyKeystore.takeIf { it.size() > 0 }.also {
+                if (it == null) {
+                    Log.e(TAG, "Android system CA store did not contain any usable certificates")
+                }
+            }
+        } catch (e: GeneralSecurityException) {
+            Log.e(TAG, "failed to create system-only CA store", e)
+            null
+        } catch (e: IOException) {
+            Log.e(TAG, "failed to initialize system-only CA store", e)
+            null
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "unexpected failure creating system-only CA store", e)
+            null
+        }
     }
 
     // -- Test only --
@@ -102,7 +171,7 @@ internal object CertificateVerifier {
     // in release builds.
 
     @get:Synchronized
-    private val mockKeystore: KeyStore = KeyStore.getInstance(KeyStore.getDefaultType())
+    private val mockKeystore: KeyStore = createEmptyKeystore()
 
     @get:Synchronized
     private var mockTrustManager: Lazy<X509TrustManagerExtensions?> =
@@ -141,9 +210,19 @@ internal object CertificateVerifier {
     @JvmStatic
     fun getSystemRootCAs(): List<X509Certificate> {
         val rootCAs = mutableListOf<X509Certificate>()
+        val loadedSystemKeystore = systemOnlyKeystore ?: return rootCAs
 
-        val factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-        factory.init(systemKeystore)
+        val factory = try {
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply {
+                init(loadedSystemKeystore)
+            }
+        } catch (e: GeneralSecurityException) {
+            Log.e(TAG, "failed to initialize the system TrustManager", e)
+            return rootCAs
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "unexpected failure initializing the system TrustManager", e)
+            return rootCAs
+        }
 
         val availableTrustManagers = try {
             factory.trustManagers
@@ -165,23 +244,25 @@ internal object CertificateVerifier {
 
     private val certFactory: CertificateFactory = CertificateFactory.getInstance("X.509")
 
-    private var systemTrustAnchorCache = hashSetOf<Pair<X500Principal, PublicKey>>()
+    private val platformKeystore: KeyStore? = loadPlatformKeystore()
+    private val systemOnlyKeystore: KeyStore? = createSystemOnlyKeystore(platformKeystore)
 
-    @get:Synchronized
-    private var systemCertificateDirectory: File? = System.getenv("ANDROID_ROOT")?.let { rootPath ->
-        File("$rootPath/etc/security/cacerts")
-    }
-
-    @get:Synchronized
-    private val systemKeystore: KeyStore? = try {
-        KeyStore.getInstance("AndroidCAStore")
-    } catch (_: KeyStoreException) {
-        null
+    private val systemTrustAnchors: Set<Pair<X500Principal, PublicKey>> by lazy {
+        val keystore = systemOnlyKeystore ?: return@lazy emptySet()
+        selectSystemCertificateAliases(keystore.aliases()).mapNotNullTo(mutableSetOf()) { alias ->
+            (keystore.getCertificate(alias) as? X509Certificate)?.let { certificate ->
+                Pair(certificate.subjectX500Principal, certificate.publicKey)
+            }
+        }
     }
 
     @get:Synchronized
     private val systemTrustManager: Lazy<X509TrustManagerExtensions?> =
-        makeLazyTrustManager(systemKeystore)
+        makeLazyTrustManager(systemOnlyKeystore)
+
+    @get:Synchronized
+    private val platformTrustManager: Lazy<X509TrustManagerExtensions?> =
+        makeLazyTrustManager(platformKeystore)
 
     @JvmStatic
     private fun verifyCertificateChain(
@@ -204,8 +285,9 @@ internal object CertificateVerifier {
             certificateChain.add(certificate as X509Certificate)
         }
 
-        // Will never throw `ArrayIndexOutOfBoundsException` because `rustls`'s `ServerCertVerifier` trait
-        // has a mandatory `end_entity` parameter in `verify_server_cert`.
+        if (certificateChain.isEmpty()) {
+            return VerificationResult(StatusCode.InvalidEncoding)
+        }
         val endEntity = certificateChain[0]
 
         // Check that the certificate is valid at the point of time provided by `rustls`.
@@ -225,24 +307,18 @@ internal object CertificateVerifier {
         // Select the trust manager to use.
         //
         // We select them as follows:
-        // - If built for release, only use the system trust manager. This should let all test-related
-        // code be optimized out.
+        // - If built for release/nightly, only use the system-only trust manager.
+        // - If built for debug, use AndroidCAStore so local TLS interception remains possible.
         // - If built for tests:
         //      - If the mock CA store has any values, use the mock trust manager.
-        //      - Otherwise, use the system trust manager.
-        val (trustManager, keystore) = if (!BuildConfig.TEST) {
-            val trustManager =
+        //      - Otherwise, follow the build-type policy.
+        val trustManager = when {
+            BuildConfig.TEST && mockKeystore.size() != 0 ->
+                mockTrustManager.value ?: return VerificationResult(StatusCode.Unavailable)
+            BuildConfig.DEBUG ->
+                platformTrustManager.value ?: return VerificationResult(StatusCode.Unavailable)
+            else ->
                 systemTrustManager.value ?: return VerificationResult(StatusCode.Unavailable)
-            Pair(trustManager, systemKeystore)
-        } else {
-            if (mockKeystore.size() != 0) {
-                val trustManager = mockTrustManager.value!!
-                Pair(trustManager, mockKeystore)
-            } else {
-                val trustManager =
-                    systemTrustManager.value ?: return VerificationResult(StatusCode.Unavailable)
-                Pair(trustManager, systemKeystore)
-            }
         }
 
         // Verify that the certificate chain is valid and correct, and nothing more.
@@ -283,6 +359,19 @@ internal object CertificateVerifier {
             // can simply return an unknown cert error without digging through the exception
             // cause chain.
             return VerificationResult(StatusCode.UnknownCert, e.toString())
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "unexpected failure validating a server certificate", e)
+            return VerificationResult(StatusCode.Unavailable)
+        }
+
+        // Defense in depth for non-debug artifacts: even if the platform trust manager behavior
+        // changes, never accept a chain whose final trust anchor is not in the filtered system set.
+        if (!BuildConfig.DEBUG && !BuildConfig.TEST) {
+            val root = validChain.lastOrNull()
+                ?: return VerificationResult(StatusCode.UnknownCert)
+            if (!isKnownRoot(root)) {
+                return VerificationResult(StatusCode.UnknownCert)
+            }
         }
 
         // TEST ONLY: Mock test suite cannot attempt to check revocation status if no OSCP data has been stapled,
@@ -320,79 +409,9 @@ internal object CertificateVerifier {
         return ekus.any { allowedEkus.contains(it) }
     }
 
-    // Android hashes a principal using the first four bytes of its MD5 digest, encoded in
-    // lowercase hex and reversed.
-    //
-    // Ref: https://source.chromium.org/chromium/chromium/src/+/main:net/android/java/src/org/chromium/net/X509Util.java;l=339
-    private fun hashPrincipal(principal: X500Principal): String {
-        val hexDigits = "0123456789abcdef".toCharArray()
-        val digest = MessageDigest.getInstance("MD5").digest(principal.encoded)
-        val hexChars = CharArray(8)
-
-        for (i in 0..3) {
-            // Kotlin doesn't support bitwise operators for bytes, only Int and Long.
-            val digestByte = digest[3 - i].toInt()
-            hexChars[2 * i] = hexDigits[(digestByte shr 4) and 0xf]
-            hexChars[2 * i + 1] = hexDigits[digestByte and 0xf]
-        }
-
-        return String(hexChars)
-    }
-
-    // Check if CA root is known or not.
-    // Known means installed in root CA store, either a preset public CA or a custom one installed by an enterprise/user.
-    //
-    // Ref: https://source.chromium.org/chromium/chromium/src/+/main:net/android/java/src/org/chromium/net/X509Util.java;l=351
+    // Check whether a root is an active Android system CA. User/enterprise-installed CAs are
+    // deliberately excluded from this set for SecureChat release builds.
     fun isKnownRoot(root: X509Certificate): Boolean {
-        // System keystore and cert directory must be non-null to perform checking
-        systemKeystore?.let { loadedSystemKeystore ->
-            systemCertificateDirectory?.let { loadedSystemCertificateDirectory ->
-
-                // Check the in-memory cache first
-                val key = Pair(root.subjectX500Principal, root.publicKey)
-                if (systemTrustAnchorCache.contains(key)) {
-                    return true
-                }
-
-                // System trust anchors are stored under a hash of the principal.
-                // In case of collisions, append number.
-                val hash = hashPrincipal(root.subjectX500Principal)
-                var i = 0
-                while (true) {
-                    val alias = "$hash.$i"
-
-                    if (!File(loadedSystemCertificateDirectory, alias).exists()) {
-                        break
-                    }
-
-                    val anchor = loadedSystemKeystore.getCertificate("system:$alias")
-
-                    // It's possible for `anchor` to be `null` if the user deleted a trust anchor.
-                    // Continue iterating as there may be further collisions after the deleted anchor.
-                    if (anchor == null) {
-                        continue
-                        // This should never happen
-                    } else if (anchor !is X509Certificate) {
-                        // SAFETY: This logs a unique identifier (hash value) only in cases where a file within the
-                        // system's root trust store is not a valid X509 certificate (extremely unlikely error).
-                        // The hash doesn't tell us any sensitive information about the invalid cert or reveal any of
-                        // its contents - it just lets us ID the bad file if a user is having TLS failure issues.
-                        Log.e(TAG, "anchor is not a certificate, alias: $alias")
-                        continue
-                        // If subject and public key match, it's a system root.
-                    } else {
-                        if ((root.subjectX500Principal == anchor.subjectX500Principal) && (root.publicKey == anchor.publicKey)) {
-                            systemTrustAnchorCache.add(key)
-                            return true
-                        }
-                    }
-
-                    i += 1
-                }
-            }
-        }
-
-        // Not found in cache or store: non-public
-        return false
+        return Pair(root.subjectX500Principal, root.publicKey) in systemTrustAnchors
     }
 }

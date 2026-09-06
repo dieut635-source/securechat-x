@@ -28,7 +28,7 @@ open class EditUserProfileStatePreviewParam : PreviewParameterProvider<EditUserP
 }
 
 fun aEditUserProfileState(
-    userId: UserId = UserId("@john.doe:matrix.org"),
+    userId: UserId = UserId("@john.doe:chat.securechat.com.au"),
     displayName: String = USER_NAME_JOHN_DOE,
     userAvatarUrl: String? = null,
     avatarActions: List<AvatarAction> = emptyList(),

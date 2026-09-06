@@ -1,6 +1,7 @@
-# AGENTS.md — Element X Android
+# AGENTS.md — SecureChat Android
 
-> **Repo:** `element-hq/element-x-android` — Android Matrix client (Compose UI + `matrix-rust-sdk`).
+> **Repo:** `dieut635-source/securechat-x` — independently branded Android Matrix client for the
+> private SecureChat deployment (Compose UI + `matrix-rust-sdk`).
 
 ---
 
@@ -21,9 +22,10 @@ PRs must meet these rules.
 
 ### Strings & Localisation
 
-- Default localisation: `en` (en-GB strings), shared with Element X iOS via [Localazy](https://localazy.com/p/element).
-- **Never edit `localazy.xml`** — it is auto-generated and overwritten.
-- New English strings go in **`temporary.xml`**. The core team imports these to Localazy.
+- Default localisation: `en` (en-GB strings). Existing `localazy.xml` files are inherited generated
+  catalogues and are not connected to an upstream synchronization workflow.
+- Avoid broad edits to generated translation catalogues. SecureChat overrides belong in dedicated
+  SecureChat resource files or `temporary.xml` until a private localisation workflow is approved.
 - **Key naming**:
   - Cross-screen verbs: `action_` (e.g., `action_copy`).
   - Common nouns/other: `common_` (e.g., `common_error`).
@@ -38,7 +40,7 @@ PRs must meet these rules.
 - Create previews for **all main states** of a Composable.
 - Use `@PreviewsDayNight` for consistency.
 - Use `PreviewParameterProvider` (e.g., `FooStatePreviewParam`) to provide states.
-- Wrap previews in `ElementPreview { ... }`.
+- Wrap previews in `ElementPreview { ... }` (retained internal API name; never render it as product text).
 - When writing tests, never try to record the screenshots, the CI will do it.
 
 ---
@@ -112,6 +114,10 @@ Always prefer Compound components and tokens from `libraries/compound/` module.
 - **Colours**: `ElementTheme.colors.textPrimary`, `ElementTheme.colors.bgCanvasDefault`.
 - **Typography**: `ElementTheme.typography.fontBodyMdRegular`.
 - **Icons**: Use `CompoundIcons.IconName()` (e.g., `CompoundIcons.UserProfileSolid()`).
+
+`ElementTheme` and `ElementPreview` are retained source-level compatibility identifiers. They must
+not be used as user-visible product branding; a future namespace migration requires its own tested
+change set.
 
 ---
 

@@ -16,7 +16,7 @@ object RageshakeConfig {
 
     /**
      * As per https://github.com/matrix-org/rageshake:
-     * Identifier for the application (eg 'riot-web').
+     * Identifier for the application (for example, `securechat-android`).
      * Should correspond to a mapping configured in the configuration file for github issue reporting to work.
      */
     const val BUG_REPORT_APP_NAME = BuildConfig.BUG_REPORT_APP_NAME

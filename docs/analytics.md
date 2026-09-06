@@ -1,17 +1,13 @@
-# Analytics in Element
+# Analytics and crash reporting
 
-<!--- TOC -->
+Analytics and Sentry crash reporting are disabled by default. `ModulesConfig` only includes a
+provider when `plugins/src/main/kotlin/config/BuildTimeConfig.kt` contains a complete
+SecureChat-owned configuration:
 
-* [Sentry](#sentry)
+- PostHog requires both `SERVICES_POSTHOG_HOST` and `SERVICES_POSTHOG_APIKEY`.
+- Sentry requires `SERVICES_SENTRY_DSN`; `SERVICES_SENTRY_DSN_RUST` is optional for Rust SDK events.
 
-<!--- END -->
-
-## Sentry
-
-To make Sentry analytics and bug reporting work, you need to provide a Sentry DSN in the `local.properties` file, or set the `ELEMENT_ANDROID_SENTRY_DSN` environment variable.
-
-The format used to add the DSN to your `local.properties` file is the following:
-
-```properties
-services.analyticsproviders.sentry.dsn=https://your-sentry-dsn/project-id
-```
+Do not restore inherited endpoints or environment-variable names. Enabling either provider requires
+a SecureChat privacy review, SecureChat-owned service credentials, updated user-facing policy text,
+and tests confirming that opt-out remains effective. Remote bug-report upload is independently
+disabled while `BUG_REPORT_URL` is null.

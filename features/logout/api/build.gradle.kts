@@ -14,6 +14,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.coroutines.core)
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.designsystem)

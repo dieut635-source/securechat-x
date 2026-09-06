@@ -8,7 +8,6 @@
 
 package io.element.android.features.login.impl
 
-import androidx.core.net.toUri
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.features.login.api.LoginIntentResolver
@@ -16,15 +15,7 @@ import io.element.android.features.login.api.LoginParams
 
 @ContributesBinding(AppScope::class)
 class DefaultLoginIntentResolver : LoginIntentResolver {
-    override fun parse(uriString: String): LoginParams? {
-        val uri = uriString.toUri()
-        if (uri.host != "mobile.element.io") return null
-        if (uri.path.orEmpty().startsWith("/element").not()) return null
-        val accountProvider = uri.getQueryParameter("account_provider") ?: return null
-        val loginHint = uri.getQueryParameter("login_hint")
-        return LoginParams(
-            accountProvider = accountProvider,
-            loginHint = loginHint,
-        )
-    }
+    // Public login/configuration links stay disabled until the SecureChat domain association is
+    // deployed with the production signing certificate and verified on supported Android versions.
+    override fun parse(uriString: String): LoginParams? = null
 }

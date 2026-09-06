@@ -10,6 +10,7 @@ package io.element.android.libraries.matrix.impl.auth
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
+import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.matrix.api.auth.HomeServerLoginCompatibilityChecker
 import io.element.android.libraries.matrix.impl.ClientBuilderProvider
@@ -18,8 +19,13 @@ import timber.log.Timber
 @ContributesBinding(AppScope::class)
 class RustHomeServerLoginCompatibilityChecker(
     private val clientBuilderProvider: ClientBuilderProvider,
-    ) : HomeServerLoginCompatibilityChecker {
+    private val enterpriseService: EnterpriseService,
+) : HomeServerLoginCompatibilityChecker {
     override suspend fun check(url: String): Result<Boolean> = runCatchingExceptions {
+        if (!enterpriseService.isAllowedToConnectToHomeserver(url)) {
+            Timber.w("Refusing compatibility check for a homeserver outside the SecureChat allowlist")
+            return@runCatchingExceptions false
+        }
         clientBuilderProvider.provide()
             .inMemoryStore()
             .serverNameOrHomeserverUrl(url)
@@ -28,8 +34,8 @@ class RustHomeServerLoginCompatibilityChecker(
                 it.homeserverLoginDetails()
             }
             .use {
-                Timber.d("Homeserver $url | OAuth: ${it.supportsOauthLogin()} | Password: ${it.supportsPasswordLogin()} | SSO: ${it.supportsSsoLogin()}")
-                it.supportsOauthLogin() || it.supportsPasswordLogin()
+                Timber.d("Homeserver $url | Password authentication available: ${it.supportsPasswordLogin()}")
+                it.supportsPasswordLogin()
             }
     }
 }

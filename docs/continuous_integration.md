@@ -1,69 +1,32 @@
-# Continuous integration strategy
+# Continuous integration
 
-<!--- TOC -->
+SecureChat uses GitHub Actions with JDK 21. The primary workflows are:
 
-* [Introduction](#introduction)
-* [CI tools](#ci-tools)
-* [Rules](#rules)
-* [What is the CI checking](#what-is-the-ci-checking)
-* [What is the CI reporting](#what-is-the-ci-reporting)
-* [Current choices](#current-choices)
-  * [R8 task](#r8-task)
-  * [Android test (connected test)](#android-test-connected-test)
+- `securechat-build.yml`: branding/configuration audit, F-Droid debug APKs, focused unit tests, and
+  Android lint.
+- `securechat-release.yml`: production source gate for exact tag/manual revisions. It validates LFS,
+  full tests/screenshots, Detekt/Ktlint, dependency vulnerabilities, release lint, and unsigned
+  release-source compilation. Dependency-Check fails on every known scored vulnerability (CVSS
+  threshold `0.0`) and uploads its reports for review. The workflow has no signing secrets and creates
+  no APK/AAB.
+- `tests.yml` and `quality.yml`: broader unit, screenshot, lint, Detekt, Ktlint, Konsist, shell, and
+  workflow checks.
+- `recordScreenshots.yml` and `validate-lfs.yml`: visual-baseline recording and LFS validation.
+- `maestro-local.yml`: manual emulator smoke tests using SecureChat-owned test accounts.
+- `nightlyReports.yml` and `sonar.yml`: scheduled reports and optional Sonar upload when configured.
 
-<!--- END -->
+All cloud jobs may compile release sources, but they must not package or upload a production release.
+The production key must never be stored in GitHub Secrets or exposed to a hosted runner. Signed APKs
+are created only on the isolated workstation with `tools/release/build_securechat_offline.sh`; Gradle
+fails closed if someone requests release packaging without the complete offline signing environment.
+When Gradle runs with `--offline`, Dependency-Check disables its own data updates and remote analyzers;
+the release operator must therefore import the fresh, reviewed vulnerability database produced for
+the same source-gate run before disconnecting the workstation.
 
-## Introduction
+Always invoke the multi-project scan as the root task `:dependencyCheckAggregate` with
+`--no-parallel --no-configure-on-demand`. The leading colon prevents Gradle from selecting the task
+of the same name in every subproject; serial configuration prevents Gradle 9 from resolving the
+aggregate cross-project graph concurrently. CI also disables the configuration cache for this task.
 
-This document gives some information about how we take advantage of the continuous integration (CI).
-
-## CI tools
-
-We use GitHub Actions to configure and perform the CI.
-
-## Rules
-
-We want:
-
-1. The CI to detect as soon as possible any issue in the code
-2. The CI to be fast - it's run on all the Pull Requests, and developers do not like to wait too long
-3. The CI to be reliable - it should not fail randomly
-4. The CI to generate artifacts which can be used by the team and the community
-5. The CI to generate useful logs and reports, not too verbose, not too short
-6. The developer to be able to run the CI locally - to help with this we have [a script](../tools/check/check_code_quality.sh) the can be run locally and which does more checks that just building and deploying the app.
-7. The CI to be used as a common environment for the team: generate the screenshots image for the screenshot test, build the release build (unsigned)
-8. The CI to run repeated tasks, like building the nightly builds, integrating data from external tools (translations, etc.)
-9. The CI to upgrade our dependencies (Renovate)
-10. The CI to do some issue triaging
-
-## What is the CI checking
-
-The CI checks that:
-
-1. The code is compiling, without any warnings, for all the app build types and variants
-2. The tests are passing
-3. The code quality is good (detekt, ktlint, lint)
-4. The code is running and smoke tests are passing (maestro)
-5. The PullRequest itself is good (with danger)
-6. Files that must be added with git-lfs are added with git-lfs
-
-## What is the CI reporting
-
-The CI reports:
-
-1. Code coverage reports
-2. Sonar reports
-
-## Current choices
-
-### R8 task
-
-The CI does not run R8 because it's too slow, and it breaks rule 2.
-
-The drawback is that the nightly build can fail, as well as the release build.
-
-Since the nightly build is failing, the team can detect the failure quite fast and react to it.
-
-### Android test (connected test)
-
-We limit the number of connected tests (tests under folder `androidTest`), because it often break rule 2 and 3.
+Parent-company enterprise, release, translation, PR-policy, Danger, and triage automations were
+removed because they depended on private repositories, accounts, or secrets not owned by SecureChat.

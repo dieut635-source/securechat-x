@@ -33,7 +33,7 @@ android {
             value = if (isEnterpriseBuild) {
                 BuildTimeConfig.SERVICES_MAPTILER_APIKEY
             } else {
-                System.getenv("ELEMENT_ANDROID_MAPTILER_API_KEY")
+                System.getenv("SECURECHAT_MAPTILER_API_KEY")
                     ?: readLocalProperty("services.maptiler.apikey")
             }
                 ?: ""
@@ -43,7 +43,7 @@ android {
             value = if (isEnterpriseBuild) {
                 BuildTimeConfig.SERVICES_MAPTILER_LIGHT_MAPID
             } else {
-                System.getenv("ELEMENT_ANDROID_MAPTILER_LIGHT_MAP_ID")
+                System.getenv("SECURECHAT_MAPTILER_LIGHT_MAP_ID")
                     ?: readLocalProperty("services.maptiler.lightMapId")
             }
             // fall back to maptiler's default light map.
@@ -54,7 +54,7 @@ android {
             value = if (isEnterpriseBuild) {
                 BuildTimeConfig.SERVICES_MAPTILER_DARK_MAPID
             } else {
-                System.getenv("ELEMENT_ANDROID_MAPTILER_DARK_MAP_ID")
+                System.getenv("SECURECHAT_MAPTILER_DARK_MAP_ID")
                     ?: readLocalProperty("services.maptiler.darkMapId")
             }
             // fall back to maptiler's default dark map.

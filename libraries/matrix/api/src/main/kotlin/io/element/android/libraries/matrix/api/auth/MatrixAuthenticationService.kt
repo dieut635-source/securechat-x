@@ -35,9 +35,14 @@ interface MatrixAuthenticationService {
     /**
      * Set the homeserver to use for authentication, and return its details.
      *
-     * @param homeserver the homeserver URL or server name to authenticate against.
+     * @param homeserver the homeserver URL or server name the SDK should connect to.
+     * @param accountProvider the user-selected account provider used for enterprise access control.
+     * This can differ from [homeserver] after a legitimate `.well-known` delegation.
      */
-    suspend fun setHomeserver(homeserver: String): Result<MatrixHomeServerDetails>
+    suspend fun setHomeserver(
+        homeserver: String,
+        accountProvider: String = homeserver,
+    ): Result<MatrixHomeServerDetails>
 
     /**
      * Logs in with a password on the homeserver previously set through [setHomeserver].

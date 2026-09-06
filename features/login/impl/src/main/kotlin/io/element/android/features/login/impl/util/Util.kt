@@ -15,6 +15,7 @@ import io.element.android.appconfig.AuthenticationConfig
 import io.element.android.libraries.core.data.tryOrNull
 
 fun openLearnMorePage(context: Context) {
-    val intent = Intent(Intent.ACTION_VIEW, AuthenticationConfig.SLIDING_SYNC_READ_MORE_URL.toUri())
+    val url = AuthenticationConfig.SLIDING_SYNC_READ_MORE_URL ?: return
+    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
     tryOrNull { context.startActivity(intent) }
 }

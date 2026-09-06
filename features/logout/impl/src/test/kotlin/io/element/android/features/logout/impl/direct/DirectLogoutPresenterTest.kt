@@ -43,8 +43,19 @@ class DirectLogoutPresenterTest {
         }
     }
 
+    /**
+     * Thiết bị cuối cùng VẪN đăng xuất trực tiếp được.
+     *
+     * Thượng nguồn trả false ở đây để đẩy người dùng qua một luồng mời lập sao lưu khoá trước
+     * khi mất quyền giải mã lịch sử. Ở SecureChat luồng đó không có gì để mời — đã chốt không
+     * sao lưu khoá — và chính sách một tài khoản một máy khiến isLastDevice LUÔN đúng.
+     *
+     * Hệ quả nếu giữ nguyên: mọi lần bấm Đăng xuất đều rơi vào `startSignOutFlow()`, mà hàm đó
+     * rỗng. Nút hiện ra, bấm không có gì xảy ra. Tôi đã bật nút đăng xuất mà không kiểm cú bấm
+     * dẫn tới đâu, và chỉ phát hiện khi bấm thử trên máy thật. Test này là chỗ lẽ ra phải bắt.
+     */
     @Test
-    fun `present - initial state - last session`() = runTest {
+    fun `present - the last session can still sign out directly`() = runTest {
         val presenter = createDirectLogoutPresenter(
             encryptionService = FakeEncryptionService().apply {
                 emitIsLastDevice(true)
@@ -54,7 +65,7 @@ class DirectLogoutPresenterTest {
             presenter.present()
         }.test {
             val initialState = awaitFirstItem()
-            assertThat(initialState.canDoDirectSignOut).isFalse()
+            assertThat(initialState.canDoDirectSignOut).isTrue()
             assertThat(initialState.logoutAction).isEqualTo(AsyncAction.Uninitialized)
         }
     }

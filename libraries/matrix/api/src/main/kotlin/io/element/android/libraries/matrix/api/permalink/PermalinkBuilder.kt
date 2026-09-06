@@ -12,7 +12,8 @@ import io.element.android.libraries.matrix.api.core.RoomAlias
 import io.element.android.libraries.matrix.api.core.UserId
 
 /**
- * Builds `matrix.to` permalinks, which are the shareable links to a user or a room; see [PermalinkParser] for the other direction.
+ * Builds `matrix:` protocol links to a user or room without routing identifiers through a public
+ * permalink service; see [PermalinkParser] for the other direction.
  */
 interface PermalinkBuilder {
     /**

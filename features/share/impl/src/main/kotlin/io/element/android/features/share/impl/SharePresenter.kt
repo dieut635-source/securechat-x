@@ -24,6 +24,7 @@ import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.room.JoinedRoom
+import io.element.android.libraries.mdm.api.MdmService
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfigProvider
 import io.element.android.libraries.mediaupload.api.MediaSenderRoomFactory
 import io.element.android.services.appnavstate.api.ActiveRoomsHolder
@@ -41,6 +42,7 @@ class SharePresenter(
     private val activeRoomsHolder: ActiveRoomsHolder,
     private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
     private val onSharedData: OnSharedData,
+    private val mdmService: MdmService,
 ) : Presenter<ShareState> {
     @AssistedFactory
     fun interface Factory {
@@ -78,6 +80,7 @@ class SharePresenter(
         roomIds: List<RoomId>,
     ) = launch {
         suspend {
+            if (shareIntentData is ShareIntentData.Uris) assertFileSendingAllowed()
             val result = when (shareIntentData) {
                 is ShareIntentData.PlainText -> {
                     roomIds
@@ -97,32 +100,35 @@ class SharePresenter(
                     } else {
                         roomIds
                             .map { roomId ->
+                                assertFileSendingAllowed()
                                 val room = getJoinedRoom(roomId) ?: return@map false
-                                val mediaSender = mediaSenderRoomFactory.create(room = room)
-                                filesToShare
-                                    .map { fileToShare ->
-                                        val result = mediaSender.sendMedia(
-                                            caption = shareIntentData.text,
-                                            uri = fileToShare.uri,
-                                            mimeType = fileToShare.mimeType,
-                                            mediaOptimizationConfig = mediaOptimizationConfigProvider.get(),
-                                        )
-                                        // If the coroutine was cancelled, destroy the room and rethrow the exception
-                                        val cancellationException = result.exceptionOrNull() as? CancellationException
-                                        if (cancellationException != null) {
-                                            if (activeRoomsHolder.getActiveRoomMatching(matrixClient.sessionId, roomId) == null) {
-                                                room.destroy()
+                                try {
+                                    val mediaSender = mediaSenderRoomFactory.create(room = room)
+                                    filesToShare
+                                        .map { fileToShare ->
+                                            // Restrictions can change while a multi-room/multi-file share is running.
+                                            // Re-check directly before every upload so only work already handed to the
+                                            // media sender can finish after an administrator disables file sending.
+                                            assertFileSendingAllowed()
+                                            val result = mediaSender.sendMedia(
+                                                caption = shareIntentData.text,
+                                                uri = fileToShare.uri,
+                                                mimeType = fileToShare.mimeType,
+                                                mediaOptimizationConfig = mediaOptimizationConfigProvider.get(),
+                                            )
+                                            // If the coroutine was cancelled, destroy the room and rethrow the exception
+                                            val cancellationException = result.exceptionOrNull() as? CancellationException
+                                            if (cancellationException != null) {
+                                                throw cancellationException
                                             }
-                                            throw cancellationException
+                                            result.isSuccess
                                         }
-                                        result.isSuccess
+                                        .all { isSuccess -> isSuccess }
+                                } finally {
+                                    if (activeRoomsHolder.getActiveRoomMatching(matrixClient.sessionId, roomId) == null) {
+                                        room.destroy()
                                     }
-                                    .all { isSuccess -> isSuccess }
-                                    .also {
-                                        if (activeRoomsHolder.getActiveRoomMatching(matrixClient.sessionId, roomId) == null) {
-                                            room.destroy()
-                                        }
-                                    }
+                                }
                             }
                             .all { it }
                     }
@@ -137,5 +143,11 @@ class SharePresenter(
             }
             roomIds
         }.runCatchingUpdatingState(shareActionState)
+    }
+
+    private fun assertFileSendingAllowed() {
+        check(mdmService.config.value.allowFileSend) {
+            "Sending files is disabled by the managed configuration"
+        }
     }
 }

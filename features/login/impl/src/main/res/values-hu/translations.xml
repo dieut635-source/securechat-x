@@ -9,13 +9,13 @@
   <string name="screen_account_provider_signin_title">"Hamarosan bejelentkezik ide: %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Itt lesznek a beszélgetései – ahogyan egy e-mail-szolgáltatást is használna a levelei kezeléséhez."</string>
   <string name="screen_account_provider_signup_title">"Hamarosan létrehoz egy fiókot itt: %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"A Matrix.org egy nagy, ingyenes kiszolgáló a nyilvános Matrix-hálózaton, a biztonságos, decentralizált kommunikáció érdekében, amelyet a Matrix.org Alapítvány üzemeltet."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Egyéb"</string>
   <string name="screen_change_account_provider_subtitle">"Másik fiókszolgáltató, például a saját privát kiszolgáló vagy egy munkahelyi fiók használata."</string>
   <string name="screen_change_account_provider_title">"Fiókszolgáltató módosítása"</string>
   <string name="screen_change_server_error_element_pro_required_action_android">"Google Play"</string>
-  <string name="screen_change_server_error_element_pro_required_message">"Az Element Pro alkalmazás szükséges a következőn: %1$s. Töltse le az áruházból."</string>
-  <string name="screen_change_server_error_element_pro_required_title">"Element Pro szükséges"</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
   <string name="screen_change_server_error_invalid_homeserver">"Nem sikerült elérni ezt a Matrix-kiszolgálót. Ellenőrizze, hogy helyesen adta-e meg a Matrix-kiszolgáló webcímét. Ha a webcím helyes, akkor további segítségért lépjen kapcsolatba a Matrix-kiszolgáló adminisztrátorával."</string>
   <string name="screen_change_server_error_invalid_well_known">"A kiszolgáló a well-known fájl problémája miatt nem érhető el:
 %1$s"</string>
@@ -37,8 +37,8 @@
   <string name="screen_login_subtitle">"A Matrix egy nyitott hálózat a biztonságos, decentralizált kommunikációhoz."</string>
   <string name="screen_login_title">"Örülünk, hogy visszatért!"</string>
   <string name="screen_login_title_with_homeserver">"Bejelentkezés ide: %1$s"</string>
-  <string name="screen_missing_key_backup_open_element_classic">"Nyissa meg az Element Classic alkalmazást"</string>
-  <string name="screen_missing_key_backup_step_1">"Nyissa meg az Element Classic alkalmazást az eszközén"</string>
+  <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
+  <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
   <string name="screen_missing_key_backup_step_2_android">"Lépjen a Beállítások &gt; Biztonság és adatvédelem menüponthoz"</string>
   <string name="screen_missing_key_backup_step_3_android">"A Kriptográfiai kulcsok kezelése részben válassza a Titkosított üzenetek helyreállítása lehetőséget"</string>
   <string name="screen_missing_key_backup_step_4">"Kövesse az utasításokat a kulcstároló engedélyezéséhez"</string>
@@ -53,7 +53,7 @@
   <string name="screen_onboarding_welcome_back">"Üdvözöljük újra!"</string>
   <string name="screen_onboarding_welcome_message">"Üdvözöljük a valaha volt leggyorsabb %1$sben. Felturbózva, a sebesség és az egyszerűség érdekében."</string>
   <string name="screen_onboarding_welcome_subtitle">"Üdvözli az %1$s. Felturbózva, a sebesség és az egyszerűség jegyében."</string>
-  <string name="screen_onboarding_welcome_title">"Legyen elemében"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Biztonságos kapcsolat létesítése"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"Nem sikerült biztonságos kapcsolatot létesíteni az új eszközzel. A meglévő eszközei továbbra is biztonságban vannak, és nem kell aggódnia miattuk."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"Most mi lesz?"</string>
@@ -100,7 +100,7 @@ Próbáljon meg kézileg bejelentkezni, vagy olvassa be a QR-kódot egy másik e
   <string name="screen_qr_code_login_verify_code_subtitle">"A fiókszolgáltatója kérheti a következő kódot a bejelentkezése ellenőrzéséhez."</string>
   <string name="screen_qr_code_login_verify_code_title">"Az Ön ellenőrzőkódja"</string>
   <string name="screen_server_confirmation_change_server">"Fiókszolgáltató módosítása"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Egy privát kiszolgáló az Element alkalmazottai számára."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"A Matrix egy nyitott hálózat a biztonságos, decentralizált kommunikációhoz."</string>
   <string name="screen_server_confirmation_message_register">"Itt lesznek a beszélgetései – ahogyan egy e-mail-szolgáltatást is használna a levelei kezeléséhez."</string>
   <string name="screen_server_confirmation_title_login">"Hamarosan bejelentkezik ebbe: %1$s"</string>

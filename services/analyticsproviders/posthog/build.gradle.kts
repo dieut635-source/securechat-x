@@ -24,11 +24,11 @@ android {
     defaultConfig {
         buildConfigFieldStr(
             name = "POSTHOG_HOST",
-            value = BuildTimeConfig.SERVICES_POSTHOG_HOST.takeIf { isEnterpriseBuild } ?: ""
+            value = BuildTimeConfig.SERVICES_POSTHOG_HOST ?: ""
         )
         buildConfigFieldStr(
             name = "POSTHOG_APIKEY",
-            value = BuildTimeConfig.SERVICES_POSTHOG_APIKEY.takeIf { isEnterpriseBuild } ?: ""
+            value = BuildTimeConfig.SERVICES_POSTHOG_APIKEY ?: ""
         )
     }
 }

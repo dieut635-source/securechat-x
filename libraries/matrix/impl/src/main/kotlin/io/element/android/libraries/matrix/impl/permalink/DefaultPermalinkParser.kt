@@ -27,11 +27,8 @@ import org.matrix.rustcomponents.sdk.MatrixId
 import org.matrix.rustcomponents.sdk.parseMatrixEntityFrom
 
 /**
- * This class turns a uri to a [PermalinkData].
- * element-based domains (e.g. https://app.element.io/#/user/@chagai95:matrix.org) permalinks
- * or matrix.to permalinks (e.g. https://matrix.to/#/@chagai95:matrix.org)
- * or client permalinks (e.g. <clientPermalinkBaseUrl>user/@chagai95:matrix.org)
- * or matrix: permalinks (e.g. matrix:u/chagai95:matrix.org)
+ * This class turns a `matrix:` protocol link or a validated matrix.to permalink into
+ * [PermalinkData]. Unrecognised web origins remain ordinary fallback links.
  */
 @ContributesBinding(AppScope::class)
 class DefaultPermalinkParser(
@@ -47,9 +44,7 @@ class DefaultPermalinkParser(
             // take matrix: URI as is to [parseMatrixEntityFrom]
             uri
         } else {
-            // the client or element-based domain permalinks (e.g. https://app.element.io/#/user/@chagai95:matrix.org) don't have the
-            // mxid in the first param (like matrix.to does - https://matrix.to/#/@chagai95:matrix.org) but rather in the second after /user/ so /user/mxid
-            // so convert URI to matrix.to to simplify parsing process
+            // Only a converter-approved web permalink is passed to the SDK parser.
             matrixToConverter.convert(uri) ?: return PermalinkData.FallbackLink(uri)
         }
 

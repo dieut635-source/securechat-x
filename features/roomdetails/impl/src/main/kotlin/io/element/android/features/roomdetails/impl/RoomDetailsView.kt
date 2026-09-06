@@ -571,7 +571,7 @@ private fun DmHeaderSection(
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             modifier = Modifier.niceClickable { onSubtitleClick(otherMember.userId.value) },
-            text = otherMember.userId.value,
+            text = otherMember.userId.displayLabel,
             style = ElementTheme.typography.fontBodyLgRegular,
             color = ElementTheme.colors.textSecondary,
             textAlign = TextAlign.Center,

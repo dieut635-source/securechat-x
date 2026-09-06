@@ -70,7 +70,7 @@ fun aShowLocationState(
 }
 
 fun aLocationShareItem(
-    userId: UserId = UserId("@alice:matrix.org"),
+    userId: UserId = UserId("@alice:chat.securechat.com.au"),
     displayName: String = USER_NAME_ALICE,
     avatarData: AvatarData = AvatarData(
         id = userId.value,

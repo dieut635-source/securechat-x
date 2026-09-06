@@ -22,7 +22,7 @@ import io.element.android.libraries.ui.strings.CommonStrings
 @Composable
 fun AboutView(
     state: AboutState,
-    onElementLegalClick: (ElementLegal) -> Unit,
+    onSecureChatLegalClick: (SecureChatLegal) -> Unit,
     onOpenSourceLicensesClick: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -32,12 +32,12 @@ fun AboutView(
         onBackClick = onBackClick,
         title = stringResource(id = CommonStrings.common_about)
     ) {
-        state.elementLegals.forEach { elementLegal ->
+        state.secureChatLegals.forEach { secureChatLegal ->
             ListItem(
                 content = {
-                    Text(stringResource(id = elementLegal.titleRes))
+                    Text(stringResource(id = secureChatLegal.titleRes))
                 },
-                onClick = { onElementLegalClick(elementLegal) }
+                onClick = { onSecureChatLegalClick(secureChatLegal) }
             )
         }
         ListItem(
@@ -54,7 +54,7 @@ fun AboutView(
 internal fun AboutViewPreview(@PreviewParameter(AboutStatePreviewParam::class) state: AboutState) = ElementPreview {
     AboutView(
         state = state,
-        onElementLegalClick = {},
+        onSecureChatLegalClick = {},
         onOpenSourceLicensesClick = {},
         onBackClick = {},
     )

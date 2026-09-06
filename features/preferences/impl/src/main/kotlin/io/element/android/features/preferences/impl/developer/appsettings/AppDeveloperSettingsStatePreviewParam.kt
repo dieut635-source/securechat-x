@@ -21,7 +21,7 @@ open class AppDeveloperSettingsStatePreviewParam : PreviewParameterProvider<AppD
             anAppDeveloperSettingsState(),
             anAppDeveloperSettingsState(
                 customElementCallBaseUrlState = aCustomElementCallBaseUrlState(
-                    baseUrl = "https://call.element.ahoy",
+                    baseUrl = "https://chat.securechat.com.au/call",
                 )
             ),
         )

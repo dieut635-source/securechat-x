@@ -10,7 +10,6 @@ package io.element.android.features.preferences.impl.root
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
-import io.element.android.features.enterprise.api.SessionEnterpriseService
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.userstatus.UserStatusState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
@@ -28,21 +26,13 @@ import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
 import io.element.android.libraries.featureflag.api.FeatureFlagService
-import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.matrix.api.MatrixClient
-import io.element.android.libraries.matrix.api.core.UserId
-import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.api.verification.SessionVerificationService
-import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 @Inject
 class PreferencesRootPresenter(
@@ -56,8 +46,6 @@ class PreferencesRootPresenter(
     private val showDeveloperSettingsProvider: ShowDeveloperSettingsProvider,
     private val rageshakeFeatureAvailability: RageshakeFeatureAvailability,
     private val featureFlagService: FeatureFlagService,
-    private val sessionStore: SessionStore,
-    private val sessionEnterpriseService: SessionEnterpriseService,
     private val userStatusPresenter: Presenter<UserStatusState>,
 ) : Presenter<PreferencesRootState> {
     @Composable
@@ -68,32 +56,10 @@ class PreferencesRootPresenter(
             // Force a refresh of the profile
             matrixClient.getUserProfile()
         }
-        val isMultiAccountEnabled by remember {
-            featureFlagService.isFeatureEnabledFlow(FeatureFlags.MultiAccount)
-        }.collectAsState(initial = false)
-        val showLinkNewDevice by remember {
-            featureFlagService.isFeatureEnabledFlow(FeatureFlags.QrCodeLogin)
-        }.collectAsState(initial = false)
-
         val isUserStatusSupported by produceState(false) {
             value = matrixClient.isUserStatusSupported().getOrDefault(false)
         }
         val userStatusState = if (isUserStatusSupported) userStatusPresenter.present() else null
-
-        val otherSessions by remember {
-            sessionStore.sessionsFlow().map { list ->
-                list
-                    .filter { it.userId != matrixClient.sessionId.value }
-                    .map {
-                        MatrixUser(
-                            userId = UserId(it.userId),
-                            displayName = it.userDisplayName,
-                            avatarUrl = it.userAvatarUrl,
-                        )
-                    }
-                    .toImmutableList()
-            }
-        }.collectAsState(initial = persistentListOf())
 
         val snackbarMessage by snackbarDispatcher.collectSnackbarMessageAsState()
         val hasAnalyticsProviders = remember { analyticsService.getAvailableAnalyticsProviders().isNotEmpty() }
@@ -103,9 +69,6 @@ class PreferencesRootPresenter(
 
         val showSecureBackupIndicator by indicatorService.showSettingChatBackupIndicator()
 
-        val accountManagementUrl: MutableState<String?> = remember {
-            mutableStateOf(null)
-        }
         var canDeactivateAccount by remember {
             mutableStateOf(false)
         }
@@ -124,10 +87,6 @@ class PreferencesRootPresenter(
 
         val directLogoutState = directLogoutPresenter.present()
 
-        LaunchedEffect(Unit) {
-            initAccountManagementUrl(accountManagementUrl)
-        }
-
         val showDeveloperSettings by showDeveloperSettingsProvider.showDeveloperSettings.collectAsState()
 
         fun handleEvent(event: PreferencesRootEvent) {
@@ -135,9 +94,9 @@ class PreferencesRootPresenter(
                 is PreferencesRootEvent.OnVersionInfoClick -> {
                     showDeveloperSettingsProvider.unlockDeveloperSettings(coroutineScope)
                 }
-                is PreferencesRootEvent.SwitchToSession -> coroutineScope.launch {
-                    sessionStore.setLatestSession(event.sessionId.value)
-                }
+                // Kept for upstream API compatibility. SecureChat never exposes multi-account UI
+                // and ignores synthetic/stale switch-account events.
+                is PreferencesRootEvent.SwitchToSession -> Unit
             }
         }
 
@@ -145,31 +104,32 @@ class PreferencesRootPresenter(
             myUser = matrixUser.value,
             userStatusState = userStatusState,
             version = remember { versionFormatter.get() },
-            isMultiAccountEnabled = isMultiAccountEnabled,
-            otherSessions = otherSessions,
+            isMultiAccountEnabled = false,
+            otherSessions = persistentListOf(),
             showSecureBackup = !canVerifyUserSession,
             showSecureBackupBadge = showSecureBackupIndicator,
-            accountManagementUrl = accountManagementUrl.value,
+            // Browser account/device management is intentionally unavailable in app-only mode.
+            accountManagementUrl = null,
             showAnalyticsSettings = hasAnalyticsProviders,
             canReportBug = canReportBug,
-            showLinkNewDevice = showLinkNewDevice,
+            showLinkNewDevice = false,
             showDeveloperSettings = showDeveloperSettings,
             canDeactivateAccount = canDeactivateAccount,
             nbOfBlockedUsers = nbOfBlockedUsers,
             showLabsItem = showLabsItem,
+            // Có nút đăng xuất. Trước đây tắt vì "đăng ký máy chủ dùng một lần", nhưng đo lại
+            // thì cái giá không phải là mất quyền dùng: đăng nhập lại sinh device_id mới nằm
+            // ngoài danh sách duyệt, và quản trị viên duyệt nó trên dashboard — đúng quy trình
+            // đang chạy hằng ngày. Đổi lại, không có nút đăng xuất thì người dùng KHÔNG có cách
+            // nào rời tài khoản khỏi máy của chính họ, kể cả khi trả máy hay đổi người dùng.
+            //
+            // Hộp thoại xác nhận nói thẳng cái giá đó (xem securechat_strings.xml của module
+            // logout), vì nó không hiển nhiên: ở sản phẩm khác, đăng xuất rồi đăng nhập lại là
+            // việc tự làm được.
+            showSignOut = true,
             directLogoutState = directLogoutState,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,
         )
-    }
-
-    private fun CoroutineScope.initAccountManagementUrl(
-        accountManagementUrl: MutableState<String?>,
-    ) = launch {
-        accountManagementUrl.value = matrixClient.getAccountManagementUrl(null)
-            .getOrNull()
-            ?.let {
-                sessionEnterpriseService.tweakMasUrl(it)
-            }
     }
 }

@@ -47,7 +47,8 @@ Other useful documentation:
 Matrix website: [matrix.org](https://matrix.org), [discover page](https://matrix.org/discover).
 *Note*: Matrix.org is also hosting a homeserver ([.well-known file](https://matrix.org/.well-known/matrix/client)).
 The reference homeserver (this is how Matrix servers are called) implementation is [Synapse](https://github.com/matrix-org/synapse/). But other implementations
-exist. The Matrix specification is here to ensure that any Matrix client, such as Element Android and its SDK can talk to any Matrix server.
+exist. The Matrix specification ensures that conforming clients and SDKs can communicate with any
+compatible Matrix server.
 
 Have a quick look to the client-server API documentation: [Client-server documentation](https://spec.matrix.org/v1.3/client-server-api/). Other network API
 exist, the list is here: (https://spec.matrix.org/latest/)
@@ -156,7 +157,7 @@ You can then build the Rust SDK by running the script
 This will prompt you for the path to the Rust SDK, then build it and
 `matrix-rust-components-kotlin`, eventually producing an aar file at
 `./libraries/rustsdk/matrix-rust-sdk.aar`, which will be picked up
-automatically by the Element X Android build.
+automatically by the SecureChat Android build.
 
 Troubleshooting:
  - You may need to set `ANDROID_NDK_HOME` e.g `export ANDROID_NDK_HOME=~/Library/Android/sdk/ndk`.
@@ -193,7 +194,7 @@ A few details about some modules:
 
 - `libraries-core` module contains utility classes;
 - `libraries-designsystem` module contains Composables which can be used across the app (theme, etc.);
-- `libraries-elementresources` module contains resource from Element Android (mainly strings);
+- `libraries/ui-strings` contains shared application strings;
 - `libraries-matrix` module contains wrappers around the Matrix Rust SDK.
 
 Most of the time a feature module should not know anything about other feature module.
@@ -334,7 +335,9 @@ suffix `Presenter`,states MUST have a suffix `State`, etc. Also we want to have 
 
 ### Push
 
-**Note** Firebase is implemented, but Unified Push is not yet fully implemented on the project, so this is not possible to choose this push provider in the app at the moment.
+Firebase and UnifiedPush are both excluded from the closed distribution. Notifications are local to
+events received while the Matrix client is running and synchronizing. Reintroducing remote push
+requires a separate security review and SecureChat-controlled infrastructure.
 
 Please see the dedicated [documentation](notifications.md) for more details.
 
@@ -351,7 +354,8 @@ We are using [Gradle version catalog](https://docs.gradle.org/current/userguide/
 All the dependencies (including android artifact, gradle plugin, etc.) should be declared in [../gradle/libs.versions.toml](libs.versions.toml) file.
 Some dependency, mainly because they are not shared can be declared in `build.gradle.kts` files.
 
-[Renovate](https://github.com/apps/renovate) is set up on the project. This tool will automatically create Pull Request to upgrade our dependencies one by one. A [dependency dashboard issue](https://github.com/element-hq/element-x-android/issues/150) is maintained by the tool and allow to perform some actions.
+[Renovate](https://github.com/apps/renovate) can create pull requests for dependency upgrades. Review
+its repository-local dependency dashboard and each dependency diff before merging.
 
 ### Test
 
@@ -416,8 +420,8 @@ Last point, note that `Timber.v` function may have no effect on some devices. Pr
 
 #### Translations
 
-Translations are handled through localazy. See [the dedicated README.md file](../tools/localazy/README.md) for information on how
-to configure new modules etc.
+No inherited translation service is connected. The optional Localazy helpers require a
+SecureChat-owned project and credentials; see `tools/localazy/README.md` before enabling them.
 
 #### Rageshake
 
@@ -429,16 +433,15 @@ Bug reports can contain:
 - the application logs from up to 15 application starts
 - the logcat logs
 
-The data will be sent to an internal server, which is not publicly accessible. A GitHub issue will also be created to a private GitHub repository.
-
-Rageshake can be very useful to get logs from a release version of the application.
+Remote upload is disabled because `BUG_REPORT_URL` is null. Do not enable it until SecureChat owns
+the receiving endpoint and its privacy and retention policy has been reviewed.
 
 
 #### Developer options
 
 > [!WARNING]
 > Developer options can result in unexpected application behavior or destructive
-> actions. Use with caution and only if you are instructed by someone at Element or are
+> actions. Use with caution and only if you are instructed by a SecureChat maintainer or are
 > already familiar.
 
 These options provide advanced controls for testing and debugging. They are visible by
@@ -448,7 +451,7 @@ default in debug and nightly builds but are hidden in release versions.
 number at the bottom 7 times. After tapping, a new "Developer options" entry will appear
 at the bottom of the list.
 
-The developer options include feature flags, notification/push history, Element call
+The developer options include feature flags, notification/push history, SecureChat call
 customization, Rust SDK log levels, per-feature tracing toggles, Showkase to debug UI
 components, rageshake controls, app crash controls, cache details/controls, persistent
 storage maintenance tasks.

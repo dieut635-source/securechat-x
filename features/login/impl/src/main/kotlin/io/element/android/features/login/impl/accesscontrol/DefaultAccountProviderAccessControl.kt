@@ -40,7 +40,7 @@ class DefaultAccountProviderAccessControl(
             if (enterpriseService.isElementProEnforced(accountProviderUrl)) {
                 throw AccountProviderAccessException.NeedElementProException(
                     unauthorisedAccountProviderTitle = title,
-                    applicationId = ELEMENT_PRO_APPLICATION_ID,
+                    applicationId = SECURECHAT_ENTERPRISE_APPLICATION_ID,
                 )
             }
         }
@@ -53,6 +53,6 @@ class DefaultAccountProviderAccessControl(
     }
 
     companion object {
-        const val ELEMENT_PRO_APPLICATION_ID = "io.element.enterprise"
+        const val SECURECHAT_ENTERPRISE_APPLICATION_ID = "com.securechat.enterprise"
     }
 }

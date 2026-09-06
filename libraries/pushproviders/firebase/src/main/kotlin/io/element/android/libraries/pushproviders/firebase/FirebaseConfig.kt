@@ -10,10 +10,10 @@ package io.element.android.libraries.pushproviders.firebase
 
 object FirebaseConfig {
     /**
-     * It is the push gateway for firebase.
-     * Note: pusher_http_url should have path '/_matrix/push/v1/notify' -->
+     * Deliberately non-routable until SecureChat has its own Firebase project and push gateway.
+     * A real gateway URL must end with `/_matrix/push/v1/notify`.
      */
-    const val PUSHER_HTTP_URL: String = "https://matrix.org/_matrix/push/v1/notify"
+    const val PUSHER_HTTP_URL: String = "https://firebase-disabled.securechat.invalid/_matrix/push/v1/notify"
 
     const val INDEX = 0
     const val NAME = "Firebase"

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2025 Element Creations Ltd.
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!--
+  Shown by Android itself on the device-administration screen, not by this app. They have to say
+  plainly what the holder of this device can do, because a person reading them is deciding whether
+  to hand over their handset.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
+    <string name="securechat_device_admin_label" translatable="false">SecureChat device management</string>
+    <string name="securechat_device_admin_description">Allows your organisation to apply security settings to this device, lock it, and erase it if it is lost or stolen.</string>
+</resources>

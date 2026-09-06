@@ -1,2 +1,2 @@
-Main changes in this version: fix Element Call not working.
-Full changelog: https://github.com/element-hq/element-x-android/releases
+Main changes in this version: fixed calling not working.
+Full changelog: https://github.com/dieut635-source/securechat-x/releases

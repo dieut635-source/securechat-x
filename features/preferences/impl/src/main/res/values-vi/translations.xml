@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"Chọn cách nhận thông báo"</string>
   <string name="screen_advanced_settings_developer_mode">"Chế độ nhà phát triển"</string>
   <string name="screen_advanced_settings_developer_mode_description">"Cho phép truy cập vào các tính năng và chức năng dành cho nhà phát triển."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"Địa chỉ tùy chỉnh máy chủ cuộc gọi Element"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"Đặt địa chỉ máy chủ cuộc gọi tùy chỉnh cho Element."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"Địa chỉ tùy chỉnh máy chủ cuộc gọi SecureChat"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"Đặt địa chỉ máy chủ cuộc gọi tùy chỉnh cho SecureChat."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"Địa chỉ URL không hợp lệ. Hãy kiểm tra lại giao thức (http/https) và địa chỉ chính xác."</string>
   <string name="screen_advanced_settings_labs">"Labs"</string>
   <string name="screen_advanced_settings_media_compression_description">"Tải ảnh và video nhanh hơn và giảm mức sử dụng dữ liệu."</string>

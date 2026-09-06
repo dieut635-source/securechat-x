@@ -27,7 +27,7 @@ internal fun SlidingSyncNotSupportedDialog(
     ConfirmationDialog(
         modifier = modifier,
         onDismiss = onDismiss,
-        submitText = stringResource(CommonStrings.action_learn_more),
+        submitText = stringResource(CommonStrings.action_ok),
         onSubmitClick = onLearnMoreClick,
         onCancelClick = onDismiss,
         title = stringResource(CommonStrings.dialog_title_error),

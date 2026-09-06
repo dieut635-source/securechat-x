@@ -21,8 +21,8 @@ open class ConfirmAccountProviderStatePreviewParam : PreviewParameterProvider<Co
         get() = sequenceOf(
             aConfirmAccountProviderState(),
             aConfirmAccountProviderState(
-                accountProviderInput = "element",
-                accountProviderSuggestion = "element.io",
+                accountProviderInput = "securechat",
+                accountProviderSuggestion = "chat.securechat.com.au",
             ),
             aConfirmAccountProviderState(
                 isAccountCreation = true,
@@ -35,7 +35,7 @@ open class ConfirmAccountProviderStatePreviewParam : PreviewParameterProvider<Co
 }
 
 private fun aConfirmAccountProviderState(
-    accountProviderInput: String = "matrix.org",
+    accountProviderInput: String = "chat.securechat.com.au",
     accountProviderSuggestion: String? = null,
     isAccountCreation: Boolean = false,
     loginModeState: LoginModeState = aLoginModeState(),

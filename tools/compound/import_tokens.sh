@@ -8,6 +8,7 @@
 set -e
 
 BRANCH='main'
+TOKENS_REPOSITORY=${COMPOUND_TOKENS_REPOSITORY:?Set COMPOUND_TOKENS_REPOSITORY to the approved design-token repository URL}
 
 while getopts b: flag
 do
@@ -27,7 +28,7 @@ if [ -d tmpCompound ]; then
 fi
 mkdir tmpCompound
 pushd tmpCompound
-git clone --branch "${BRANCH}" https://github.com/element-hq/compound-design-tokens
+git clone --branch "${BRANCH}" "${TOKENS_REPOSITORY}" compound-design-tokens
 
 echo "Copying files from tokens repository..."
 rm -R ../libraries/compound/src/main/res/drawable

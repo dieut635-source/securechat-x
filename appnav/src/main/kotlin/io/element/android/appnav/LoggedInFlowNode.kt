@@ -56,7 +56,6 @@ import io.element.android.features.ftue.api.FtueEntryPoint
 import io.element.android.features.ftue.api.state.FtueService
 import io.element.android.features.ftue.api.state.FtueState
 import io.element.android.features.home.api.HomeEntryPoint
-import io.element.android.features.linknewdevice.api.LinkNewDeviceEntryPoint
 import io.element.android.features.location.api.LocalMapTilerConfig
 import io.element.android.features.location.api.live.ActiveLiveLocationShareManager
 import io.element.android.features.networkmonitor.api.NetworkMonitor
@@ -134,7 +133,6 @@ class LoggedInFlowNode(
     private val secureBackupEntryPoint: SecureBackupEntryPoint,
     private val userProfileEntryPoint: UserProfileEntryPoint,
     private val ftueEntryPoint: FtueEntryPoint,
-    private val linkNewDeviceEntryPoint: LinkNewDeviceEntryPoint,
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
     private val ftueService: FtueService,
@@ -183,33 +181,35 @@ class LoggedInFlowNode(
 
     private val verificationListener = object : SessionVerificationServiceListener {
         override fun onIncomingSessionRequest(verificationRequest: VerificationRequest.Incoming) {
-            // Without this launch the rendering and actual state of this Appyx node's children gets out of sync, resulting in a crash.
-            // This might be because this method is called back from Rust in a background thread.
+            // A second session for the same account is forbidden. Keep cross-user verification,
+            // which is a separate E2EE identity check and must not be weakened by single-device mode.
+            val userVerificationRequest = when (verificationRequest) {
+                is VerificationRequest.Incoming.OtherSession -> {
+                    Timber.w("Ignoring same-account session verification request in single-device mode")
+                    return
+                }
+                is VerificationRequest.Incoming.User -> verificationRequest
+            }
+
+            // Without this launch the rendering and actual state of this Appyx node's children gets
+            // out of sync, resulting in a crash because this callback can arrive from a Rust thread.
             lifecycleScope.launch {
                 val receivedAt = Instant.now()
-
-                // Wait until the app is in foreground to display the incoming verification request
                 appNavigationStateService.appNavigationState.first { it.isInForeground }
 
-                // TODO there should also be a timeout for > 10 minutes elapsed since the request was created, but the SDK doesn't expose that info yet
-                val now = Instant.now()
-                val elapsedTimeSinceReceived = Duration.between(receivedAt, now).toKotlinDuration()
-
-                // Discard the incoming verification request if it has timed out
+                val elapsedTimeSinceReceived = Duration.between(receivedAt, Instant.now()).toKotlinDuration()
                 if (elapsedTimeSinceReceived > 2.minutes) {
-                    Timber.w("Incoming verification request ${verificationRequest.details.flowId} discarded due to timeout.")
+                    Timber.w("Incoming user verification request discarded due to timeout")
                     return@launch
                 }
 
-                // Wait for the RoomList UI to be ready so the incoming verification screen can be displayed on top of it
-                // Otherwise, the RoomList UI may be incorrectly displayed on top
                 withTimeout(5.seconds) {
                     backstack.elements.first { elements ->
                         elements.any { it.key.navTarget == NavTarget.Home }
                     }
                 }
 
-                backstack.singleTop(NavTarget.IncomingVerificationRequest(verificationRequest))
+                backstack.singleTop(NavTarget.IncomingVerificationRequest(userVerificationRequest))
             }
         }
     }
@@ -225,6 +225,8 @@ class LoggedInFlowNode(
                 analyticsRoomListStateWatcher.start()
                 appNavigationStateService.onNavigateToSession(id, matrixClient.sessionId)
                 loggedInFlowProcessor.observeEvents(sessionCoroutineScope)
+                // The listener rejects same-account device verification while retaining
+                // user-to-user identity verification and the Matrix crypto safety checks.
                 matrixClient.sessionVerificationService.setListener(verificationListener)
                 mediaPreviewConfigMigration()
                 sessionCoroutineScope.launch {
@@ -310,16 +312,13 @@ class LoggedInFlowNode(
         data object Ftue : NavTarget
 
         @Parcelize
-        data object LinkNewDevice : NavTarget
-
-        @Parcelize
         data object RoomDirectory : NavTarget
 
         @Parcelize
         data class IncomingShare(val shareIntentData: ShareIntentData) : NavTarget
 
         @Parcelize
-        data class IncomingVerificationRequest(val data: VerificationRequest.Incoming) : NavTarget
+        data class IncomingVerificationRequest(val data: VerificationRequest.Incoming.User) : NavTarget
     }
 
     override fun resolve(navTarget: NavTarget, buildContext: BuildContext): Node {
@@ -471,7 +470,7 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToLinkNewDevice() {
-                        backstack.push(NavTarget.LinkNewDevice)
+                        Timber.w("Link-new-device navigation ignored in SecureChat single-device mode")
                     }
 
                     override fun navigateToBugReport() {
@@ -557,14 +556,6 @@ class LoggedInFlowNode(
             }
             NavTarget.Ftue -> {
                 ftueEntryPoint.createNode(this, buildContext)
-            }
-            NavTarget.LinkNewDevice -> {
-                val callback = object : LinkNewDeviceEntryPoint.Callback {
-                    override fun onDone() {
-                        backstack.pop()
-                    }
-                }
-                linkNewDeviceEntryPoint.createNode(this, buildContext, callback)
             }
             NavTarget.RoomDirectory -> {
                 roomDirectoryEntryPoint.createNode(

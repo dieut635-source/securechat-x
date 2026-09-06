@@ -10,7 +10,8 @@
     <application>
         <activity
             android:name="io.element.android.features.lockscreen.impl.unlock.activity.PinUnlockActivity"
-            android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard|navigation|uiMode"/>
+            android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard|navigation|uiMode"
+            android:exported="false" />
     </application>
 
 </manifest>

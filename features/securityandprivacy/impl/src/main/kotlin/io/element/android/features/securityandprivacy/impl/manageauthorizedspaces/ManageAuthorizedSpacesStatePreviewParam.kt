@@ -28,7 +28,7 @@ open class ManageAuthorizedSpacesStatePreviewParam : PreviewParameterProvider<Ma
         )
 }
 
-private fun aRoomId(index: Int) = RoomId("!roomId$index:matrix.org")
+private fun aRoomId(index: Int) = RoomId("!roomId$index:chat.securechat.com.au")
 
 private fun aSpaceRoomList(count: Int): List<SpaceRoom> {
     return (1..count).map { index ->
@@ -36,7 +36,7 @@ private fun aSpaceRoomList(count: Int): List<SpaceRoom> {
             roomId = aRoomId(index),
             displayName = "Space $index",
             canonicalAlias = if (index % 2 == 0) {
-                RoomAlias("#space$index:matrix.org")
+                RoomAlias("#space$index:chat.securechat.com.au")
             } else {
                 null
             }

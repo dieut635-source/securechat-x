@@ -27,8 +27,7 @@ object OAuthConfig {
     // Note: host must match with the host of CLIENT_URI
     const val POLICY_URI = BuildConfig.POLICY_URI
 
-    // Some homeservers/auth issuers don't support dynamic client registration, and have to be registered manually
-    val STATIC_REGISTRATIONS = mapOf(
-        "https://id.thirdroom.io/realms/thirdroom" to "elementx",
-    )
+    // SecureChat has no issuer-specific static OAuth client registrations. Add one only after the
+    // issuer has explicitly registered a SecureChat-owned client identifier.
+    val STATIC_REGISTRATIONS: Map<String, String> = emptyMap()
 }

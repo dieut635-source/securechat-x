@@ -20,12 +20,13 @@ import io.element.android.libraries.matrix.test.room.FakeBaseRoom
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.libraries.matrix.test.widget.FakeCallWidgetSettingsProvider
 import io.element.android.libraries.matrix.test.widget.FakeMatrixWidgetDriver
-import io.element.android.libraries.preferences.api.store.AppPreferencesStore
-import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
 import io.element.android.services.appnavstate.api.ActiveRoomsHolder
 import io.element.android.services.appnavstate.impl.DefaultActiveRoomsHolder
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+
+private const val A_SECURECHAT_CALL_URL =
+    "https://appassets.androidplatform.net/securechat-call/index.html?widgetId=widget#roomId=!room:securechat.com.au"
 
 class DefaultCallWidgetProviderTest {
     @Test
@@ -56,9 +57,23 @@ class DefaultCallWidgetProviderTest {
     }
 
     @Test
+    fun `getWidget - rejects a generated URL outside the bundled call document`() = runTest {
+        val room = FakeJoinedRoom(
+            generateWidgetWebViewUrlResult = { _, _, _, _ -> Result.success("https://attacker.invalid/call") },
+            getWidgetDriverResult = { Result.success(FakeMatrixWidgetDriver()) },
+        )
+        val client = FakeMatrixClient().apply {
+            givenGetRoomResult(A_ROOM_ID, room)
+        }
+        val provider = createProvider(matrixClientProvider = FakeMatrixClientProvider { Result.success(client) })
+
+        assertThat(provider.getWidget(A_SESSION_ID, A_ROOM_ID, false, "clientId", "languageTag", "theme").isFailure).isTrue()
+    }
+
+    @Test
     fun `getWidget - fails if it can't get the widget driver`() = runTest {
         val room = FakeJoinedRoom(
-            generateWidgetWebViewUrlResult = { _, _, _, _ -> Result.success("url") },
+            generateWidgetWebViewUrlResult = { _, _, _, _ -> Result.success(A_SECURECHAT_CALL_URL) },
             getWidgetDriverResult = { Result.failure(Exception("Can't get a widget driver")) }
         )
         val client = FakeMatrixClient().apply {
@@ -71,7 +86,7 @@ class DefaultCallWidgetProviderTest {
     @Test
     fun `getWidget - returns a widget driver when all steps are successful`() = runTest {
         val room = FakeJoinedRoom(
-            generateWidgetWebViewUrlResult = { _, _, _, _ -> Result.success("url") },
+            generateWidgetWebViewUrlResult = { _, _, _, _ -> Result.success(A_SECURECHAT_CALL_URL) },
             getWidgetDriverResult = { Result.success(FakeMatrixWidgetDriver()) },
         )
         val client = FakeMatrixClient().apply {
@@ -92,7 +107,7 @@ class DefaultCallWidgetProviderTest {
             addRoom(
                 FakeJoinedRoom(
                     baseRoom = FakeBaseRoom(roomId = A_ROOM_ID),
-                    generateWidgetWebViewUrlResult = { _, _, _, _ -> Result.success("url") },
+                    generateWidgetWebViewUrlResult = { _, _, _, _ -> Result.success(A_SECURECHAT_CALL_URL) },
                     getWidgetDriverResult = { Result.success(FakeMatrixWidgetDriver()) },
                 )
             )
@@ -105,36 +120,30 @@ class DefaultCallWidgetProviderTest {
     }
 
     @Test
-    fun `getWidget - will use a custom base url if it exists`() = runTest {
+    fun `getWidget - always uses the embedded SecureChat call application`() = runTest {
         val room = FakeJoinedRoom(
-            generateWidgetWebViewUrlResult = { _, _, _, _ -> Result.success("url") },
+            generateWidgetWebViewUrlResult = { _, _, _, _ -> Result.success(A_SECURECHAT_CALL_URL) },
             getWidgetDriverResult = { Result.success(FakeMatrixWidgetDriver()) },
         )
         val client = FakeMatrixClient().apply {
             givenGetRoomResult(A_ROOM_ID, room)
         }
-        val preferencesStore = InMemoryAppPreferencesStore().apply {
-            setCustomElementCallBaseUrl("https://custom.element.io")
-        }
         val settingsProvider = FakeCallWidgetSettingsProvider()
         val provider = createProvider(
             matrixClientProvider = FakeMatrixClientProvider { Result.success(client) },
             callWidgetSettingsProvider = settingsProvider,
-            appPreferencesStore = preferencesStore,
         )
         provider.getWidget(A_SESSION_ID, A_ROOM_ID, false, "clientId", "languageTag", "theme")
 
-        assertThat(settingsProvider.providedBaseUrls).containsExactly("https://custom.element.io")
+        assertThat(settingsProvider.providedBaseUrls).containsExactly("https://appassets.androidplatform.net/securechat-call/index.html")
     }
 
     private fun createProvider(
         matrixClientProvider: MatrixClientProvider = FakeMatrixClientProvider(),
-        appPreferencesStore: AppPreferencesStore = InMemoryAppPreferencesStore(),
         callWidgetSettingsProvider: CallWidgetSettingsProvider = FakeCallWidgetSettingsProvider(),
         activeRoomsHolder: ActiveRoomsHolder = DefaultActiveRoomsHolder(),
     ) = DefaultCallWidgetProvider(
         matrixClientsProvider = matrixClientProvider,
-        appPreferencesStore = appPreferencesStore,
         callWidgetSettingsProvider = callWidgetSettingsProvider,
         activeRoomsHolder = activeRoomsHolder,
     )

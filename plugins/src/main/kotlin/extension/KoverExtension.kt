@@ -49,8 +49,8 @@ val excludedKoverSubProjects = listOf(
     ":tests:testutils",
 ) + localAarProjects
 
-private fun Project.kover(any: Any) {
-    this.dependencies.add("kover", any)
+private fun Project.kover(projectPath: String) {
+    dependencies.add("kover", dependencies.project(projectPath))
 }
 
 fun Project.setupKover() {
@@ -93,9 +93,9 @@ fun Project.setupKover() {
 
         // If it's the root project, set up kover for subprojects
         if (project.path == ":") {
-            for (project in project.subprojects) {
-                if (project.path !in excludedKoverSubProjects && File(project.projectDir, "build.gradle.kts").exists()) {
-                    kover(project)
+            for (subproject in project.subprojects) {
+                if (subproject.path !in excludedKoverSubProjects && File(subproject.projectDir, "build.gradle.kts").exists()) {
+                    kover(subproject.path)
                 }
             }
         }

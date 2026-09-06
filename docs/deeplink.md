@@ -1,71 +1,44 @@
-# Element X Android deeplink
+# SecureChat Android deep links
 
-<!--- TOC -->
+SecureChat accepts two link families:
 
-* [Introduction](#introduction)
-  * [Asset Links](#asset-links)
-  * [Supported links](#supported-links)
-* [Developer tools](#developer-tools)
+- Internal session links: `securechat://open/{userId}/{roomId}/{threadId}/{eventId}`. Only the
+  user ID is required; every segment must be URI-encoded when it contains reserved characters.
+- Matrix protocol links such as `matrix:r/securechat:chat.securechat.com.au`.
 
-<!--- END -->
+Public HTTPS login/configuration links are disabled: the application manifest has no HTTPS intent
+filter and the login-intent resolver rejects them. The domain-association statement currently does
+not authorize the SecureChat production package and signing certificate, so accepting such links
+would not provide a verified ownership boundary.
 
+Do not restore this link family until all of the following are true:
 
-## Introduction
+- the intended HTTPS route and its parameter contract exist and have been audited on a
+  SecureChat-owned server;
+- `https://chat.securechat.com.au/.well-known/assetlinks.json` removes every obsolete application
+  target and authorizes only the intended SecureChat build, including package `com.securechat.app`
+  and the SHA-256 digest of the certificate signing the manually distributed production APK;
+- the manifest uses an exact host/path filter with `android:autoVerify="true"`, the resolver checks
+  the same endpoint, and a production-signed installation reports the domain as verified through
+  `adb shell pm get-app-links com.securechat.app`.
 
-Element X Android supports deep linking to specific screens in the application. This document explains how to use deep links in Element X Android.
+`autoVerify=true` only requests verification. Without the matching server statement it is not a
+security boundary; Android version and user settings can still affect dispatch. Do not reuse a
+debug-certificate digest for production.
 
-### Asset Links
+The OAuth callback is separate from navigation links: release builds use
+`com.securechat://oauth/callback` and debug builds use
+`com.securechat.debug://oauth/callback`. The exact host and path are enforced by both the manifest
+and callback parser.
 
-The asset links file is available at https://element.io/.well-known/assetlinks.json
+SecureChat generates `matrix:` protocol links for users and room aliases. It can parse a valid
+`https://matrix.to/` link locally for interoperability, but it does not generate new public
+matrix.to links or rewrite links from arbitrary web origins into in-app navigation.
 
-### Supported links
+Developer examples are maintained in `tools/adb/deeplink.sh`, `tools/adb/deeplink_matrix.sh`, and
+`tools/adb/deeplink_matrixto.sh`. After the server-side blocker has been resolved and the HTTPS link
+family deliberately restored, inspect Android link state for a production installation with:
 
-Element Call link: 
-> https://call.element.io/Example
-
-Link to a user:
-> https://app.element.io/#/user/@alice:matrix.org
-
-Link to a room by id or alias:
-> https://app.element.io/#/room/!roomid:matrix.org
-> https://app.element.io/#/room/#element-x-android:matrix.org
-
-Link to a room with a specific event:
-> https://app.element.io/#/room/!roomid:matrix.org/$eventid
-
-Note that it will also work with other domain such as:
-> https://mobile.element.io
-> https://develop.element.io
-> https://staging.element.io
-
-## Developer tools
-
-Using an Android 12 or higher emulator
-
-Ensure links verification is enabled
 ```bash
-adb shell am compat enable 175408749 io.element.android.x.debug  
-```
-
-Reset link verifications for the given package id
-```bash
-adb shell pm set-app-links --package io.element.android.x.debug 0 all 
-```
-
-Force the package id links to be verified
-```bash
-adb shell pm verify-app-links --re-verify io.element.android.x.debug 
-```
-
-Print the link verification of the package id
-```bash
-adb shell pm get-app-links io.element.android.x.debug
-```
-
-```
-  io.element.android.x.debug:
-    ID: e2ece472-c266-4bf0-829c-be79959a6270
-    Signatures: [B0:B0:51:DC:56:5C:81:2F:E1:7F:6F:3E:94:5B:4D:79:04:71:23:AB:0D:A6:12:86:76:9E:B2:94:91:97:13:0E]
-    Domain verification state:
-      *.element.io: 1024
+adb shell pm get-app-links com.securechat.app
 ```

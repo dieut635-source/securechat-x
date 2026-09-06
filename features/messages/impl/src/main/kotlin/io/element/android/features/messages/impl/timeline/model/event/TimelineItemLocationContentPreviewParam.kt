@@ -51,7 +51,7 @@ fun aLiveLocationMode(
 fun aStaticLocationMode(location: Location = aLocation()) = TimelineItemLocationContent.Mode.Static(location)
 
 fun aTimelineItemLocationContent(
-    senderId: UserId = UserId("@sender:matrix.org"),
+    senderId: UserId = UserId("@sender:chat.securechat.com.au"),
     senderProfile: ProfileDetails = aProfileDetailsReady(),
     description: String? = null,
     mode: TimelineItemLocationContent.Mode,

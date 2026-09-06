@@ -51,6 +51,7 @@ import io.element.android.libraries.matrix.impl.room.location.timedByExpiry
 import io.element.android.libraries.matrix.impl.room.member.RoomMemberListFetcher
 import io.element.android.libraries.matrix.impl.room.threads.RustThreadsListService
 import io.element.android.libraries.matrix.impl.roomdirectory.map
+import io.element.android.libraries.matrix.impl.timeline.EncryptionGuardedTimeline
 import io.element.android.libraries.matrix.impl.timeline.RustTimeline
 import io.element.android.libraries.matrix.impl.timeline.item.event.TimelineEventContentMapper
 import io.element.android.libraries.matrix.impl.user.map
@@ -152,7 +153,13 @@ class JoinedRustRoom(
 
     override val roomNotificationSettingsStateFlow = MutableStateFlow<RoomNotificationSettingsState>(RoomNotificationSettingsState.Unknown)
 
-    override val liveTimeline = liveInnerTimeline.map(mode = Timeline.Mode.Live)
+    // Wrapped so nothing can be published into a room that is not encrypted. This and
+    // createTimeline() below are the only two places a Timeline reaches a caller.
+    override val liveTimeline: Timeline = EncryptionGuardedTimeline(
+        delegate = liveInnerTimeline.map(mode = Timeline.Mode.Live),
+        roomId = roomId,
+        isEncrypted = { roomInfoFlow.value.isEncrypted },
+    )
 
     override val threadsListService: ThreadsListService = RustThreadsListService(
         inner = innerRoom.threadListService(),
@@ -276,7 +283,12 @@ class JoinedRustRoom(
                     CreateTimelineParams.PinnedOnly -> Timeline.Mode.PinnedEvents
                     is CreateTimelineParams.Threaded -> Timeline.Mode.Thread(createTimelineParams.threadRootEventId)
                 }
-                innerTimeline.map(mode = mode)
+                // Same guard as liveTimeline: this is the other place a Timeline escapes to a caller.
+                EncryptionGuardedTimeline(
+                    delegate = innerTimeline.map(mode = mode),
+                    roomId = roomId,
+                    isEncrypted = { roomInfoFlow.value.isEncrypted },
+                )
             }
         }.mapFailure {
             when (createTimelineParams) {

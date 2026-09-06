@@ -9,11 +9,14 @@
 package io.element.android.features.call.impl.ui
 
 import android.annotation.SuppressLint
+import android.os.Build
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -41,6 +44,7 @@ import io.element.android.features.call.impl.utils.InvalidAudioDeviceReason
 import io.element.android.features.call.impl.utils.WebViewAudioManager
 import io.element.android.features.call.impl.utils.WebViewPipController
 import io.element.android.features.call.impl.utils.WebViewWidgetMessageInterceptor
+import io.element.android.features.call.impl.utils.isSecureChatCallOrigin
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.designsystem.components.dialogs.ErrorDialog
@@ -63,6 +67,7 @@ internal fun CallScreenView(
     onConsoleMessage: (ConsoleMessage) -> Unit,
     requestPermissions: (Array<String>, RequestPermissionCallback) -> Unit,
     modifier: Modifier = Modifier,
+    isCallUiVisible: Boolean = true,
 ) {
     var callWebView by remember { mutableStateOf<WebView?>(null) }
 
@@ -102,9 +107,31 @@ internal fun CallScreenView(
             modifier = modifier.consumeWindowInsets(WindowInsets.systemBars).fillMaxSize(),
             url = state.urlState,
             userAgent = state.userAgent,
+            isVisible = isCallUiVisible,
             onPermissionsRequest = { request ->
+                if (!isSecureChatCallOrigin(request.origin.toString())) {
+                    request.deny()
+                    return@CallWebView
+                }
                 val androidPermissions = mapWebkitPermissions(request.resources)
-                val callback: RequestPermissionCallback = { request.grant(it) }
+                if (androidPermissions.isEmpty()) {
+                    request.deny()
+                    return@CallWebView
+                }
+                val callback: RequestPermissionCallback = { grantedResources ->
+                    val safeResources = grantedResources.filter { resource ->
+                        resource in request.resources &&
+                            resource in setOf(
+                                PermissionRequest.RESOURCE_AUDIO_CAPTURE,
+                                PermissionRequest.RESOURCE_VIDEO_CAPTURE,
+                            )
+                    }
+                    if (safeResources.isEmpty()) {
+                        request.deny()
+                    } else {
+                        request.grant(safeResources.toTypedArray())
+                    }
+                }
                 requestPermissions(androidPermissions.toTypedArray(), callback)
             },
             onConsoleMessage = onConsoleMessage,
@@ -180,6 +207,7 @@ private fun InvalidAudioDeviceDialog(
 private fun CallWebView(
     url: AsyncData<String>,
     userAgent: String,
+    isVisible: Boolean,
     onPermissionsRequest: (PermissionRequest) -> Unit,
     onConsoleMessage: (ConsoleMessage) -> Unit,
     onCreateWebView: (WebView) -> Unit,
@@ -195,6 +223,7 @@ private fun CallWebView(
             modifier = modifier,
             factory = { context ->
                 WebView(context).apply {
+                    visibility = if (isVisible) View.VISIBLE else View.INVISIBLE
                     onCreateWebView(this)
                     setup(
                         userAgent = userAgent,
@@ -204,6 +233,7 @@ private fun CallWebView(
                 }
             },
             update = { webView ->
+                webView.visibility = if (isVisible) View.VISIBLE else View.INVISIBLE
                 if (url is AsyncData.Success && webView.url != url.data) {
                     webView.loadUrl(url.data)
                 }
@@ -229,8 +259,19 @@ private fun WebView.setup(
 
     with(settings) {
         javaScriptEnabled = true
-        allowContentAccess = true
-        allowFileAccess = true
+        allowContentAccess = false
+        allowFileAccess = false
+        @Suppress("DEPRECATION")
+        allowFileAccessFromFileURLs = false
+        @Suppress("DEPRECATION")
+        allowUniversalAccessFromFileURLs = false
+        mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        javaScriptCanOpenWindowsAutomatically = false
+        setSupportMultipleWindows(false)
+        setGeolocationEnabled(false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            safeBrowsingEnabled = true
+        }
         domStorageEnabled = true
         mediaPlaybackRequiresUserGesture = false
         @Suppress("DEPRECATION")

@@ -16,6 +16,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.libraries.matrix.api.core.EventId
+import io.element.android.libraries.mediaviewer.api.anApkMediaInfo
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
 import io.element.android.tests.testutils.EnsureNeverCalledWithParam
@@ -99,6 +100,18 @@ class MediaDetailsBottomSheetTest : RobolectricTest() {
             state = aMediaBottomSheetStateDetails(),
         )
         onNodeWithText(activity!!.getString(CommonStrings.action_download)).assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "h1024dp")
+    fun `install action is not displayed for Android packages`() = runAndroidComposeUiTest {
+        setMediaDetailsBottomSheet(
+            state = aMediaBottomSheetStateDetails(mediaInfo = anApkMediaInfo()),
+        )
+
+        val context = activity!!
+        onNodeWithText(context.getString(CommonStrings.common_install_apk_android)).assertDoesNotExist()
+        onNodeWithText(context.getString(CommonStrings.action_open_with)).assertDoesNotExist()
     }
 
     @Config(qualifiers = "h1024dp")

@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"Vali kuidas sa soovid saada teavitusi"</string>
   <string name="screen_advanced_settings_developer_mode">"Arendaja valikud"</string>
   <string name="screen_advanced_settings_developer_mode_description">"Selle eelistuse sisselülitamisel lisanduvad rakendusse arendaja tööks vajalikud valikud."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"Element Calli kohandatud teenuseaadress"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"Seadista kohandatud teenuseaadress Element Calli jaoks."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"SecureChat Callsi kohandatud teenuseaadress"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"Seadista kohandatud teenuseaadress SecureChat Callsi jaoks."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"Vigane url. Palun vaata, et url algaks protokolliga (http/https) ning aadress ise oleks ka õige."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Peida jututubade kutsetest tunnuspildid"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"Peida meedia eelvaated ajajoonel"</string>
@@ -88,8 +88,8 @@ Kui sa jätkad muutmist, siis võivad muutuda ka need peidetud eelistused."</str
   <string name="screen_notification_settings_sound_custom_fallback">"Kohandatud"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"Sinu valitud helin…"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"Viga faili kustutamisel"</string>
-  <string name="screen_notification_settings_sound_element_default">"Elementi vaikimisi väärtus"</string>
-  <string name="screen_notification_settings_sound_element_fade">"Elemendi hajumine"</string>
+  <string name="screen_notification_settings_sound_element_default">"SecureChat vaikimisi väärtus"</string>
+  <string name="screen_notification_settings_sound_element_fade">"SecureChat hajumine"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"Viga faili importimisel"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"Viga helina eelvaate esitamisel"</string>
   <string name="screen_notification_settings_sound_section_title">"Helin"</string>

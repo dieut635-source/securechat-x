@@ -19,98 +19,160 @@ class MdmConfigParserTest {
         assertThat(config.homeserverUrl).isEqualTo("https://chat.securechat.com.au")
         assertThat(config.allowRegistration).isFalse()
         assertThat(config.allowFileSend).isTrue()
-        assertThat(config.autoLogoutMinutes).isEqualTo(0)
+        assertThat(config.restrictionsPending).isFalse()
     }
 
     @Test
-    fun `values of the declared types are read as-is`() {
+    fun `DPC pending sentinel overrides permissive values until final restrictions arrive`() {
         val config = MdmConfigParser.parse(
             mapOf(
-                MdmConfig.KEY_HOMESERVER_URL to "https://matrix.example.com",
-                MdmConfig.KEY_ALLOW_REGISTRATION to true,
+                MdmConfig.KEY_RESTRICTIONS_PENDING to true,
+                MdmConfig.KEY_ALLOW_FILE_SEND to true,
+            )
+        )
+
+        assertThat(config).isEqualTo(MdmConfig.restrictionsPending)
+        assertThat(config.allowFileSend).isFalse()
+        assertThat(config.restrictionsPending).isTrue()
+    }
+
+    @Test
+    fun `values of the declared types are read`() {
+        val config = MdmConfigParser.parse(
+            mapOf(
+                MdmConfig.KEY_HOMESERVER_URL to MdmConfig.DEFAULT_HOMESERVER_URL,
+                MdmConfig.KEY_ALLOW_REGISTRATION to false,
                 MdmConfig.KEY_ALLOW_FILE_SEND to false,
-                MdmConfig.KEY_AUTO_LOGOUT_MINUTES to 15,
             )
         )
-        assertThat(config).isEqualTo(
-            MdmConfig(
-                homeserverUrl = "https://matrix.example.com",
-                allowRegistration = true,
-                allowFileSend = false,
-                autoLogoutMinutes = 15,
-            )
-        )
+        assertThat(config).isEqualTo(MdmConfig.default.copy(allowFileSend = false))
     }
 
     @Test
-    fun `booleans pushed as strings are understood`() {
-        for (value in listOf("true", "TRUE", " true ", "1", "yes", "on")) {
-            assertThat(MdmConfigParser.parseBoolean(value)).isTrue()
-        }
-        for (value in listOf("false", "FALSE", " false ", "0", "no", "off")) {
-            assertThat(MdmConfigParser.parseBoolean(value)).isFalse()
+    fun `only Bundle booleans are accepted`() {
+        assertThat(MdmConfigParser.parseBoolean(true)).isTrue()
+        assertThat(MdmConfigParser.parseBoolean(false)).isFalse()
+        for (value in listOf<Any>("true", "false", 1, 0)) {
+            assertThat(MdmConfigParser.parseBoolean(value)).isNull()
         }
     }
 
     @Test
-    fun `a boolean that makes no sense falls back to the default`() {
-        assertThat(MdmConfigParser.parseBoolean("maybe")).isNull()
-        assertThat(MdmConfigParser.parseBoolean("")).isNull()
-        assertThat(MdmConfigParser.parseBoolean(null)).isNull()
-        assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_ALLOW_FILE_SEND to "maybe")).allowFileSend).isTrue()
+    fun `a present malformed boolean fails the whole snapshot closed`() {
+        for (value in listOf<Any?>("true", "maybe", 1, null)) {
+            assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_ALLOW_FILE_SEND to value)))
+                .isEqualTo(MdmConfig.restrictionsPending)
+        }
     }
 
     @Test
-    fun `minutes pushed as a string are understood, and nonsense falls back`() {
-        assertThat(MdmConfigParser.parseMinutes("30")).isEqualTo(30)
-        assertThat(MdmConfigParser.parseMinutes(" 30 ")).isEqualTo(30)
-        assertThat(MdmConfigParser.parseMinutes(0)).isEqualTo(0)
-        assertThat(MdmConfigParser.parseMinutes("soon")).isNull()
-        assertThat(MdmConfigParser.parseMinutes(2_147_483_647L)).isEqualTo(Int.MAX_VALUE)
+    fun `canonical homeserver spellings resolve to the one locked value`() {
+        for (value in listOf(
+            "https://chat.securechat.com.au",
+            " HTTPS://CHAT.SECURECHAT.COM.AU:443/ ",
+        )) {
+            assertThat(MdmConfigParser.parseHomeserverUrl(value)).isEqualTo(MdmConfig.DEFAULT_HOMESERVER_URL)
+            assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_HOMESERVER_URL to value)))
+                .isEqualTo(MdmConfig.default)
+        }
     }
 
     @Test
-    fun `a negative timeout is ignored rather than logging the user out at once`() {
-        assertThat(MdmConfigParser.parseMinutes(-1)).isNull()
-        assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_AUTO_LOGOUT_MINUTES to -5)).autoLogoutMinutes).isEqualTo(0)
-    }
-
-    @Test
-    fun `a bare host gets https added`() {
-        assertThat(MdmConfigParser.parseHomeserverUrl("matrix.example.com")).isEqualTo("https://matrix.example.com")
-        assertThat(MdmConfigParser.parseHomeserverUrl(" matrix.example.com/ ")).isEqualTo("https://matrix.example.com")
-    }
-
-    @Test
-    fun `an http url is rejected rather than downgrading the connection`() {
+    fun `an absent scheme or http url fails the whole snapshot closed`() {
+        assertThat(MdmConfigParser.parseHomeserverUrl("chat.securechat.com.au")).isNull()
         assertThat(MdmConfigParser.parseHomeserverUrl("http://matrix.example.com")).isNull()
-        assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_HOMESERVER_URL to "http://insecure.example.com")).homeserverUrl)
-            .isEqualTo(MdmConfig.DEFAULT_HOMESERVER_URL)
+        assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_HOMESERVER_URL to "http://insecure.example.com")))
+            .isEqualTo(MdmConfig.restrictionsPending)
     }
 
     @Test
-    fun `a homeserver url that is not usable falls back to the default`() {
-        for (value in listOf("", "   ", "not a host", "ftp://example.com", "localhost", 42)) {
+    fun `a different homeserver is rejected even when it is a valid HTTPS URL`() {
+        for (value in listOf(
+            "https://matrix.example.com",
+            "matrix.example.com",
+            "https://chat.securechat.com.au:8448",
+            "https://chat.securechat.com.au/client",
+            "https://chat.securechat.com.au.evil.example",
+            "https://securechat.com.au",
+        )) {
             assertThat(MdmConfigParser.parseHomeserverUrl(value)).isNull()
+            assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_HOMESERVER_URL to value)))
+                .isEqualTo(MdmConfig.restrictionsPending)
         }
     }
 
     @Test
-    fun `a trailing slash is removed so the url matches what the app stores`() {
-        assertThat(MdmConfigParser.parseHomeserverUrl("https://matrix.example.com/")).isEqualTo("https://matrix.example.com")
+    fun `malformed ambiguous and non HTTPS values are rejected`() {
+        for (value in listOf(
+            "",
+            "   ",
+            "not a host",
+            "ftp://chat.securechat.com.au",
+            "http://chat.securechat.com.au",
+            "https://admin@chat.securechat.com.au",
+            "https://chat.securechat.com.au?tenant=other",
+            "https://chat.securechat.com.au/#fragment",
+            "https://chat.securechat.com.au//",
+            "https://chat.securechat.com.au:",
+            "https://chat.securechat.com.au:abc",
+            "https://chat.securechat.com.au:0",
+            "https://chat.securechat.com.au:65536",
+            "https://",
+            42,
+        )) {
+            assertThat(MdmConfigParser.parseHomeserverUrl(value)).isNull()
+            assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_HOMESERVER_URL to value)))
+                .isEqualTo(MdmConfig.restrictionsPending)
+        }
     }
 
     @Test
-    fun `describe lists all four keys so a log line is enough to diagnose a device`() {
+    fun `registration cannot be enabled or supplied with the wrong type`() {
+        for (value in listOf<Any>(true, 1, "false")) {
+            assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_ALLOW_REGISTRATION to value)))
+                .isEqualTo(MdmConfig.restrictionsPending)
+        }
+        assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_ALLOW_REGISTRATION to false)))
+            .isEqualTo(MdmConfig.default)
+    }
+
+    @Test
+    fun `a malformed pending sentinel fails closed`() {
+        for (value in listOf<Any?>("false", 0, null)) {
+            assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_RESTRICTIONS_PENDING to value)))
+                .isEqualTo(MdmConfig.restrictionsPending)
+        }
+        assertThat(MdmConfigParser.parse(mapOf(MdmConfig.KEY_RESTRICTIONS_PENDING to false)))
+            .isEqualTo(MdmConfig.default)
+    }
+
+    /**
+     * auto_logout_minutes was removed. Profiles already pushed to devices may still carry it, so a
+     * leftover value must simply be ignored — not rejected, and above all not tipped into
+     * restrictionsPending, which would silently switch file sending off across the fleet.
+     */
+    @Test
+    fun `a leftover auto_logout_minutes in an old profile is ignored`() {
+        val config = MdmConfigParser.parse(
+            mapOf(
+                MdmConfig.KEY_ALLOW_FILE_SEND to false,
+                "auto_logout_minutes" to 15,
+            )
+        )
+        assertThat(config.restrictionsPending).isFalse()
+        assertThat(config.allowFileSend).isFalse()
+    }
+
+    @Test
+    fun `describe lists all policy values so a log line is enough to diagnose a device`() {
         val text = MdmConfig.default.copy(
             homeserverUrl = "https://matrix.example.com",
             allowRegistration = true,
             allowFileSend = false,
-            autoLogoutMinutes = 15,
         ).describe()
         assertThat(text).contains("homeserver_url=https://matrix.example.com")
         assertThat(text).contains("allow_registration=true")
         assertThat(text).contains("allow_file_send=false")
-        assertThat(text).contains("auto_logout_minutes=15")
+        assertThat(text).contains("restrictions_pending=false")
     }
 }

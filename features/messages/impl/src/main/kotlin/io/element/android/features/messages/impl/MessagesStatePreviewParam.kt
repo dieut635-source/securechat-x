@@ -152,7 +152,7 @@ fun aMessagesState(
     showReinvitePrompt = showReinvitePrompt,
     enableTextFormatting = true,
     roomCallState = roomCallState,
-    appName = "Element",
+    appName = "SecureChat",
     pinnedMessagesBannerState = pinnedMessagesBannerState,
     dmUserVerificationState = dmUserVerificationState,
     roomMemberModerationState = roomMemberModerationState,

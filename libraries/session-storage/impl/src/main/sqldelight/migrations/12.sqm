@@ -1,0 +1,4 @@
+-- Migrate DB from version 12
+-- Preserve the account provider used for managed-policy checks independently of delegation.
+
+ALTER TABLE SessionData ADD COLUMN accountProvider TEXT;

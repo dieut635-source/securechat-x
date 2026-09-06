@@ -39,8 +39,21 @@ class InMemoryLockScreenStore : LockScreenStore {
         this.pinCode = pinCode
     }
 
+    private var duressPinCode: String? = null
+
+    override suspend fun getEncryptedDuressCode(): String? = duressPinCode
+
+    override suspend fun saveEncryptedDuressPinCode(pinCode: String) {
+        duressPinCode = pinCode
+    }
+
+    override suspend fun deleteEncryptedDuressPinCode() {
+        duressPinCode = null
+    }
+
     override suspend fun deleteEncryptedPinCode() {
         pinCode = null
+        duressPinCode = null
     }
 
     override fun isBiometricUnlockAllowed(): Flow<Boolean> {

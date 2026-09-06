@@ -3,4 +3,4 @@ Main changes in this version:
 - Better room list sorting.
 - Fixed crashes when recording long voice messages.
 - Improved the UX when opening a room from the room list.
-Full changelog: https://github.com/element-hq/element-x-android/releases
+Full changelog: https://github.com/dieut635-source/securechat-x/releases

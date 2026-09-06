@@ -8,9 +8,7 @@
 
 package io.element.android.features.home.impl
 
-import android.app.Activity
 import android.os.Parcelable
-import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,7 +48,6 @@ import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.appyx.launchMolecule
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.core.extensions.runCatchingExceptions
-import io.element.android.libraries.deeplink.api.usecase.InviteFriendsUseCase
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.designsystem.utils.DelayedVisibility
 import io.element.android.libraries.di.SessionScope
@@ -80,7 +77,6 @@ class HomeFlowNode(
     @Assisted plugins: List<Plugin>,
     private val matrixClient: MatrixClient,
     private val presenter: HomePresenter,
-    private val inviteFriendsUseCase: InviteFriendsUseCase,
     private val analyticsService: AnalyticsService,
     private val acceptDeclineInviteView: AcceptDeclineInviteView,
     private val directLogoutView: DirectLogoutView,
@@ -145,11 +141,8 @@ class HomeFlowNode(
         backstack.push(NavTarget.DeclineInviteAndBlockUser(roomSummary.toInviteData()))
     }
 
-    private fun onMenuActionClick(activity: Activity, roomListMenuAction: RoomListMenuAction) {
+    private fun onMenuActionClick(roomListMenuAction: RoomListMenuAction) {
         when (roomListMenuAction) {
-            RoomListMenuAction.InviteFriends -> {
-                inviteFriendsUseCase.execute(activity)
-            }
             RoomListMenuAction.ReportBug -> {
                 callback.navigateToBugReport()
             }
@@ -167,7 +160,6 @@ class HomeFlowNode(
     private fun rootNode(buildContext: BuildContext): Node {
         return node(buildContext) { modifier ->
             val state by stateFlow.collectAsState()
-            val activity = requireNotNull(LocalActivity.current)
 
             val loadingJoinedRoomJob = remember { mutableStateOf<AsyncData<Job>>(AsyncData.Uninitialized) }
             if (loadingJoinedRoomJob.value.isLoading()) {
@@ -228,7 +220,7 @@ class HomeFlowNode(
                 onSetUpRecoveryClick = callback::navigateToSetUpRecovery,
                 onConfirmRecoveryKeyClick = callback::navigateToEnterRecoveryKey,
                 onRoomSettingsClick = callback::navigateToRoomSettings,
-                onMenuActionClick = { onMenuActionClick(activity, it) },
+                onMenuActionClick = { onMenuActionClick(it) },
                 onReportRoomClick = ::navigateToReportRoom,
                 onDeclineInviteAndBlockUser = ::navigateToDeclineInviteAndBlockUser,
                 modifier = modifier,

@@ -91,6 +91,88 @@ allprojects {
     apply {
         plugin("org.owasp.dependencycheck")
     }
+    configure<org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension> {
+        // A production security gate must fail on every dependency with a known scored
+        // vulnerability. The plugin default is 11.0, which can never be reached by CVSS and
+        // therefore only creates a report without protecting a release.
+        failBuildOnCVSS.set(0.0f)
+        failOnError.set(true)
+
+        // Miễn trừ dương tính giả — danh sách hẹp, mỗi mục có lý do viết ra.
+        //
+        // failBuildOnCVSS 0.0 nghĩa là MỌI lỗ hổng có điểm đều làm hỏng build. Đó là ngưỡng
+        // đúng cho một sản phẩm bảo mật, nhưng nó cũng làm mọi lần gán CPE sai của
+        // Dependency-Check trở thành một lần chặn phát hành. Cách xử lý đúng là miễn trừ
+        // TỪNG CVE trên TỪNG thư viện kèm lý do, chứ không nâng ngưỡng — nâng ngưỡng là tắt
+        // cổng cho mọi lỗ hổng dưới mức đó, kể cả lỗ hổng thật.
+        suppressionFile = "$rootDir/tools/dependency-check/suppressions.xml"
+
+        // Gradle's --offline flag does not automatically disable Dependency-Check's own network
+        // updaters and remote analyzers. The isolated release workstation must use the reviewed
+        // vulnerability database copied into its offline cache and must never attempt a network
+        // request during the signing ceremony.
+        val offlineDependencyCheck = gradle.startParameter.isOffline
+        autoUpdate.set(!offlineDependencyCheck)
+
+        // CISA KEV: TẮT. Đây là đánh đổi có chủ ý, không phải bỏ sót.
+        //
+        // Đo 06/09/2026 — hai nguồn dữ liệu cần hai đường mạng NGƯỢC NHAU:
+        //
+        //                 đi thẳng      qua đường hầm SOCKS (máy chủ Singapore)
+        //   NVD + khoá    200           404
+        //   CISA KEV      403           200
+        //
+        // CISA chặn theo vùng nên phải đi vòng; NVD lại từ chối chính khoá đó khi yêu cầu
+        // đến từ IP máy chủ. Java đặt SOCKS ở mức toàn cục, không loại trừ được theo host,
+        // nên một tiến trình Gradle không thể chiều cả hai. Không có cách nào giữ cả hai.
+        //
+        // ĐÃ THỬ VÀ KHÔNG DÙNG ĐƯỢC: tải KEV về rồi trỏ `analyzers.kev.url` vào bản cục bộ.
+        // Thuộc tính đó tồn tại trong KEVExtension của plugin 13.0.0 nhưng KHÔNG có tác dụng
+        // — đặt nó thành một URL bịa vẫn cho ra lỗi nêu đúng địa chỉ cisa.gov.
+        //
+        // CÁI GIÁ THẬT SỰ MẤT ĐI, nói cho đúng: KEV đánh dấu lỗ hổng nào ĐANG bị khai thác
+        // ngoài thực tế. Nó KHÔNG đổi việc build hỏng hay không — failBuildOnCVSS là 0.0,
+        // tức mọi lỗ hổng có điểm đều làm hỏng build, dù có nằm trong KEV hay không. Thứ mất
+        // đi là nhãn ưu tiên khi ĐỌC báo cáo, không phải khả năng phát hiện.
+        //
+        // Giữ NVD (nguồn chính, đi thẳng) và bỏ KEV (nguồn phụ, không thể tới được) là đánh
+        // đổi đúng. Nếu sau này build từ nơi không bị CISA chặn, bật lại bằng cách xoá dòng
+        // dưới đây.
+        analyzers.kev.enabled.set(false)
+
+        if (offlineDependencyCheck) {
+            analyzers.centralEnabled.set(false)
+            analyzers.nodeAudit.enabled.set(false)
+            analyzers.ossIndex.enabled.set(false)
+        }
+
+        // Dependency-Check 13 downloads the CVE database through the NVD API, which now requires a
+        // free key. Without one the task dies with "Invalid API Key, length of 0 too short", which
+        // reads like a code fault rather than missing configuration - so fail early and say what to
+        // do instead. Get a key at https://nvd.nist.gov/developers/request-an-api-key and pass it
+        // as the NVD_API_KEY environment variable (a GitHub secret in CI).
+        //
+        // The key is a credential: never commit it, and never put it in gradle.properties inside
+        // the repository.
+        if (!offlineDependencyCheck) {
+            val nvdApiKey = providers.environmentVariable("NVD_API_KEY").orNull
+                ?: providers.gradleProperty("nvdApiKey").orNull
+            if (nvdApiKey.isNullOrBlank()) {
+                tasks.matching { it.name.startsWith("dependencyCheck") }.configureEach {
+                    doFirst {
+                        error(
+                            "NVD_API_KEY is not set, so the CVE database cannot be downloaded and this " +
+                                "security gate would silently scan nothing. Request a free key at " +
+                                "https://nvd.nist.gov/developers/request-an-api-key and export it as " +
+                                "NVD_API_KEY."
+                        )
+                    }
+                }
+            } else {
+                nvd.apiKey.set(nvdApiKey)
+            }
+        }
+    }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         compilerOptions {
@@ -126,20 +208,19 @@ dependencyAnalysis {
 
 // To run a sonar analysis:
 // Run './gradlew sonar -Dsonar.login=<SONAR_LOGIN>'
-// The SONAR_LOGIN is stored in passbolt as Token Sonar Cloud Bma
-// Sonar result can be found here: https://sonarcloud.io/project/overview?id=element-x-android
+// Sonar result can be found here: https://sonarcloud.io/project/overview?id=dieut635-source_securechat-x
 sonar {
     properties {
-        property("sonar.projectName", "element-x-android")
-        property("sonar.projectKey", "element-x-android")
+        property("sonar.projectName", "SecureChat Android")
+        property("sonar.projectKey", "dieut635-source_securechat-x")
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.projectVersion", "1.0") // TODO project(":app").android.defaultConfig.versionName)
         property("sonar.sourceEncoding", "UTF-8")
-        property("sonar.links.homepage", "https://github.com/element-hq/element-x-android/")
-        property("sonar.links.ci", "https://github.com/element-hq/element-x-android/actions")
-        property("sonar.links.scm", "https://github.com/element-hq/element-x-android/")
-        property("sonar.links.issue", "https://github.com/element-hq/element-x-android/issues")
-        property("sonar.organization", "element-hq")
+        property("sonar.links.homepage", "https://github.com/dieut635-source/securechat-x/")
+        property("sonar.links.ci", "https://github.com/dieut635-source/securechat-x/actions")
+        property("sonar.links.scm", "https://github.com/dieut635-source/securechat-x/")
+        property("sonar.links.issue", "https://github.com/dieut635-source/securechat-x/issues")
+        property("sonar.organization", "dieut635-source")
         property("sonar.login", if (project.hasProperty("SONAR_LOGIN")) project.property("SONAR_LOGIN")!! else "invalid")
 
         // exclude source code from analyses separated by a colon (:)
@@ -150,7 +231,15 @@ sonar {
 
 allprojects {
     tasks.withType<Test> {
-        maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+        // Defaults sized for CI. On a developer machine the Gradle daemon needs -Xmx8g for R8, so
+        // the default fork count can exhaust a 16 GB laptop before the full suite finishes. Both
+        // knobs are overridable so the whole gate stays runnable locally:
+        //   ./gradlew test -Psecurechat.test.maxParallelForks=1 -Psecurechat.test.maxHeapSize=1g
+        // See scripts/run-full-test-gate.sh, which wraps this with a smaller daemon heap too.
+        maxParallelForks = (project.findProperty("securechat.test.maxParallelForks") as String?)
+            ?.toIntOrNull()
+            ?.coerceAtLeast(1)
+            ?: (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
 
         val isScreenshotTest = project.gradle.startParameter.taskNames.any { it.contains("paparazzi", ignoreCase = true) }
         if (isScreenshotTest) {
@@ -169,6 +258,9 @@ allprojects {
             exclude("ui/*.class")
             exclude("translations/*.class")
         }
+
+        // Applied last so it also caps the screenshot-test heap set above.
+        (project.findProperty("securechat.test.maxHeapSize") as String?)?.let { maxHeapSize = it }
     }
 }
 

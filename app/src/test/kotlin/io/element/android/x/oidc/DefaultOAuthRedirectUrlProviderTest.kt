@@ -23,7 +23,7 @@ class DefaultOAuthRedirectUrlProviderTest {
             stringProvider = stringProvider,
         )
         val result = sut.provide()
-        assertThat(result).isEqualTo("str:/")
+        assertThat(result).isEqualTo("str://oauth/callback")
         assertThat(stringProvider.lastResIdParam).isEqualTo(R.string.login_redirect_scheme)
     }
 }

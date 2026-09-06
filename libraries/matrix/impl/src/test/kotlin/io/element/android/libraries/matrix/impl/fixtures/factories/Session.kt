@@ -18,12 +18,14 @@ internal fun aRustSession(
     proxy: SlidingSyncVersion = SlidingSyncVersion.NONE,
     accessToken: String = "accessToken",
     refreshToken: String = "refreshToken",
+    homeserverUrl: String = A_HOMESERVER_URL,
+    deviceId: String = A_DEVICE_ID.value,
 ) = Session(
     accessToken = accessToken,
     refreshToken = refreshToken,
     userId = A_USER_ID.value,
-    deviceId = A_DEVICE_ID.value,
-    homeserverUrl = A_HOMESERVER_URL,
+    deviceId = deviceId,
+    homeserverUrl = homeserverUrl,
     oauthData = null,
     slidingSyncVersion = proxy,
 )

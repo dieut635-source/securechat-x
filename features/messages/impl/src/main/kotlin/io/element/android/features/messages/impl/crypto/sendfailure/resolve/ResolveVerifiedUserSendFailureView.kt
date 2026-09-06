@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -32,7 +33,6 @@ import io.element.android.libraries.designsystem.atomic.molecules.IconTitleSubti
 import io.element.android.libraries.designsystem.components.BigIcon
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
-import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.ModalBottomSheet
 import io.element.android.libraries.designsystem.theme.components.OutlinedButton
 import io.element.android.libraries.designsystem.theme.components.TextButton
@@ -44,11 +44,15 @@ fun ResolveVerifiedUserSendFailureView(
     state: ResolveVerifiedUserSendFailureState,
     modifier: Modifier = Modifier,
 ) {
+    val showSheetImmediately = LocalInspectionMode.current &&
+        state.verifiedUserSendFailure !is VerifiedUserSendFailure.None
     val sheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
+        // Production must start hidden so opening the sheet is animated. Previews are static
+        // snapshots, so render their requested state immediately instead of racing LaunchedEffect.
+        initialValue = if (showSheetImmediately) SheetValue.Expanded else SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
-    var showSheet by remember { mutableStateOf(false) }
+    var showSheet by remember { mutableStateOf(showSheetImmediately) }
 
     fun dismiss() {
         state.eventSink(ResolveVerifiedUserSendFailureEvent.Dismiss)
@@ -56,10 +60,6 @@ fun ResolveVerifiedUserSendFailureView(
 
     fun onRetryClick() {
         state.eventSink(ResolveVerifiedUserSendFailureEvent.Retry)
-    }
-
-    fun onResolveAndResendClick() {
-        state.eventSink(ResolveVerifiedUserSendFailureEvent.ResolveAndResend)
     }
 
     LaunchedEffect(state.verifiedUserSendFailure) {
@@ -90,12 +90,6 @@ fun ResolveVerifiedUserSendFailureView(
                 ButtonColumnMolecule(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 ) {
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = state.verifiedUserSendFailure.resolveAction(),
-                        showProgress = state.resolveAction.isLoading(),
-                        onClick = ::onResolveAndResendClick
-                    )
                     OutlinedButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = stringResource(id = CommonStrings.action_retry),
@@ -142,15 +136,6 @@ private fun VerifiedUserSendFailure.subtitle(): String {
             id = CommonStrings.screen_resolve_send_failure_changed_identity_subtitle,
             userDisplayName
         )
-        VerifiedUserSendFailure.None -> ""
-    }
-}
-
-@Composable
-private fun VerifiedUserSendFailure.resolveAction(): String {
-    return when (this) {
-        is VerifiedUserSendFailure.UnsignedDevice -> stringResource(id = CommonStrings.screen_resolve_send_failure_unsigned_device_primary_button_title)
-        is VerifiedUserSendFailure.ChangedIdentity -> stringResource(id = CommonStrings.screen_resolve_send_failure_changed_identity_primary_button_title)
         VerifiedUserSendFailure.None -> ""
     }
 }

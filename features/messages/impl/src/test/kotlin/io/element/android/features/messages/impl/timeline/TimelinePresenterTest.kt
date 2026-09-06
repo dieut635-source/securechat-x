@@ -1081,7 +1081,8 @@ class TimelinePresenterTest {
             initialState.eventSink.invoke(TimelineEvent.LoadMore(Timeline.PaginationDirection.FORWARDS))
             advanceUntilIdle()
             assert(paginateLambda).isNeverCalled()
-            assertThat(expectMostRecentItem().isLive).isFalse()
+            assertThat(awaitItem().isLive).isFalse()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

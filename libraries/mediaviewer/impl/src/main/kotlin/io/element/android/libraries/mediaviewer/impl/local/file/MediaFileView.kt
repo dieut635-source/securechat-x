@@ -37,7 +37,6 @@ import io.element.android.libraries.designsystem.theme.components.OutlinedButton
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.mediaviewer.api.MediaInfo
 import io.element.android.libraries.mediaviewer.api.helper.formatFileExtensionAndSize
-import io.element.android.libraries.mediaviewer.impl.R
 import io.element.android.libraries.mediaviewer.impl.local.LocalMediaViewState
 import io.element.android.libraries.mediaviewer.impl.local.rememberLocalMediaViewState
 import io.element.android.libraries.ui.strings.CommonStrings
@@ -61,7 +60,11 @@ fun MediaFileView(
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            val isApk = info?.mimeType == MimeTypes.Apk
+            val isApk = info?.let {
+                it.mimeType.equals(MimeTypes.Apk, ignoreCase = true) ||
+                    it.fileExtension.equals("apk", ignoreCase = true) ||
+                    it.filename.endsWith(".apk", ignoreCase = true)
+            }.orFalse()
             val icon = when {
                 isAudio -> CompoundIcons.Audio()
                 isApk -> CompoundIcons.Bug()
@@ -92,18 +95,13 @@ fun MediaFileView(
                     overflow = TextOverflow.Ellipsis,
                     color = ElementTheme.colors.textPrimary
                 )
-                if (onOpenWith != null) {
-                    val (icon, textResId) = if (isApk) {
-                        IconSource.Resource(R.drawable.ic_apk_install) to CommonStrings.common_install_apk_android
-                    } else {
-                        IconSource.Vector(CompoundIcons.PopOut()) to CommonStrings.action_open_with
-                    }
+                if (onOpenWith != null && !isApk) {
                     OutlinedButton(
                         modifier = Modifier.padding(top = 24.dp),
                         size = ButtonSize.Small,
-                        leadingIcon = icon,
+                        leadingIcon = IconSource.Vector(CompoundIcons.PopOut()),
                         onClick = onOpenWith,
-                        text = stringResource(id = textResId),
+                        text = stringResource(id = CommonStrings.action_open_with),
                     )
                 }
             }

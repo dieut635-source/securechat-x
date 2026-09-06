@@ -1,4 +1,5 @@
 import extension.buildConfigFieldBoolean
+import extension.testCommonDependencies
 
 /*
  * Copyright (c) 2026 Element Creations Ltd.
@@ -21,4 +22,8 @@ android {
     defaultConfig {
         buildConfigFieldBoolean("TEST", false)
     }
+}
+
+dependencies {
+    testCommonDependencies(libs)
 }

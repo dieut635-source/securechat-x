@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"Dewiswch sut i dderbyn hysbysiadau"</string>
   <string name="screen_advanced_settings_developer_mode">"Modd datblygwr"</string>
   <string name="screen_advanced_settings_developer_mode_description">"Galluogi i gael mynediad at nodweddion a swyddogaethau datblygwyr."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"URL sylfaen Galwad Element Cyfaddas"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"Gosod URL sylfaen cyfaddas ar gyfer Galwad Element."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"URL sylfaen Galwad SecureChat Cyfaddas"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"Gosod URL sylfaen cyfaddas ar gyfer Galwad SecureChat."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"URL annilys, gwnewch yn siŵr eich bod yn cynnwys y protocol (http/https) a\'r cyfeiriad cywir."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Cuddio afatarau yn y ceisiadau gwahoddiad i ystafell"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"Cuddio rhagolygon cyfryngau yn y llinell amser"</string>

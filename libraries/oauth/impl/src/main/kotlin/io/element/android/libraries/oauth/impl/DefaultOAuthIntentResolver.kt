@@ -19,6 +19,7 @@ class DefaultOAuthIntentResolver(
     private val oAuthUrlParser: OAuthUrlParser,
 ) : OAuthIntentResolver {
     override fun resolve(intent: Intent): OAuthAction? {
+        if (intent.action != Intent.ACTION_VIEW) return null
         return oAuthUrlParser.parse(intent.dataString.orEmpty())
     }
 }

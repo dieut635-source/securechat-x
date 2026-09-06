@@ -9,38 +9,15 @@
 package io.element.android.services.analyticsproviders.posthog
 
 import dev.zacsweers.metro.Inject
-import io.element.android.libraries.core.extensions.isElement
-import io.element.android.libraries.core.meta.BuildMeta
-import io.element.android.libraries.core.meta.BuildType
 
 @Inject
-class PosthogEndpointConfigProvider(
-    private val buildMeta: BuildMeta,
-) {
+class PosthogEndpointConfigProvider {
     fun provide(): PosthogEndpointConfig? {
-        return if (buildMeta.isEnterpriseBuild) {
-            PosthogEndpointConfig(
-                host = BuildConfig.POSTHOG_HOST,
-                apiKey = BuildConfig.POSTHOG_APIKEY,
-            ).takeIf {
-                // Note that if the config is invalid, this module will not be included in the build.
-                // So the configuration should be always valid.
-                it.isValid
-            }
-        } else if (buildMeta.isElement()) {
-            when (buildMeta.buildType) {
-                BuildType.RELEASE -> PosthogEndpointConfig(
-                    host = "https://posthog.element.io",
-                    apiKey = "phc_Jzsm6DTm6V2705zeU5dcNvQDlonOR68XvX2sh1sEOHO",
-                )
-                BuildType.NIGHTLY,
-                BuildType.DEBUG -> PosthogEndpointConfig(
-                    host = "https://posthog.element.dev",
-                    apiKey = "phc_VtA1L35nw3aeAtHIx1ayrGdzGkss7k1xINeXcoIQzXN",
-                )
-            }
-        } else {
-            null
+        return PosthogEndpointConfig(
+            host = BuildConfig.POSTHOG_HOST,
+            apiKey = BuildConfig.POSTHOG_APIKEY,
+        ).takeIf {
+            it.isValid
         }
     }
 }

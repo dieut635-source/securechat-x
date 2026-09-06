@@ -45,7 +45,9 @@ class UtdTracker(
             eventLocalAgeMillis = info.eventLocalAgeMillis.toInt(),
             userTrustsOwnIdentity = info.userTrustsOwnIdentity,
             isFederated = info.ownHomeserver != info.senderHomeserver,
-            isMatrixDotOrg = info.ownHomeserver == "matrix.org",
+            // This legacy analytics field is retained for wire-schema compatibility only. A closed
+            // SecureChat deployment must not classify or special-case an inherited public server.
+            isMatrixDotOrg = false,
         )
         analyticsService.capture(event)
     }

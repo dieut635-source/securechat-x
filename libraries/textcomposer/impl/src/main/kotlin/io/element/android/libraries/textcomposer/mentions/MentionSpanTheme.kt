@@ -114,7 +114,7 @@ fun MentionSpanTheme.updateMentionStyles(charSequence: CharSequence) {
 @Composable
 internal fun MentionSpanThemePreview() {
     ElementPreview {
-        val mentionSpanTheme = remember { MentionSpanTheme(UserId("@me:matrix.org")) }
+        val mentionSpanTheme = remember { MentionSpanTheme(UserId("@me:chat.securechat.com.au")) }
         val provider = remember {
             MentionSpanProvider(
                 mentionSpanTheme = mentionSpanTheme,
@@ -131,10 +131,10 @@ internal fun MentionSpanThemePreview() {
                 permalinkParser = object : PermalinkParser {
                     override fun parse(uriString: String): PermalinkData {
                         return when (uriString) {
-                            "https://matrix.to/#/@me:matrix.org" -> PermalinkData.UserLink(UserId("@me:matrix.org"))
-                            "https://matrix.to/#/@other:matrix.org" -> PermalinkData.UserLink(UserId("@other:matrix.org"))
-                            "https://matrix.to/#/#room:matrix.org" -> PermalinkData.RoomLink(
-                                roomIdOrAlias = RoomAlias("#room:matrix.org").toRoomIdOrAlias(),
+                            "https://matrix.to/#/@me:chat.securechat.com.au" -> PermalinkData.UserLink(UserId("@me:chat.securechat.com.au"))
+                            "https://matrix.to/#/@other:chat.securechat.com.au" -> PermalinkData.UserLink(UserId("@other:chat.securechat.com.au"))
+                            "https://matrix.to/#/#room:chat.securechat.com.au" -> PermalinkData.RoomLink(
+                                roomIdOrAlias = RoomAlias("#room:chat.securechat.com.au").toRoomIdOrAlias(),
                                 eventId = null,
                                 viaParameters = persistentListOf(),
                             )
@@ -147,9 +147,12 @@ internal fun MentionSpanThemePreview() {
         }
 
         val textColor = ElementTheme.colors.textPrimary.toArgb()
-        fun mentionSpanMe() = provider.getMentionSpanFor("mention", "https://matrix.to/#/@me:matrix.org")
-        fun mentionSpanOther() = provider.getMentionSpanFor("mention", "https://matrix.to/#/@other:matrix.org")
-        fun mentionSpanRoom() = provider.getMentionSpanFor("room:matrix.org", "https://matrix.to/#/#room:matrix.org")
+        fun mentionSpanMe() = provider.getMentionSpanFor("mention", "https://matrix.to/#/@me:chat.securechat.com.au")
+        fun mentionSpanOther() = provider.getMentionSpanFor("mention", "https://matrix.to/#/@other:chat.securechat.com.au")
+        fun mentionSpanRoom() = provider.getMentionSpanFor(
+            "room:chat.securechat.com.au",
+            "https://matrix.to/#/#room:chat.securechat.com.au",
+        )
         fun mentionSpanEveryone() = provider.createEveryoneMentionSpan()
         mentionSpanTheme.updateStyles()
 
@@ -165,12 +168,12 @@ internal fun MentionSpanThemePreview() {
                     append(" to other user. This is for everyone in the ")
                     append("@room", mentionSpanEveryone(), 0)
                     append(". This one is for a link to another room: ")
-                    append("#room:matrix.org", mentionSpanRoom(), 0)
+                    append("#room:chat.securechat.com.au", mentionSpanRoom(), 0)
                     append("\n\n")
                     append("This ")
                     append("mention", mentionSpanMe(), 0)
                     append(" didn't have an '@' and it was automatically added, same as this ")
-                    append("room:matrix.org", mentionSpanRoom(), 0)
+                    append("room:chat.securechat.com.au", mentionSpanRoom(), 0)
                     append(" one, which had no leading '#'.")
                 }
                 setTextColor(textColor)
@@ -184,7 +187,7 @@ private fun MentionSpanThemeInTimelineContent(
     bgColor: Int,
     modifier: Modifier = Modifier,
 ) {
-    val mentionSpanTheme = remember { MentionSpanTheme(UserId("@me:matrix.org")) }
+    val mentionSpanTheme = remember { MentionSpanTheme(UserId("@me:chat.securechat.com.au")) }
     val provider = remember {
         MentionSpanProvider(
             mentionSpanTheme = mentionSpanTheme,
@@ -199,8 +202,8 @@ private fun MentionSpanThemeInTimelineContent(
             permalinkParser = object : PermalinkParser {
                 override fun parse(uriString: String): PermalinkData {
                     return when (uriString) {
-                        "https://matrix.to/#/@me:matrix.org" -> PermalinkData.UserLink(UserId("@me:matrix.org"))
-                        "https://matrix.to/#/@other:matrix.org" -> PermalinkData.UserLink(UserId("@other:matrix.org"))
+                        "https://matrix.to/#/@me:chat.securechat.com.au" -> PermalinkData.UserLink(UserId("@me:chat.securechat.com.au"))
+                        "https://matrix.to/#/@other:chat.securechat.com.au" -> PermalinkData.UserLink(UserId("@other:chat.securechat.com.au"))
                         else -> throw AssertionError("Unexpected value $uriString")
                     }
                 }
@@ -209,8 +212,8 @@ private fun MentionSpanThemeInTimelineContent(
     }
 
     val textColor = ElementTheme.colors.textPrimary.toArgb()
-    fun mentionSpanMe() = provider.getMentionSpanFor("mention", "https://matrix.to/#/@me:matrix.org")
-    fun mentionSpanOther() = provider.getMentionSpanFor("mention", "https://matrix.to/#/@other:matrix.org")
+    fun mentionSpanMe() = provider.getMentionSpanFor("mention", "https://matrix.to/#/@me:chat.securechat.com.au")
+    fun mentionSpanOther() = provider.getMentionSpanFor("mention", "https://matrix.to/#/@other:chat.securechat.com.au")
     mentionSpanTheme.updateStyles()
 
     AndroidView(

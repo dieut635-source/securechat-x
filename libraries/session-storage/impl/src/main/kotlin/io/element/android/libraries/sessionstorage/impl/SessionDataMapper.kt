@@ -31,6 +31,7 @@ internal fun SessionData.toDbModel(): DbSessionData {
         lastUsageIndex = lastUsageIndex,
         userDisplayName = userDisplayName,
         userAvatarUrl = userAvatarUrl,
+        accountProvider = accountProvider,
     )
 }
 
@@ -52,5 +53,6 @@ internal fun DbSessionData.toApiModel(): SessionData {
         lastUsageIndex = lastUsageIndex,
         userDisplayName = userDisplayName,
         userAvatarUrl = userAvatarUrl,
+        accountProvider = accountProvider,
     )
 }

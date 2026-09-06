@@ -162,9 +162,9 @@ fun aFailureContentState(): ContentState {
 
 fun aLoadedContentState(
     roomId: RoomId = A_ROOM_ID,
-    name: String? = "Element X android",
-    alias: RoomAlias? = RoomAlias("#exa:matrix.org"),
-    topic: String? = "Element X is a secure, private and decentralized messenger.",
+    name: String? = "SecureChat Android",
+    alias: RoomAlias? = RoomAlias("#exa:chat.securechat.com.au"),
+    topic: String? = "SecureChat is a secure, private and decentralized messenger.",
     numberOfMembers: Long? = null,
     roomAvatarUrl: String? = null,
     joinAuthorisationStatus: JoinAuthorisationStatus = JoinAuthorisationStatus.Unknown,
@@ -245,5 +245,5 @@ internal fun anInviteData(
     isDm = isDm,
 )
 
-private val A_ROOM_ID = RoomId("!exa:matrix.org")
-private val A_ROOM_ALIAS = RoomAlias("#exa:matrix.org")
+private val A_ROOM_ID = RoomId("!exa:chat.securechat.com.au")
+private val A_ROOM_ALIAS = RoomAlias("#exa:chat.securechat.com.au")

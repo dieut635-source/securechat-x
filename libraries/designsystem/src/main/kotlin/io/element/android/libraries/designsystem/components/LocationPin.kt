@@ -395,7 +395,7 @@ private object LocationPinRenderer {
 @Composable
 internal fun LocationPinPreview() = ElementPreview {
     val sampleAvatarData = AvatarData(
-        id = "@alice:matrix.org",
+        id = "@alice:chat.securechat.com.au",
         name = USER_NAME_ALICE,
         url = null,
         size = AvatarSize.SelectedUser

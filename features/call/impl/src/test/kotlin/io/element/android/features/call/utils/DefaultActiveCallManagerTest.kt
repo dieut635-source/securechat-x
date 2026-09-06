@@ -20,6 +20,7 @@ import io.element.android.features.call.impl.utils.ActiveCall
 import io.element.android.features.call.impl.utils.CallState
 import io.element.android.features.call.impl.utils.DefaultActiveCallManager
 import io.element.android.features.call.impl.utils.DefaultCurrentCallService
+import io.element.android.features.lockscreen.test.FakeLockScreenService
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.SessionId
@@ -527,6 +528,8 @@ class DefaultActiveCallManagerTest : RobolectricTest() {
             matrixClientProvider = matrixClientProvider,
             imageLoaderHolder = FakeImageLoaderHolder(),
             notificationBitmapLoader = FakeNotificationBitmapLoader(),
+            lockScreenService = FakeLockScreenService(),
+            appForegroundStateService = FakeAppForegroundStateService(),
         ),
         notificationManagerCompat = notificationManagerCompat,
         matrixClientProvider = matrixClientProvider,

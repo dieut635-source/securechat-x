@@ -354,7 +354,7 @@ private fun KnockRequestItem(
             // UserId
             if (!knockRequest.displayName.isNullOrEmpty()) {
                 Text(
-                    text = knockRequest.userId.value,
+                    text = knockRequest.userId.displayLabel,
                     color = ElementTheme.colors.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

@@ -462,7 +462,7 @@ private fun InvitedByView(
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            text = sender.userId.value,
+            text = sender.userId.displayLabel,
             style = ElementTheme.typography.fontBodySmRegular,
             color = ElementTheme.colors.textSecondary
         )

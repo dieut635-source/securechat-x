@@ -28,9 +28,9 @@ changelog:
       labels:
         - PR-Dependencies
 
-    - title: 💼 Element Pro
+    - title: 💼 Enterprise
       labels:
-        - PR-Element-Pro
+        - PR-Enterprise
 
     - title: Others
       labels:

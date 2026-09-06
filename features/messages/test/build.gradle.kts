@@ -21,6 +21,7 @@ dependencies {
     implementation(projects.libraries.audio.test)
     implementation(projects.libraries.mediaplayer.test)
     implementation(projects.libraries.mediaupload.test)
+    implementation(projects.libraries.mdm.test)
     implementation(projects.libraries.mediaviewer.api)
     implementation(projects.libraries.permissions.test)
     implementation(projects.libraries.preferences.api)

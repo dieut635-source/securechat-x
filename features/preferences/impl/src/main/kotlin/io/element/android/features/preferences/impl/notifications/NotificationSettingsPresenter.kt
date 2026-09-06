@@ -120,17 +120,24 @@ class NotificationSettingsPresenter(
         val availableDistributors = remember {
             distributors.map { it.second }.toImmutableList()
         }
+        val hasRemotePushProvider = distributors.isNotEmpty()
 
         var currentDistributor by remember { mutableStateOf<AsyncData<Distributor>>(AsyncData.Uninitialized) }
         var refreshPushProvider by remember { mutableIntStateOf(0) }
 
-        LaunchedEffect(refreshPushProvider) {
-            val p = pushService.getCurrentPushProvider(matrixClient.sessionId)
-            val distributor = p?.getCurrentDistributor(matrixClient.sessionId)
-            currentDistributor = if (distributor != null) {
-                AsyncData.Success(distributor)
+        LaunchedEffect(refreshPushProvider, hasRemotePushProvider) {
+            if (!hasRemotePushProvider) {
+                // The hardened closed build intentionally has no remote push provider. This is a
+                // supported local-sync mode, not an error to expose in advanced settings.
+                currentDistributor = AsyncData.Uninitialized
             } else {
-                AsyncData.Failure(Exception("Failed to get current push provider"))
+                val p = pushService.getCurrentPushProvider(matrixClient.sessionId)
+                val distributor = p?.getCurrentDistributor(matrixClient.sessionId)
+                currentDistributor = if (distributor != null) {
+                    AsyncData.Success(distributor)
+                } else {
+                    AsyncData.Failure(Exception("Failed to get current push provider"))
+                }
             }
         }
 
@@ -207,7 +214,11 @@ class NotificationSettingsPresenter(
                 is NotificationSettingsEvent.SetInviteForMeNotificationsEnabled -> {
                     localCoroutineScope.setInviteForMeNotificationsEnabled(event.enabled, changeNotificationSettingAction)
                 }
-                is NotificationSettingsEvent.SetNotificationsEnabled -> sessionCoroutineScope.setNotificationsEnabled(userPushStore, event.enabled)
+                is NotificationSettingsEvent.SetNotificationsEnabled -> sessionCoroutineScope.setNotificationsEnabled(
+                    userPushStore = userPushStore,
+                    enabled = event.enabled,
+                    hasRemotePushProvider = hasRemotePushProvider,
+                )
                 NotificationSettingsEvent.ClearConfigurationMismatchError -> {
                     matrixSettings.value = NotificationSettingsState.MatrixSettings.Invalid(fixFailed = false)
                 }
@@ -512,12 +523,15 @@ class NotificationSettingsPresenter(
         }
     }
 
-    private fun CoroutineScope.setNotificationsEnabled(userPushStore: UserPushStore, enabled: Boolean) = launch {
+    private fun CoroutineScope.setNotificationsEnabled(
+        userPushStore: UserPushStore,
+        enabled: Boolean,
+        hasRemotePushProvider: Boolean,
+    ) = launch {
         userPushStore.setNotificationEnabledForDevice(enabled)
-        if (enabled) {
-            pushService.ensurePusherIsRegistered(matrixClient)
-        } else {
-            pushService.getCurrentPushProvider(matrixClient.sessionId)?.unregister(matrixClient)
+        when {
+            enabled && hasRemotePushProvider -> pushService.ensurePusherIsRegistered(matrixClient)
+            !enabled -> pushService.getCurrentPushProvider(matrixClient.sessionId)?.unregister(matrixClient)
         }
     }
 }

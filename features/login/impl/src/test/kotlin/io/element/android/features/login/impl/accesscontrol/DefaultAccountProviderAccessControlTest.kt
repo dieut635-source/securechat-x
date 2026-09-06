@@ -166,7 +166,7 @@ class DefaultAccountProviderAccessControlTest {
             }
         }
         assertThat(exception.unauthorisedAccountProviderTitle).isEqualTo(AN_ACCOUNT_PROVIDER)
-        assertThat(exception.applicationId).isEqualTo("io.element.enterprise")
+        assertThat(exception.applicationId).isEqualTo("com.securechat.enterprise")
         runTest {
             assertThat(
                 isAllowedToConnectToAccountProvider(

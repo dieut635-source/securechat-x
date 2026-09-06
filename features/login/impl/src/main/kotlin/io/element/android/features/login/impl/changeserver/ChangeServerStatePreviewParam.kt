@@ -24,7 +24,7 @@ open class ChangeServerStatePreviewParam : PreviewParameterProvider<ChangeServer
                 changeServerAction = AsyncData.Failure(
                     ChangeServerError.UnauthorizedAccountProvider(
                         unauthorisedAccountProviderTitle = "example.com",
-                        authorisedAccountProviderTitles = listOf("element.io", "element.org"),
+                        authorisedAccountProviderTitles = listOf("chat.securechat.com.au"),
                     )
                 )
             ),

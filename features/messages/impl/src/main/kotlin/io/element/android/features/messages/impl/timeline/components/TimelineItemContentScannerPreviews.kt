@@ -300,7 +300,7 @@ internal fun TimelineItemAttachmentsViewScanningContentFailedPreview() = Element
 
 private fun inReplyToInvalidContent(): InReplyToDetails.Ready = InReplyToDetails.Ready(
     eventId = AN_EVENT_ID,
-    senderId = UserId("@sender:matrix.org"),
+    senderId = UserId("@sender:chat.securechat.com.au"),
     eventContent = MessageContent(
         body = "A body",
         inReplyTo = null,
@@ -325,7 +325,7 @@ private fun inReplyToInvalidContent(): InReplyToDetails.Ready = InReplyToDetails
 
 private fun inReplyToTextContent(): InReplyToDetails.Ready = InReplyToDetails.Ready(
     eventId = EventId($$"$text_eventId"),
-    senderId = UserId("@sender:matrix.org"),
+    senderId = UserId("@sender:chat.securechat.com.au"),
     eventContent = MessageContent(
         body = "A body",
         inReplyTo = null,

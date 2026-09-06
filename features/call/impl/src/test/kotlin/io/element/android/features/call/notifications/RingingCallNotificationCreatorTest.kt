@@ -8,11 +8,14 @@
 
 package io.element.android.features.call.notifications
 
+import android.app.Notification
 import androidx.core.graphics.drawable.IconCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import coil3.ImageLoader
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.call.impl.notifications.RingingCallNotificationCreator
+import io.element.android.features.lockscreen.api.LockScreenLockState
+import io.element.android.features.lockscreen.test.FakeLockScreenService
 import io.element.android.libraries.designsystem.components.avatar.AvatarData
 import io.element.android.libraries.matrix.test.AN_EVENT_ID
 import io.element.android.libraries.matrix.test.A_ROOM_ID
@@ -22,6 +25,7 @@ import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.FakeMatrixClientProvider
 import io.element.android.libraries.matrix.ui.media.test.FakeImageLoaderHolder
 import io.element.android.libraries.push.test.notifications.push.FakeNotificationBitmapLoader
+import io.element.android.services.appnavstate.test.FakeAppForegroundStateService
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import kotlinx.coroutines.test.runTest
@@ -61,6 +65,23 @@ class RingingCallNotificationCreatorTest : RobolectricTest() {
         notificationCreator.createTestNotification()
 
         getUserIconLambda.assertions().isCalledOnce()
+    }
+
+    @Test
+    fun `createNotification - hides caller data while app is locked or backgrounded`() = runTest {
+        val getUserIconLambda = lambdaRecorder<AvatarData, ImageLoader, IconCompat?> { _, _ -> null }
+        val notificationCreator = createRingingCallNotificationCreator(
+            matrixClientProvider = FakeMatrixClientProvider(getClient = { Result.success(FakeMatrixClient()) }),
+            notificationBitmapLoader = FakeNotificationBitmapLoader(getUserIconResult = getUserIconLambda),
+            appForegroundStateService = FakeAppForegroundStateService(initialForegroundValue = false),
+        )
+
+        val notification = notificationCreator.createTestNotification()
+
+        getUserIconLambda.assertions().isNeverCalled()
+        assertThat(notification?.visibility).isEqualTo(Notification.VISIBILITY_SECRET)
+        assertThat(notification?.extras.toString()).doesNotContain("Johnnie Murphy")
+        assertThat(notification?.extras.toString()).doesNotContain("https://example.com/avatar.jpg")
     }
 
     @Test
@@ -108,10 +129,19 @@ class RingingCallNotificationCreatorTest : RobolectricTest() {
         matrixClientProvider: FakeMatrixClientProvider = FakeMatrixClientProvider(),
         imageLoaderHolder: FakeImageLoaderHolder = FakeImageLoaderHolder(),
         notificationBitmapLoader: FakeNotificationBitmapLoader = FakeNotificationBitmapLoader(),
+        lockScreenService: FakeLockScreenService = unlockedLockScreenService(),
+        appForegroundStateService: FakeAppForegroundStateService = FakeAppForegroundStateService(),
     ) = RingingCallNotificationCreator(
         context = InstrumentationRegistry.getInstrumentation().targetContext,
         matrixClientProvider = matrixClientProvider,
         imageLoaderHolder = imageLoaderHolder,
         notificationBitmapLoader = notificationBitmapLoader,
+        lockScreenService = lockScreenService,
+        appForegroundStateService = appForegroundStateService,
     )
+
+    private fun unlockedLockScreenService() = FakeLockScreenService().apply {
+        setIsPinSetup(true)
+        setLockState(LockScreenLockState.Unlocked)
+    }
 }

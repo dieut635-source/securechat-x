@@ -9,13 +9,13 @@
   <string name="screen_account_provider_signin_title">"Anda akan masuk ke %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Di sinilah percakapan Anda akan berlangsung — sama seperti Anda menggunakan penyedia surel untuk menyimpan surel Anda."</string>
   <string name="screen_account_provider_signup_title">"Anda akan membuat akun di %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org adalah server besar dan gratis di jaringan Matrix publik untuk komunikasi yang aman dan terdesentralisasi, disediakan oleh Yayasan Matrix.org."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Lainnya"</string>
   <string name="screen_change_account_provider_subtitle">"Gunakan penyedia akun yang berbeda, seperti server pribadi Anda sendiri atau akun kerja."</string>
   <string name="screen_change_account_provider_title">"Ubah penyedia akun"</string>
   <string name="screen_change_server_error_element_pro_required_action_android">"Google play"</string>
-  <string name="screen_change_server_error_element_pro_required_message">"Aplikasi Element Pro diperlukan di %1$s. Silakan unduh dari App Store."</string>
-  <string name="screen_change_server_error_element_pro_required_title">"Element Pro diperlukan"</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s cannot be used with SecureChat. Please contact your administrator."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Unsupported server"</string>
   <string name="screen_change_server_error_invalid_homeserver">"Kami tidak dapat menjangkau server ini. Periksa apakah Anda telah memasukkan URL homeserver dengan benar. Jika URL sudah benar, hubungi administrator homeserver Anda untuk bantuan lebih lanjut."</string>
   <string name="screen_change_server_error_invalid_well_known">"Server tidak tersedia karena ada masalah dalam berkas .well-known:
 %1$s"</string>
@@ -29,7 +29,7 @@
   <string name="screen_change_server_navigation_title_register">"Buat akun"</string>
   <string name="screen_change_server_subtitle">"Apa alamat server Anda?"</string>
   <string name="screen_change_server_textfield_footer_login">"Jika akun Anda disediakan oleh perusahaan atau komunitas Anda, maka ubah penyedia akun (contoh: companyname.com)."</string>
-  <string name="screen_change_server_textfield_footer_register">"Buat akun di matrix.org secara gratis. Jika anda ingin membuat akun dengan penyedia lain, ubah sesuai kebutuhan (contoh: communityname.org)."</string>
+  <string name="screen_change_server_textfield_footer_register">"Accounts are created by your administrator. Contact them if you need access."</string>
   <string name="screen_change_server_textfield_header">"Penyedia akun"</string>
   <string name="screen_change_server_textfield_placeholder">"contoh.com"</string>
   <string name="screen_change_server_title">"Pilih server Anda"</string>
@@ -45,8 +45,8 @@
   <string name="screen_login_subtitle">"Matrix adalah jaringan terbuka untuk komunikasi yang aman dan terdesentralisasi."</string>
   <string name="screen_login_title">"Selamat datang kembali!"</string>
   <string name="screen_login_title_with_homeserver">"Masuk ke %1$s"</string>
-  <string name="screen_missing_key_backup_open_element_classic">"Buka Element Classic"</string>
-  <string name="screen_missing_key_backup_step_1">"Buka Element Classic di perangkat Anda"</string>
+  <string name="screen_missing_key_backup_open_element_classic">"Open your previous Matrix app"</string>
+  <string name="screen_missing_key_backup_step_1">"Open your previous Matrix app on your device"</string>
   <string name="screen_missing_key_backup_step_2_android">"Buka Pengaturan &gt; Keamanan &amp;amp; Privasi"</string>
   <string name="screen_missing_key_backup_step_3_android">"Dalam pengelolaan kunci kriptografi, pilih Pemulihan pesan terenkripsi"</string>
   <string name="screen_missing_key_backup_step_4">"Ikuti petunjuk berikut untuk mengaktifkan penyimpanan kunci Anda"</string>
@@ -61,7 +61,7 @@
   <string name="screen_onboarding_welcome_back">"Selamat datang kembali!"</string>
   <string name="screen_onboarding_welcome_message">"Selamat datang di %1$s tercepat yang pernah ada. Berdaya besar untuk kecepatan dan kesederhanaan."</string>
   <string name="screen_onboarding_welcome_subtitle">"Selamat datang di %1$s. Berdaya penuh, untuk kecepatan dan kesederhanaan."</string>
-  <string name="screen_onboarding_welcome_title">"Berada di elemen Anda"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Membuat koneksi aman"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"Koneksi aman tidak dapat dibuat ke perangkat baru. Perangkat Anda yang ada masih aman dan Anda tidak perlu khawatir tentang mereka."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"Apa sekarang?"</string>
@@ -108,7 +108,7 @@ Coba masuk secara manual, atau pindai kode QR dengan perangkat lain."</string>
   <string name="screen_qr_code_login_verify_code_subtitle">"Penyedia akun Anda mungkin meminta kode berikut untuk memverifikasi proses masuk."</string>
   <string name="screen_qr_code_login_verify_code_title">"Kode verifikasi Anda"</string>
   <string name="screen_server_confirmation_change_server">"Ubah penyedia akun"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Server pribadi untuk karyawan Element."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix adalah jaringan terbuka untuk komunikasi yang aman dan terdesentralisasi."</string>
   <string name="screen_server_confirmation_message_register">"Di sinilah percakapan Anda akan berlangsung — sama seperti Anda menggunakan penyedia surel untuk menyimpan surel Anda."</string>
   <string name="screen_server_confirmation_title_login">"Anda akan masuk ke %1$s"</string>

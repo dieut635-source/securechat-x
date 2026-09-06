@@ -15,7 +15,6 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.deactivation.test.FakeAccountDeactivationEntryPoint
 import io.element.android.features.licenses.test.FakeOpenSourceLicensesEntryPoint
 import io.element.android.features.lockscreen.test.FakeLockScreenEntryPoint
-import io.element.android.features.logout.test.FakeLogoutEntryPoint
 import io.element.android.features.preferences.api.PreferencesEntryPoint
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -45,7 +44,6 @@ class DefaultPreferencesEntryPointTest {
                 notificationTroubleShootEntryPoint = FakeNotificationTroubleShootEntryPoint(),
                 pushHistoryEntryPoint = FakePushHistoryEntryPoint(),
                 fileViewerEntryPoint = FakeFileViewerEntryPoint(),
-                logoutEntryPoint = FakeLogoutEntryPoint(),
                 openSourceLicensesEntryPoint = FakeOpenSourceLicensesEntryPoint(),
                 accountDeactivationEntryPoint = FakeAccountDeactivationEntryPoint(),
             )

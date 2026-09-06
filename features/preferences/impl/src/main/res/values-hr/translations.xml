@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"Odaberite kako želite primati obavijesti"</string>
   <string name="screen_advanced_settings_developer_mode">"Način rada za razvojne inženjere"</string>
   <string name="screen_advanced_settings_developer_mode_description">"Omogućite pristup značajkama i funkcionalnostima za razvojne inženjere."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"Prilagođeni osnovni URL za Element Call"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"Postavite prilagođeni osnovni URL za Element Call."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"Prilagođeni osnovni URL za SecureChat Calls"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"Postavite prilagođeni osnovni URL za SecureChat Calls."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"Nevažeći URL; provjerite jeste li uključili protokol (http/https) i ispravnu adresu."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Sakrij avatare u zahtjevima za poziv u sobu"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"Sakrij preglede medija na vremenskoj traci"</string>
@@ -89,8 +89,8 @@ Ako nastavite, neke od vaših postavki mogu se promijeniti."</string>
   <string name="screen_notification_settings_sound_custom_fallback">"Prilagođeno"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"Personalizirano zvono"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"Pogreška pri brisanju datoteke"</string>
-  <string name="screen_notification_settings_sound_element_default">"Zadano za element"</string>
-  <string name="screen_notification_settings_sound_element_fade">"Blijeđenje elementa"</string>
+  <string name="screen_notification_settings_sound_element_default">"Zadano za SecureChat"</string>
+  <string name="screen_notification_settings_sound_element_fade">"Blijeđenje SecureChat"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"Pogreška pri uvozu datoteke"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"Problem s pregledom zvuka upozorenja"</string>
   <string name="screen_notification_settings_sound_section_title">"Zvuk"</string>

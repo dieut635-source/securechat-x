@@ -9,7 +9,7 @@
   <string name="screen_account_provider_signin_title">"Estàs a punt d\'iniciar sessió a %s"</string>
   <string name="screen_account_provider_signup_subtitle">"Aquí és on es guardaran els teus xats, de manera similar a utilitzar un proveïdor de correu electrònic per guardar els teus correus electrònics."</string>
   <string name="screen_account_provider_signup_title">"Estàs a punt de crear un compte a %s"</string>
-  <string name="screen_change_account_provider_matrix_org_subtitle">"Matrix.org és un gran servidor gratuït de la xarxa pública de Matrix per a la comunicació segura i descentralitzada, gestionat per la Fundació Matrix.org."</string>
+  <string name="screen_change_account_provider_matrix_org_subtitle">"SecureChat uses a private server managed by your organisation."</string>
   <string name="screen_change_account_provider_other">"Altres"</string>
   <string name="screen_change_account_provider_subtitle">"Utilitza un proveïdor de comptes diferent, com ara el teu servidor privat o un compte de feina."</string>
   <string name="screen_change_account_provider_title">"Canvia el proveïdor del compte"</string>
@@ -36,7 +36,7 @@
   <string name="screen_onboarding_sign_up">"Crea un compte"</string>
   <string name="screen_onboarding_welcome_message">"Et donem la benvinguda a %1$s. Més ràpid i simple que mai."</string>
   <string name="screen_onboarding_welcome_subtitle">"Et donem la benvinguda a %1$s. Dissenyat per ser més ràpid i simple."</string>
-  <string name="screen_onboarding_welcome_title">"Sigues el teu propi element"</string>
+  <string name="screen_onboarding_welcome_title">"Welcome to SecureChat"</string>
   <string name="screen_qr_code_login_connecting_subtitle">"Establint una connexió segura"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_description">"No s\'ha pogut establir una connexió segura amb el dispositiu nou. Els dispositius existents continuen sent segurs, no te n\'has de preocupar."</string>
   <string name="screen_qr_code_login_connection_note_secure_state_list_header">"I ara què?"</string>
@@ -81,7 +81,7 @@ Prova d\'iniciar la sessió manualment o escaneja el QR amb un altre dispositiu.
   <string name="screen_qr_code_login_verify_code_subtitle">"Per verificar l\'inici de sessió, pot ser que el proveïdor del teu compte et demani el següent codi."</string>
   <string name="screen_qr_code_login_verify_code_title">"Codi de verificació"</string>
   <string name="screen_server_confirmation_change_server">"Canvia el proveïdor del compte"</string>
-  <string name="screen_server_confirmation_message_login_element_dot_io">"Servidor privat per a treballadors d\'Element."</string>
+  <string name="screen_server_confirmation_message_login_element_dot_io">"A private server."</string>
   <string name="screen_server_confirmation_message_login_matrix_dot_org">"Matrix és una xarxa oberta per a comunicacions segures i descentralitzades."</string>
   <string name="screen_server_confirmation_message_register">"Aquí és on es guardaran els teus xats, de manera similar a utilitzar un proveïdor de correu electrònic per guardar els teus correus electrònics."</string>
   <string name="screen_server_confirmation_title_login">"Estàs a punt d\'iniciar sessió a %1$s"</string>

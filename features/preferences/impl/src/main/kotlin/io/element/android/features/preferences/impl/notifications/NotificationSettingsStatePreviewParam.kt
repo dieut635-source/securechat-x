@@ -65,7 +65,7 @@ open class NotificationSettingsStatePreviewParam : PreviewParameterProvider<Noti
             ),
             aValidNotificationSettingsState(
                 messageSound = NotificationSound.ElementDefault,
-                messageSoundDisplayName = "Element default",
+                messageSoundDisplayName = "SecureChat Default",
             ),
             aValidNotificationSettingsState(showMessageSoundDialog = true),
             aValidNotificationSettingsState(showCallRingtoneDialog = true),
@@ -92,7 +92,7 @@ fun aValidNotificationSettingsState(
     showChangePushProviderDialog: Boolean = false,
     fullScreenIntentPermissionsState: FullScreenIntentPermissionsState = aFullScreenIntentPermissionsState(),
     messageSound: NotificationSound = NotificationSound.SystemDefault,
-    messageSoundDisplayName: String = "Element default",
+    messageSoundDisplayName: String = "SecureChat Default",
     messageSoundCopyError: Boolean = false,
     callRingtone: NotificationSound = NotificationSound.SystemDefault,
     callRingtoneDisplayName: String = "System default",

@@ -13,7 +13,7 @@ import kotlinx.parcelize.Parcelize
 
 /**
  * Parameters to start the login flow, when the application is opened
- * from a mobile.element.io link.
+ * from a SecureChat configuration link.
  */
 @Parcelize
 data class LoginParams(

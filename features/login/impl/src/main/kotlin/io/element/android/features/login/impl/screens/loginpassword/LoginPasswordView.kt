@@ -129,10 +129,17 @@ fun LoginPasswordView(
             IconTitleSubtitleMolecule(
                 modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp),
                 iconStyle = BigIcon.Style.Default(CompoundIcons.UserProfileSolid()),
-                title = stringResource(
-                    id = R.string.screen_account_provider_signin_title,
-                    state.accountProvider.title
-                ),
+                // Tiêu đề KHÔNG in địa chỉ máy chủ.
+                //
+                // Khi máy chủ do cấu hình quản lý ấn định thì đây là màn hình ĐẦU TIÊN người
+                // dùng thấy, nên nó mang luôn phần chào mừng. In "You're about to sign in to
+                // chat.securechat.com.au" ở đây vừa thừa - người dùng không chọn máy chủ nào
+                // khác được - vừa đưa địa chỉ ra cho bất kỳ ai cầm máy.
+                //
+                // Địa chỉ vẫn lộ qua DNS, chứng chỉ TLS và chính lưu lượng app; thứ thật sự
+                // chặn đăng nhập web là khoá phía máy chủ, không phải giấu chuỗi này. Nhưng
+                // in nó ra vẫn không có lợi ích gì.
+                title = stringResource(id = R.string.screen_onboarding_welcome_title),
                 subTitle = stringResource(id = R.string.screen_login_subtitle)
             )
             Spacer(Modifier.height(40.dp))

@@ -21,6 +21,7 @@ internal fun Session.toSessionData(
     passphrase: String?,
     sessionPaths: SessionPaths,
     homeserverUrl: String? = null,
+    accountProvider: String? = null,
 ) = SessionData(
     userId = userId,
     deviceId = deviceId,
@@ -39,6 +40,7 @@ internal fun Session.toSessionData(
     lastUsageIndex = 0,
     userDisplayName = null,
     userAvatarUrl = null,
+    accountProvider = accountProvider,
 )
 
 internal fun ExternalSession.toSessionData(
@@ -46,6 +48,7 @@ internal fun ExternalSession.toSessionData(
     loginType: LoginType,
     passphrase: String?,
     sessionPaths: SessionPaths,
+    accountProvider: String? = null,
 ) = SessionData(
     userId = userId,
     deviceId = deviceId,
@@ -63,4 +66,5 @@ internal fun ExternalSession.toSessionData(
     lastUsageIndex = 0,
     userDisplayName = null,
     userAvatarUrl = null,
+    accountProvider = accountProvider,
 )

@@ -7,11 +7,9 @@
 
 package io.element.android.features.share.impl
 
-import android.content.ComponentName
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.content.pm.ResolveInfo
 import android.net.Uri
 import androidx.core.content.IntentCompat
 import dev.zacsweers.metro.AppScope
@@ -19,7 +17,6 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.features.share.api.ShareIntentData
 import io.element.android.features.share.api.ShareIntentHandler
 import io.element.android.features.share.api.UriToShare
-import io.element.android.libraries.androidutils.compat.queryIntentActivitiesCompat
 import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeAny
 import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeApplication
@@ -40,8 +37,26 @@ class DefaultShareIntentHandler(
     override fun handleIncomingShareIntent(
         intent: Intent,
     ): ShareIntentData? {
+        if (!mdmService.config.value.allowFileSend) {
+            val isPlainTextOnly = intent.action == Intent.ACTION_SEND &&
+                intent.type == MimeTypes.PlainText &&
+                !intent.hasExtra(Intent.EXTRA_STREAM) &&
+                intent.clipData?.let { clipData ->
+                    (0 until clipData.itemCount).none { clipData.getItemAt(it).uri != null }
+                } != false
+            if (!isPlainTextOnly) {
+                // Enforce this before unmarshalling URI arrays, resolving providers, or looking up
+                // MIME types. A rejected share must have no URI-related side effects.
+                Timber.i("Incoming share ignored: sending files is disabled by the managed configuration")
+                return null
+            }
+            // Return before resolveType(), which may contact a content provider when the sender
+            // omitted an explicit MIME type.
+            return handlePlainText(intent)
+        }
+
         val type = intent.resolveType(context) ?: return null
-        val uris = getIncomingUris(intent, type)
+        val uris = getIncomingUris(intent, type) ?: return null
         return when {
             uris.isEmpty() && type == MimeTypes.PlainText -> handlePlainText(intent)
             uris.isNotEmpty() ||
@@ -52,13 +67,6 @@ class DefaultShareIntentHandler(
                 type.isMimeTypeFile() ||
                 type.isMimeTypeText() ||
                 type.isMimeTypeAny() -> {
-                // `allow_file_send` off: sharing a file in from another app is one of the routes the
-                // attachment button no longer offers, so it is closed here too. Sharing plain text
-                // still works - that is a message the user could have typed.
-                if (!mdmService.config.value.allowFileSend) {
-                    Timber.i("Incoming share ignored: sending files is disabled by the managed configuration")
-                    return null
-                }
                 ShareIntentData.Uris(
                     text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.takeIf { it.isNotEmpty() },
                     uris = uris,
@@ -81,7 +89,7 @@ class DefaultShareIntentHandler(
      * Use this function to retrieve files which are shared from another application or internally
      * by using android.intent.action.SEND or android.intent.action.SEND_MULTIPLE actions.
      */
-    private fun getIncomingUris(intent: Intent, fallbackMimeType: String): List<UriToShare> {
+    private fun getIncomingUris(intent: Intent, fallbackMimeType: String): List<UriToShare>? {
         val uriList = mutableListOf<Uri>()
         if (intent.action == Intent.ACTION_SEND) {
             IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
@@ -90,30 +98,46 @@ class DefaultShareIntentHandler(
             IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
                 ?.let { uriList.addAll(it) }
         }
-        val resInfoList: List<ResolveInfo> = context.packageManager.queryIntentActivitiesCompat(intent, PackageManager.MATCH_DEFAULT_ONLY)
-        uriList.forEach { uri ->
-            resInfoList.forEach resolve@{ resolveInfo ->
-                val packageName: String = resolveInfo.activityInfo.packageName
-                // Replace implicit intent by an explicit to fix crash on some devices like Xiaomi.
-                // see https://juejin.cn/post/7031736325422186510
-                try {
-                    context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                } catch (e: Exception) {
-                    Timber.w(e, "Unable to grant Uri permission")
-                    return@resolve
-                }
-                intent.action = null
-                intent.component = ComponentName(packageName, resolveInfo.activityInfo.name)
-            }
+
+        if (uriList.size > MAX_SHARED_URI_COUNT) {
+            Timber.w("Incoming share ignored: too many URIs (${uriList.size})")
+            return null
         }
+        if (uriList.any { it.scheme != ContentResolver.SCHEME_CONTENT }) {
+            Timber.w("Incoming share ignored: only content URIs are accepted")
+            return null
+        }
+        val internalFileProviderAuthorities = setOf(
+            "${context.packageName}.fileprovider",
+            "${context.packageName}.notifications.fileprovider",
+        )
+        if (uriList.any { it.authority in internalFileProviderAuthorities }) {
+            // An external app can forge the text of a URI owned by SecureChat without receiving a
+            // grant. If SecureChat resolved that URI itself, its own provider privileges would turn
+            // the app into a confused deputy and could expose private cached data.
+            Timber.w("Incoming share ignored: SecureChat-owned FileProvider URI")
+            return null
+        }
+
+        // The sending application grants SecureChat temporary read access through the incoming
+        // intent. Never redistribute that grant or mutate the caller-owned intent.
         return uriList.map { uri ->
             // The value in fallbackMimeType can be wrong, especially if several uris were received
             // in the same intent (i.e. 'image/*'). We need to check the mime type of each uri.
-            val mimeType = context.contentResolver.getType(uri) ?: fallbackMimeType
+            val mimeType = try {
+                context.contentResolver.getType(uri) ?: fallbackMimeType
+            } catch (exception: SecurityException) {
+                Timber.w(exception, "Incoming share ignored: URI permission denied")
+                return null
+            }
             UriToShare(
                 uri = uri,
                 mimeType = mimeType,
             )
         }
+    }
+
+    private companion object {
+        const val MAX_SHARED_URI_COUNT = 20
     }
 }

@@ -10,6 +10,7 @@
 
 package io.element.android.x.intent
 
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import com.google.common.truth.Truth.assertThat
@@ -28,7 +29,9 @@ import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.x.MainActivity
 import org.junit.Test
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
+@Config(application = Application::class)
 class DefaultIntentProviderTest : RobolectricTest() {
     @Test
     fun `test getViewRoomIntent with data`() {

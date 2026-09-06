@@ -15,9 +15,8 @@ env:
 
 jobs:
   nightlyReports:
-    name: Create kover report artifact and upload sonar result.
+    name: Create nightly test and coverage reports
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'element-hq/element-x-android' }}
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
@@ -64,13 +63,6 @@ jobs:
           path: |
             **/build/reports/kover
 
-      - name: 🔊 Publish results to Sonar
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          ORG_GRADLE_PROJECT_SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
-        if: ${{ always() && env.SONAR_TOKEN != '' && env.ORG_GRADLE_PROJECT_SONAR_LOGIN != '' }}
-        run: ./gradlew assembleDebug createFullJarDebugTestFixtures :app:createFullJarGplayDebugTestFixtures $CI_GRADLE_ARG_PROPERTIES
-
   # Gradle dependency analysis using https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin
   dependency-analysis:
     name: Dependency analysis
@@ -89,7 +81,12 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
       - name: Dependency analysis
-        run: ./gradlew dependencyCheckAnalyze $CI_GRADLE_ARG_PROPERTIES
+        run: >-
+          ./gradlew
+          :dependencyCheckAggregate
+          --no-parallel
+          --no-configure-on-demand
+          $CI_GRADLE_ARG_PROPERTIES
       - name: Upload dependency analysis
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

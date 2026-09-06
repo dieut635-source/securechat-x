@@ -5,8 +5,8 @@
   <string name="screen_advanced_settings_choose_distributor_dialog_title_android">"Elige cómo recibir las notificaciones"</string>
   <string name="screen_advanced_settings_developer_mode">"Modo desarrollador"</string>
   <string name="screen_advanced_settings_developer_mode_description">"Habilita para tener acceso a características y funcionalidades para desarrolladores."</string>
-  <string name="screen_advanced_settings_element_call_base_url">"URL base personalizada de Element Call"</string>
-  <string name="screen_advanced_settings_element_call_base_url_description">"Define una URL base personalizada para Element Call."</string>
+  <string name="screen_advanced_settings_element_call_base_url">"URL base personalizada de SecureChat Calls"</string>
+  <string name="screen_advanced_settings_element_call_base_url_description">"Define una URL base personalizada para SecureChat Calls."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"URL no válida, asegúrate de incluir el protocolo (http/https) y la dirección correcta."</string>
   <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Ocultar avatares en las invitaciones a salas"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"Ocultar vistas previas de multimedia en la cronología"</string>
@@ -88,8 +88,8 @@ Si continúas, es posible que algunos de tus ajustes cambien."</string>
   <string name="screen_notification_settings_sound_custom_fallback">"Personalizado"</string>
   <string name="screen_notification_settings_sound_custom_sound_button_title">"Sonido personalizado…"</string>
   <string name="screen_notification_settings_sound_delete_sound_error_title">"Error al eliminar el archivo"</string>
-  <string name="screen_notification_settings_sound_element_default">"Predeterminado de Element"</string>
-  <string name="screen_notification_settings_sound_element_fade">"Desvanecimiento de Element"</string>
+  <string name="screen_notification_settings_sound_element_default">"Predeterminado de SecureChat"</string>
+  <string name="screen_notification_settings_sound_element_fade">"Desvanecimiento de SecureChat"</string>
   <string name="screen_notification_settings_sound_import_sound_error_title">"Error al importar el archivo"</string>
   <string name="screen_notification_settings_sound_preview_sound_error_title">"Problema al previsualizar el sonido de alerta"</string>
   <string name="screen_notification_settings_sound_section_title">"Sonido"</string>
