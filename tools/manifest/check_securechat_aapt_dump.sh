@@ -457,12 +457,58 @@ exported_components = {
     for component in components
     if component["exported"]
 }
+# Danh sách trắng bề mặt exported. Mở rộng nó là mở rộng bề mặt tấn công, nên mỗi mục
+# phải nói được: vì sao BẮT BUỘC exported, và cái gì bảo vệ nó.
+#
+# Danh sách gốc viết ngày 30/08, trước khi có UnifiedPush (chốt 31/08) và trước khi có
+# Device Owner (đầu 09). Bốn mục dưới đây là thật, không phải nới lỏng.
 expected_exported_components = {
+    # Màn hình chính. Phải exported để trình khởi chạy mở được.
     ("activity", "io.element.android.x.MainActivity", None),
     (
+        # WorkManager. Chỉ hệ thống gọi được — BIND_JOB_SERVICE là quyền chữ ký.
         "service",
         "androidx.work.impl.background.systemjob.SystemJobService",
         "android.permission.BIND_JOB_SERVICE",
+    ),
+    (
+        # Receiver quản trị thiết bị của chính SecureChat. Android BẮT BUỘC device admin
+        # receiver phải exported và phải yêu cầu BIND_DEVICE_ADMIN; quyền đó là quyền chữ
+        # ký, chỉ hệ thống gửi được. Đây là mục được bảo vệ tốt nhất trong danh sách.
+        "receiver",
+        "io.element.android.x.securechat.dpc.SecureChatDeviceAdminReceiver",
+        "android.permission.BIND_DEVICE_ADMIN",
+    ),
+    # BA MỤC UNIFIEDPUSH DƯỚI ĐÂY KHÔNG CÓ QUYỀN BẢO VỆ. Nói thẳng ra thay vì để chúng
+    # lẫn vào danh sách:
+    #
+    # UnifiedPush hoạt động bằng cách một app khác (ntfy) gửi broadcast và bind vào app
+    # này, nên chúng buộc phải exported và thư viện không đặt quyền. Hệ quả: MỌI app trên
+    # máy đều gửi được thông điệp giả tới hai receiver, và bind được vào service.
+    #
+    # Kẻ tấn công LÀM ĐƯỢC: gây một lần đồng bộ thừa, hoặc kéo app lên tiền cảnh.
+    # Kẻ tấn công KHÔNG làm được: chèn nội dung tin nhắn. Thông điệp push chỉ là tín hiệu
+    # đánh thức; nội dung thật lấy từ Synapse qua TLS ghim chứng chỉ bằng token của phiên.
+    # Thông điệp sai định dạng bị pushParser từ chối ("Invalid data received from
+    # UnifiedPush") chứ không được diễn giải.
+    #
+    # Đây là cái giá đã trả khi chọn ntfy tự host thay cho Firebase — đổi phụ thuộc vào
+    # Google lấy một bề mặt liên-app cục bộ. Ghi lại để lần sau đọc danh sách này biết đó
+    # là lựa chọn có ý thức, không phải sơ suất.
+    (
+        "receiver",
+        "io.element.android.libraries.pushproviders.unifiedpush.VectorUnifiedPushMessagingReceiver",
+        None,
+    ),
+    (
+        "receiver",
+        "org.unifiedpush.android.connector.internal.MessagingReceiverImpl",
+        None,
+    ),
+    (
+        "service",
+        "org.unifiedpush.android.connector.internal.RaiseToForegroundService",
+        None,
     ),
 }
 if exported_components != expected_exported_components:
