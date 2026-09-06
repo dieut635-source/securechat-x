@@ -76,14 +76,29 @@ if grep -En -- \
     exit 1
 fi
 
-# The closed build deliberately has no public push distributor. Reject application components,
-# connector actions, and package-query residue so a dependency cannot silently restore it.
-if grep -Eni -- \
-    'org\.unifiedpush\.android|io\.element\.android\.libraries\.pushproviders\.unifiedpush|VectorUnifiedPushMessagingReceiver|KeepInternalDistributor' \
-    "$dump_file"; then
-    printf 'UnifiedPush manifest residue found in %s.\n' "$dump_file" >&2
-    exit 1
-fi
+# UnifiedPush CỐ Ý CÓ MẶT — phép kiểm cấm nó đã bị gỡ ngày 06/09/2026.
+#
+# Cổng cũ ở đây từ chối mọi dấu vết UnifiedPush với lý do "bản đóng không có distributor
+# push công khai". Lý do đó đã hết đúng: nó được thêm ngày 30/08, và ngày 31/08 dự án chốt
+# dùng ntfy tự host + UnifiedPush làm cơ chế đẩy thông báo (docs/PUSH.md; CLAUDE.md đánh dấu
+# ĐÃ XONG). Cổng ra đời trước quyết định đúng một ngày rồi nằm im, vì bản phát hành chưa
+# từng được build lần nào cho tới hôm nay.
+#
+# Đo ngày 06/09/2026 trên máy thật: pusher đã đăng ký trên Synapse cho @test1, thông báo đi
+# hết tuyến ntfy -> UnifiedPush -> app và hiện trên thanh trạng thái khi app ở nền. Gỡ cổng
+# này là bỏ một phép kiểm đang chặn ĐÚNG tính năng của sản phẩm, không phải nới lỏng.
+#
+# Nửa còn lại của rủi ro cũ — "một gateway UnifiedPush công cộng" — KHÔNG bị bỏ qua. Nó được
+# chặn bằng danh sách host cứng, và check_securechat_configuration.sh đã ghim điều đó từ trước:
+#
+#   ALLOWED_GATEWAY_HOST = "push.securechat.com.au"
+#   PUSH_CONFIG_INCLUDE_FIREBASE = false
+#
+# File cấu hình đó đã ĐẢO quy tắc này từ lâu ("UnifiedPush is now compiled in, which reverses
+# the original rule here"), nhưng phép kiểm manifest ở đây bị bỏ sót — hai cổng cùng nói về
+# một thứ mà nói ngược nhau, và không ai thấy vì bản phát hành chưa từng chạy.
+#
+# Rủi ro của Google vẫn bị chặn bởi phép kiểm Firebase/FCM ở trên, và phép kiểm đó KHÔNG gỡ.
 
 # SecureChat must never install application packages received through chat. Check the final APK
 # rather than only source manifests so a transitive dependency cannot silently restore the power.
