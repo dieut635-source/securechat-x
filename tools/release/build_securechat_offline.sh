@@ -497,9 +497,28 @@ while IFS= read -r apk; do
     grep -Fq 'Verified using v3 scheme (APK Signature Scheme v3): true' "$signature_report" || fail "$apk_base is missing APK Signature Scheme v3."
     grep -qi 'CN=Android Debug' "$signature_report" && fail "$apk_base is signed with the Android debug key."
 
-    signer_count=$(grep -c '^Signer #[0-9][0-9]* certificate SHA-256 digest: ' "$signature_report" || true)
+    # apksigner đổi định dạng đầu ra giữa các phiên bản build-tools:
+    #
+    #   cũ:  Signer #1 certificate SHA-256 digest: <hex>
+    #   mới: Number of signers: 1
+    #        V2 Signer: certificate SHA-256 digest: <hex>
+    #        V3 Signer: certificate SHA-256 digest: <hex>
+    #
+    # Build-tools 37.0.0 dùng định dạng mới, nên biểu thức cũ khớp KHÔNG dòng nào và
+    # phép kiểm này báo "found 0" trên một APK đã ký đúng — nó chưa từng chạy được
+    # trên máy này. Đọc cả hai định dạng thay vì ghim vào một phiên bản công cụ.
+    signer_count=$(sed -n 's/^Number of signers: \([0-9][0-9]*\)$/\1/p' "$signature_report" | head -n 1)
+    if [[ -z "$signer_count" ]]; then
+        signer_count=$(grep -c '^Signer #[0-9][0-9]* certificate SHA-256 digest: ' "$signature_report" || true)
+    fi
     [[ "$signer_count" -eq 1 ]] || fail "$apk_base must have exactly one current signer; found $signer_count."
-    apk_certificate_sha256=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$signature_report" | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')
+
+    # Định dạng mới in MỘT dòng cho mỗi sơ đồ ký (V2, V3), cùng một certificate. Gom
+    # rồi loại trùng: thứ phải đúng là "chỉ một danh tính ký", không phải "chỉ một dòng".
+    apk_certificate_sha256=$(sed -nE 's/^(Signer #[0-9]+|V[0-9.]+ Signer):? certificate SHA-256 digest: (.*)$/\2/p' "$signature_report" \
+        | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]' | sort -u)
+    distinct_certs=$(printf '%s\n' "$apk_certificate_sha256" | grep -c . || true)
+    [[ "$distinct_certs" -eq 1 ]] || fail "$apk_base has $distinct_certs distinct signer certificates; expected exactly 1."
     [[ "$apk_certificate_sha256" = "$expected_certificate_sha256" ]] || fail "$apk_base signer does not match the trusted certificate pin."
 
     "$ZIPALIGN" -c -P 16 -v 4 "$apk" >/dev/null
