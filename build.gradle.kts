@@ -98,6 +98,15 @@ allprojects {
         failBuildOnCVSS.set(0.0f)
         failOnError.set(true)
 
+        // Miễn trừ dương tính giả — danh sách hẹp, mỗi mục có lý do viết ra.
+        //
+        // failBuildOnCVSS 0.0 nghĩa là MỌI lỗ hổng có điểm đều làm hỏng build. Đó là ngưỡng
+        // đúng cho một sản phẩm bảo mật, nhưng nó cũng làm mọi lần gán CPE sai của
+        // Dependency-Check trở thành một lần chặn phát hành. Cách xử lý đúng là miễn trừ
+        // TỪNG CVE trên TỪNG thư viện kèm lý do, chứ không nâng ngưỡng — nâng ngưỡng là tắt
+        // cổng cho mọi lỗ hổng dưới mức đó, kể cả lỗ hổng thật.
+        suppressionFile = "$rootDir/tools/dependency-check/suppressions.xml"
+
         // Gradle's --offline flag does not automatically disable Dependency-Check's own network
         // updaters and remote analyzers. The isolated release workstation must use the reviewed
         // vulnerability database copied into its offline cache and must never attempt a network

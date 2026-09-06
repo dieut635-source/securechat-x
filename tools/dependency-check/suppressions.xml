@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Miễn trừ cho cổng quét lỗ hổng.
+
+  QUY TẮC CỦA FILE NÀY
+
+  Mỗi mục phải: (1) khoá vào ĐÚNG một thư viện bằng sha1, không dùng regex rộng;
+  (2) nêu ĐÚNG những CVE cụ thể, không miễn trừ cả gói; (3) viết ra vì sao đó là
+  dương tính giả, kiểm được bằng cách đọc.
+
+  Miễn trừ rộng làm cổng này thành vô dụng mà vẫn hiện màu xanh — tệ hơn không có
+  cổng, vì nó tạo cảm giác đã kiểm.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <!--
+      JNA bị nhận nhầm là "Sun Java".
+
+      Dependency-Check gán cpe:/a:sun:java cho jna-*.aar, rồi kéo về hai CVE năm 1999
+      của JDK 1.0 và Netscape Navigator 2.0:
+
+        CVE-1999-0142  Java Applet Security Manager trong Netscape Navigator 2.0
+                       và Java Developer's Kit 1.0 — applet nối được tới host bất kỳ
+        CVE-1999-0440  trình xác minh bytecode của JVM — thực thi từ xa qua trang
+                       web độc hại
+
+      JNA (net.java.dev.jna) là thư viện gọi hàm native từ Java, không phải bản cài
+      Java runtime của Sun. Hai CVE trên nói về applet trong trình duyệt và về JVM
+      của những năm 1990; ứng dụng Android năm 2026 không có applet, không có
+      Netscape, và JVM ở đây là ART của Android.
+
+      Chỉ miễn trừ ĐÚNG hai CVE này, khoá theo tên gói. Mọi CVE khác của JNA vẫn
+      làm hỏng build như thường.
+    -->
+    <suppress>
+        <notes><![CDATA[
+            JNA bị gán nhầm cpe:/a:sun:java. Hai CVE năm 1999 về applet Netscape và
+            JVM đời cũ, không áp dụng cho một thư viện gọi hàm native trên Android.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/net\.java\.dev\.jna/jna@.*$</packageUrl>
+        <cve>CVE-1999-0142</cve>
+        <cve>CVE-1999-0440</cve>
+    </suppress>
+
+</suppressions>
